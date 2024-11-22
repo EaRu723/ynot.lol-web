@@ -10,7 +10,7 @@
 
 .showcaseGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -30,18 +30,8 @@
   border: 1px solid black;
 }
 
-/* Hide scrollbar for IE, Edge and Firefox */
-.showcaseItem {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-
-/* Hide scrollbar for webkit browsers */
-.showcaseItem::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
-}
-
 .iframeWrapper {
+  position: relative;
   cursor: pointer;
   width: 100%;
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Internet's White Pages</title>
-    <link rel="stylesheet" href="styles/styles.css" />
+    <link rel="stylesheet" href="../static/styles.css" />
   </head>
   <body>
     <main class="main">
@@ -20,7 +20,7 @@
         </div>
         <div>
           <button class="submitButton" onclick="openModal()">
-            Add Your Site
+            Register Your Site
           </button>
         </div>
       </div>
@@ -103,8 +103,6 @@
           iframe.title = site.name;
           iframe.loading = "lazy";
           iframe.className = "showcaseItem";
-          iframe.style.pointerEvents = "none";
-          iframe.scrolling = "no";
 
           iframeWrapper.appendChild(iframe);
           siteDiv.appendChild(iframeWrapper);
