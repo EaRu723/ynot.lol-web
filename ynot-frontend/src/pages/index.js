@@ -16,7 +16,7 @@ export default function Home() {
 
   async function fetchSites() {
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/sites");
+      const response = await fetch("https://your-backend.onrender.com/api/sites");
       const data = await response.json();
       // Convert the object to an array of site details
       const sitesArray = Object.values(data);
