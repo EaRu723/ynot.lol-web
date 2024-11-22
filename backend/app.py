@@ -31,9 +31,13 @@ def get_sites():
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
-    if path and os.path.exists('build/' + path):
-        return send_from_directory('build', path)
-    return send_from_directory('build', 'index.html')
+    build_dir = 'ynot-frontend/.next'
+    if path and os.path.exists(os.path.join(build_dir, path)):
+        return send_from_directory(build_dir, path)
+    try:
+        return send_from_directory(build_dir, 'server/pages/index.html')
+    except:
+        return f"Error: Build directory content: {os.listdir(build_dir) if os.path.exists(build_dir) else 'build dir not found'}"
 
 
 if __name__ == "__main__":
