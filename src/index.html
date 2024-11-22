@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Internet's White Pages</title>
+    <link rel="stylesheet" href="styles/styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Discover cool <i>people</i></h1>
+
+      <p>Y Not lol?</p>
+
+      <nav>
+        <div>
+          <input
+            type="search"
+            placeholder="Search..."
+            aria-label="Search personal sites"
+          />
+        </div>
+        <div>
+          <button class="og-button" onclick="openModal()">Add Your Site</button>
+        </div>
+      </nav>
+
+      <div class="showcase-grid" id="showcase-grid"></div>
+    </main>
+
+    <!-- Modal -->
+    <div id="submitModal" class="modal">
+      <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <h2 style="margin-top: 0; margin-bottom: 1.5rem">
+          Submit Your Website
+        </h2>
+        <form
+          id="siteSubmitForm"
+          onsubmit="handleSubmit(event)"
+          action="https://formsubmit.co/andrearusso2399@gmail.com"
+          method="POST"
+        >
+          <div class="form-group">
+            <label for="name">Your Name</label>
+            <input type="text" id="name" name="name" required />
+          </div>
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+          <div class="form-group">
+            <label for="url">Website URL</label>
+            <input
+              type="url"
+              id="url"
+              name="url"
+              required
+              placeholder="https://"
+            />
+          </div>
+          <button type="submit" class="submit-button">Submit Website</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function openModal() {
+        document.getElementById("submitModal").style.display = "block";
+      }
+
+      function closeModal() {
+        document.getElementById("submitModal").style.display = "none";
+      }
+
+      async function fetchSites() {
+        try {
+          const response = await fetch("http://127.0.0.1:5000/api/sites");
+          const data = await response.json();
+          const showcaseGrid = document.getElementById("showcase-grid");
+
+          for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+              const site = data[key];
+              const iframe = document.createElement("iframe");
+              iframe.src = site.url;
+              iframe.title = site.name;
+              iframe.loading = "lazy";
+              iframe.className = "showcase-item";
+
+              const showcaseRow = document.createElement("div");
+              showcaseRow.className = "showcase-row";
+              showcaseRow.appendChild(iframe);
+
+              showcaseGrid.appendChild(showcaseRow);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching sites:", error);
+        }
+      }
+
+      window.onload = fetchSites;
+
+      async function handleSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+          });
+
+          if (response.ok) {
+            alert("Thank you for submitting your website!");
+            form.reset();
+            closeModal();
+          } else {
+            alert("Something went wrong. Please try again.");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Something went wrong. Please try again.");
+        }
+      }
+
+      // Close modal if clicking outside of it
+      window.onclick = function (event) {
+        const modal = document.getElementById("submitModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
+    </script>
+  </body>
+</html>
