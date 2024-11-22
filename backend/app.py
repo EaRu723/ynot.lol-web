@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -26,6 +27,13 @@ def ping():
 @app.route("/api/sites", methods=["GET"])
 def get_sites():
     return jsonify(sites)
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path and os.path.exists('build/' + path):
+        return send_from_directory('build', path)
+    return send_from_directory('build', 'index.html')
 
 
 if __name__ == "__main__":
