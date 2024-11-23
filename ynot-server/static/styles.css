@@ -8,6 +8,44 @@
   padding: 20px;
 }
 
+.search-and-register {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tag-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+.tagButton {
+  border: 1px solid #808080;
+  cursor: pointer;
+}
+
+.tagButton:hover {
+  background-color: #e0e0e0;
+}
+
+.tagButton.selected {
+  background-color: #333;
+  color: white;
+  border-color: #333;
+}
+
+.submitButton {
+  font-family: inherit;
+  border: 2px outset #808080;
+  padding: 2px 6px;
+  color: black;
+  cursor: pointer;
+}
+
 .showcaseGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));

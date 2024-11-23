@@ -10,19 +10,26 @@
     <main class="main">
       <h1>Discover cool <i>people</i>.</h1>
       <p>Because Y not lol?</p>
-      <div>
-        <div>
-          <input
-            type="search"
-            placeholder="Search..."
-            aria-label="Search personal sites"
-          />
-        </div>
+      <hr style="color: lightgray" />
+      <div class="search-and-register">
         <div>
           <button class="submitButton" onclick="openModal()">
             Register Your Site
           </button>
         </div>
+        <div>
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="Search..."
+            aria-label="Search personal sites"
+            oninput="handleSearch()"
+          />
+        </div>
+      </div>
+
+      <div class="tag-buttons" id="tag-buttons">
+        <!-- Tag buttons will be dynamically inserted here -->
       </div>
 
       <div class="showcaseGrid" id="showcase-grid">
@@ -67,7 +74,10 @@
 
     <script>
       const showcaseGridRef = document.getElementById("showcase-grid");
+      const tagButtonsRef = document.getElementById("tag-buttons");
       let sites = [];
+      let filteredSites = [];
+      let selectedTags = new Set();
 
       function openModal() {
         document.getElementById("submitModal").style.display = "block";
@@ -82,7 +92,9 @@
           const response = await fetch("http://127.0.0.1:5000/api/sites");
           const data = await response.json();
           sites = Object.values(data);
+          filteredSites = sites;
           renderSites();
+          renderTagButtons();
         } catch (error) {
           console.error("Error fetching sites:", error);
         }
@@ -90,7 +102,7 @@
 
       function renderSites() {
         showcaseGridRef.innerHTML = "";
-        sites.forEach((site, index) => {
+        filteredSites.forEach((site, index) => {
           const siteDiv = document.createElement("div");
           siteDiv.className = "showcaseRow";
           siteDiv.onclick = () => window.open(site.url, "_blank");
@@ -108,6 +120,54 @@
           siteDiv.appendChild(iframeWrapper);
           showcaseGridRef.appendChild(siteDiv);
         });
+      }
+
+      function renderTagButtons() {
+        const tags = new Set();
+        sites.forEach((site) => {
+          site.tags.forEach((tag) => tags.add(tag));
+        });
+
+        tagButtonsRef.innerHTML = "";
+        tags.forEach((tag) => {
+          const tagButton = document.createElement("button");
+          tagButton.className = "tagButton";
+          tagButton.textContent = tag;
+          tagButton.onclick = () => toggleTag(tag, tagButton);
+          tagButtonsRef.appendChild(tagButton);
+        });
+      }
+
+      function toggleTag(tag, button) {
+        if (selectedTags.has(tag)) {
+          selectedTags.delete(tag);
+          button.classList.remove("selected");
+        } else {
+          selectedTags.add(tag);
+          button.classList.add("selected");
+        }
+        handleSearch();
+      }
+
+      function handleSearch() {
+        const searchInput = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+
+        filteredSites = sites.filter((site) => {
+          const matchesSearch =
+            site.name.toLowerCase().includes(searchInput) ||
+            site.metadata.toLowerCase().includes(searchInput) ||
+            site.tags.some((tag) => tag.toLowerCase().includes(searchInput));
+
+          const matchesTags =
+            selectedTags.size === 0 ||
+            site.tags.some((tag) => selectedTags.has(tag));
+
+          return matchesSearch && matchesTags;
+        });
+
+        renderSites();
       }
 
       async function handleSubmit(event) {
