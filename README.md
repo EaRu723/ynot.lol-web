@@ -7,7 +7,10 @@ docker compose up --build -d
 
 Served at `http://localhost:8080`
 
+---
+
 Environment variables (`ynot-server/.env`):
+
 If this file does not exist, create it.
 
 ```
