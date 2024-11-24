@@ -124,44 +124,43 @@ sites = [
 ]
 
 
-async def insert_sample_data():
-    async with async_session() as session:
-        async with session.begin():
-            # Insert tags if they do not exist
-            for tag in tags:
-                existing_tag = await session.execute(
-                    select(Tag).where(Tag.name == tag["name"])
-                )
-                existing_tag = existing_tag.scalars().first()
-                if not existing_tag:
-                    tag_obj = Tag(**tag)
-                    session.add(tag_obj)
+async def insert_sample_data(session: AsyncSession):
+    async with session.begin():
+        # Insert tags if they do not exist
+        for tag in tags:
+            existing_tag = await session.execute(
+                select(Tag).where(Tag.name == tag["name"])
+            )
+            existing_tag = existing_tag.scalars().first()
+            if not existing_tag:
+                tag_obj = Tag(**tag)
+                session.add(tag_obj)
 
-            # Insert sites if they do not exist
-            for site in sites:
-                existing_site = await session.execute(
-                    select(Site).where(Site.url == site["url"])
+        # Insert sites if they do not exist
+        for site in sites:
+            existing_site = await session.execute(
+                select(Site).where(Site.url == site["url"])
+            )
+            existing_site = existing_site.scalars().first()
+            if not existing_site:
+                tag_objs = await session.execute(
+                    select(Tag).where(Tag.id.in_(site["tags"]))
                 )
-                existing_site = existing_site.scalars().first()
-                if not existing_site:
-                    tag_objs = await session.execute(
-                        select(Tag).where(Tag.id.in_(site["tags"]))
-                    )
-                    tag_objs = tag_objs.scalars().all()
-                    site_obj = Site(
-                        name=site["name"],
-                        owner=site["owner"],
-                        email=site["email"],
-                        url=site["url"],
-                        site_metadata=site["site_metadata"],
-                        tags=tag_objs,
-                    )
-                    session.add(site_obj)
+                tag_objs = tag_objs.scalars().all()
+                site_obj = Site(
+                    name=site["name"],
+                    owner=site["owner"],
+                    email=site["email"],
+                    url=site["url"],
+                    site_metadata=site["site_metadata"],
+                    tags=tag_objs,
+                )
+                session.add(site_obj)
 
 
 @router.get("/insert-sample-data")
-async def insert_data():
-    await insert_sample_data()
+async def insert_data(session: AsyncSession = Depends(get_async_session)):
+    await insert_sample_data(session)
     return {"message": "Sample data inserted successfully"}
 
 
@@ -171,18 +170,14 @@ async def ping():
 
 
 @router.get("/sites", response_model=List[SiteBase])
-async def get_sites(
-    request: Request, session: AsyncSession = Depends(get_async_session)
-):
+async def get_sites(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(Site).options(joinedload(Site.tags)))
     sites = result.unique().scalars().all()
     return sites
 
 
 @router.get("/tags", response_model=List[TagBase])
-async def get_tags(
-    request: Request, session: AsyncSession = Depends(get_async_session)
-):
+async def get_tags(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(Tag))
     tags = result.scalars().all()
     return tags
