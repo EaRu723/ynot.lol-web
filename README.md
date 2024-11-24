@@ -5,7 +5,7 @@ cd ynot-server
 docker compose up --build -d
 ```
 
-Served at `http://localhost:8080`
+Served at `http://localhost:8000`
 
 ---
 
