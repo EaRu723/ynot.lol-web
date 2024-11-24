@@ -77,6 +77,7 @@
       const tagButtonsRef = document.getElementById("tag-buttons");
       let sites = [];
       let filteredSites = [];
+      let tags = new Set();
       let selectedTags = new Set();
 
       function openModal() {
@@ -94,10 +95,21 @@
           sites = Object.values(data);
           filteredSites = sites;
           renderSites();
-          renderTagButtons();
         } catch (error) {
           console.error("Error fetching sites:", error);
         }
+      }
+
+      async function fetchTags() {
+        fetch("http://127.0.0.1:8000/api/tags")
+          .then((response) => response.json())
+          .then((data) => {
+            data.forEach((tag) => tags.add(tag));
+            renderTagButtons();
+          })
+          .catch((error) => {
+            console.error("Error fetching tags:", error);
+          });
       }
 
       function renderSites() {
@@ -123,27 +135,25 @@
       }
 
       function renderTagButtons() {
-        const tags = new Set();
-        sites.forEach((site) => {
-          site.tags.forEach((tag) => tags.add(tag));
-        });
+        const tagContainer = document.getElementById("tag-buttons");
+        tagContainer.innerHTML = "";
 
-        tagButtonsRef.innerHTML = "";
         tags.forEach((tag) => {
           const tagButton = document.createElement("button");
           tagButton.className = "tagButton";
-          tagButton.textContent = tag;
+          tagButton.textContent = tag.name;
           tagButton.onclick = () => toggleTag(tag, tagButton);
-          tagButtonsRef.appendChild(tagButton);
+          tagContainer.appendChild(tagButton);
         });
       }
 
       function toggleTag(tag, button) {
-        if (selectedTags.has(tag)) {
-          selectedTags.delete(tag);
+        tagName = tag.name;
+        if (selectedTags.has(tagName)) {
+          selectedTags.delete(tagName);
           button.classList.remove("selected");
         } else {
-          selectedTags.add(tag);
+          selectedTags.add(tagName);
           button.classList.add("selected");
         }
         handleSearch();
@@ -157,12 +167,14 @@
         filteredSites = sites.filter((site) => {
           const matchesSearch =
             site.name.toLowerCase().includes(searchInput) ||
-            site.metadata.toLowerCase().includes(searchInput) ||
-            site.tags.some((tag) => tag.toLowerCase().includes(searchInput));
+            site.site_metadata.toLowerCase().includes(searchInput) ||
+            site.tags.some((tag) =>
+              tag.name.toLowerCase().includes(searchInput),
+            );
 
           const matchesTags =
             selectedTags.size === 0 ||
-            site.tags.some((tag) => selectedTags.has(tag));
+            site.tags.some((tag) => selectedTags.has(tag.name));
 
           return matchesSearch && matchesTags;
         });
@@ -185,6 +197,7 @@
             form.reset();
             closeModal();
             fetchSites(); // refresh the sites
+            fetchTags(); // refresh the tags
           } else {
             alert("Something went wrong. Please try again.");
           }
@@ -194,7 +207,10 @@
         }
       }
 
-      document.addEventListener("DOMContentLoaded", fetchSites);
+      document.addEventListener("DOMContentLoaded", () => {
+        fetchSites();
+        fetchTags();
+      });
     </script>
   </body>
 </html>
