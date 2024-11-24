@@ -90,7 +90,7 @@
 
       async function fetchSites() {
         try {
-          const response = await fetch("http://127.0.0.1:8000/api/sites");
+          const response = await fetch(`http://13.56.229.239/api/sites`);
           const data = await response.json();
           sites = Object.values(data);
           filteredSites = sites;
@@ -101,7 +101,7 @@
       }
 
       async function fetchTags() {
-        fetch("http://127.0.0.1:8000/api/tags")
+        fetch(`http://13.56.229.239/api/tags`)
           .then((response) => response.json())
           .then((data) => {
             data.forEach((tag) => tags.add(tag));

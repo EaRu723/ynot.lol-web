@@ -8,7 +8,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*", "http://13.56.229.239"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -19,4 +19,3 @@ app.include_router(api.router, prefix="/api", tags=["api"])
 
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
