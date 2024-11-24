@@ -1,5 +1,8 @@
-from fastapi import APIRouter
-from app.models import Site
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.models import Site, SiteBase
+from app.db.db import async_session
 
 router = APIRouter()
 
@@ -86,6 +89,11 @@ async def ping():
     return {"message": "pong"}
 
 
-@router.get("/sites", response_model=list[Site])
-async def get_sites():
-    return [Site(**site) for site in sites.values()]
+@router.get("/sites", response_model=list[SiteBase])
+async def get_sites(session: AsyncSession = Depends(async_session)):
+    result = await session.execute(select(Site))
+    sites = result.scalars().all()
+    return sites
+
+# async def get_sites():
+#     return [Site(**site) for site in sites.values()]

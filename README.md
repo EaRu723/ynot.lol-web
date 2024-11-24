@@ -24,3 +24,8 @@ APP_PORT=8000
 APP_ENV=development
 ```
 You should be able to plug and play a `.env` with these values.
+
+To initialize the database with the schema, run the following command:
+```
+docker exec ynot python -m app.db.create_tables
+```
