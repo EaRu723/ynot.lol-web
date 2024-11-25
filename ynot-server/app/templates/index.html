@@ -90,7 +90,7 @@
 
       async function fetchSites() {
         try {
-          const response = await fetch(`http://13.56.229.239/api/sites`);
+          const response = await fetch(`https://ynot.lol/api/sites`);
           const data = await response.json();
           sites = Object.values(data);
           filteredSites = sites;
@@ -101,7 +101,7 @@
       }
 
       async function fetchTags() {
-        fetch(`http://13.56.229.239/api/tags`)
+        fetch(`https://ynot.lol/api/tags`)
           .then((response) => response.json())
           .then((data) => {
             data.forEach((tag) => tags.add(tag));
