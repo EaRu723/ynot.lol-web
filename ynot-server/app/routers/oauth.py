@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse, FileResponse
 from httpx import AsyncClient
 from app.config import settings
 import json
 import hashlib
 import base64
 import secrets
+import os
 
 router = APIRouter()
 
@@ -23,6 +24,36 @@ def generate_pkce_pair():
         .decode("utf-8")
     )
     return code_verifier, code_challenge
+
+
+@router.get("/client-metadata.json")
+async def client_metadata():
+    metadata = {
+        "client_id": "https://ynot.lol/oauth/client-metadata.json",
+        "application_type": "web",
+        "client_name": "Y: The discovery engine",
+        "client_uri": "https://ynot.lol/",
+        "dpop_bound_access_tokens": True,
+        "grant_types": ["authorization_code", "refresh_token"],
+        "redirect_uris": ["http://ynot.lol/oauth/callback"],
+        "response_types": ["code"],
+        "scope": "atproto transition:generic",
+        "token_endpoint_auth_method": "private_key_jwt",
+        "token_endpoint_auth_signing_alg": "ES256",
+        "jwks": {
+            "keys": [
+                {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "x": "NX5B2b_T9_CN7CqNN35qB3v12o6iGL7ospcwTAoTF6E",
+                    "y": "j7zlhcUGYGsnwZSp2vvekvguZsIHcFxitDU-F2846fo",
+                    "d": "cinXNXdPhitUJiUpDld7yOuwHI5g4wbpCyrdXTFxk3Q",
+                }
+            ]
+        },
+    }
+
+    return JSONResponse(metadata)
 
 
 @router.get("/login")
