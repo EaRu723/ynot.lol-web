@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from httpx import AsyncClient
 from app.config import settings
@@ -8,10 +8,13 @@ router = APIRouter()
 
 
 @router.get("/login")
-async def login():
-    # Redirect the user to the atproto login page
+async def login(pds: str):
+    if not pds:
+        raise HTTPException(status_code=400, detail="PDS URL is required")
+
+    # Redirect the user to the login page of their indicated PDS
     auth_url = (
-        f"https://atproto.com/oauth/authorize?"
+        f"{pds}/oauth/authorize?"
         f"client_id={settings.atprotocol_client_id}&"
         f"redirect_uri={settings.atprotocol_redirect_uri}&"
         f"response_type=code"
@@ -20,11 +23,19 @@ async def login():
 
 
 @router.get("/callback")
-async def callback(code: str):
+async def callback(request: Request):
+    pds = request.query_params.get("pds")
+    if not pds:
+        raise HTTPException(status_code=400, detail="PDS URL is required")
+
+    code = request.query_params.get("code")
+    if not code:
+        raise HTTPException(status_code=400, detail="Authorization code is required")
+
     async with AsyncClient() as client:
         # Handle the callback from the atproto identity provider
         # Exchange the authorization code for an access token
-        token_url = "https://atproto.com/oauth/token"
+        token_url = f"{pds}/oauth/token"
         data = {
             "grant_type": "authorization_code",
             "code": code,
@@ -44,4 +55,3 @@ async def callback(code: str):
             "access_token": access_token,
             "token_type": token_data.get("token_type"),
         }
-

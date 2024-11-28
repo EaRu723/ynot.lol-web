@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Sign In</title>
+    <style>
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgb(0, 0, 0);
+        background-color: rgba(0, 0, 0, 0.4);
+        padding-top: 60px;
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sign In</h1>
+    <form action="/oauth/login" method="get">
+      <button type="submit" name="pds" value="https://bsky.social">
+        Login with Bluesky
+      </button>
+      <button type="button" id="customPdsBtn">Login with Custom PDS</button>
+    </form>
+
+    <!-- The Modal -->
+    <div id="customPdsModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <form action="/oauth/login" method="get">
+          <label for="customPds">Enter your PDS URL:</label>
+          <input
+            type="url"
+            id="customPds"
+            name="pds"
+            placeholder="https://your-pds-url.com"
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      // Get the modal
+      var modal = document.getElementById("customPdsModal");
+
+      // Get the button that opens the modal
+      var btn = document.getElementById("customPdsBtn");
+
+      // Get the <span> element that closes the modal
+      var span = document.getElementsByClassName("close")[0];
+
+      // When the user clicks the button, open the modal
+      btn.onclick = function () {
+        modal.style.display = "block";
+      };
+
+      // When the user clicks on <span> (x), close the modal
+      span.onclick = function () {
+        modal.style.display = "none";
+      };
+
+      // When the user clicks anywhere outside of the modal, close it
+      window.onclick = function (event) {
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+    </script>
+  </body>
+</html>
