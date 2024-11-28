@@ -1,0 +1,24 @@
+{
+  "client_id": "https://ynot.lol/static/client-metadata.json",
+  "application_type": "web",
+  "client_name": "Y: The decentralized discovery engine",
+  "client_uri": "https://ynot.lol",
+  "dpop_bound_access_tokens": true,
+  "grant_types": ["authorization_code", "refresh_token"],
+  "redirect_uris": ["https://ynot.lol/auth/callback"],
+  "response_types": ["code"],
+  "scope": "atproto transition:generic",
+  "token_endpoint_auth_method": "private_key_jwt",
+  "token_endpoint_auth_signing_alg": "ES256",
+  "jwks": {
+    "keys": [
+      {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "base64url-encoded-x-coordinate",
+        "y": "base64url-encoded-y-coordinate",
+        "d": "base64url-encoded-private-key"
+      }
+    ]
+  }
+}

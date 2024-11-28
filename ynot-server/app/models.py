@@ -21,6 +21,7 @@ class Tag(Base):
     name = Column(String, unique=True, index=True)
     sites = relationship("Site", secondary=site_tag_association, back_populates="tags")
 
+
 class Site(Base):
     __tablename__ = "sites"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -30,6 +31,7 @@ class Site(Base):
     url = Column(String, unique=True, index=True)
     site_metadata = Column(String, index=True)
     tags = relationship("Tag", secondary=site_tag_association, back_populates="sites")
+
 
 class TagBase(BaseModel):
     id: int
@@ -50,4 +52,3 @@ class SiteBase(BaseModel):
 
     class Config:
         from_attributes = True
-

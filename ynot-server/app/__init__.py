@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routers import api, views
+from app.routers import api, views, auth
 from app.db.db import engine, async_session
 
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,7 +16,8 @@ app.add_middleware(
 )
 
 app.include_router(views.router)
-app.include_router(api.router, prefix="/api", tags=["api"])
+app.include_router(api.router, prefix="/api")
+app.include_router(auth.router, prefix="/auth")
 
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
