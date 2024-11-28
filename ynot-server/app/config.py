@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     atprotocol_client_id: str
     atprotocol_client_secret: str
     atprotocol_redirect_uri: str
+    path_to_private_key: str
 
     class Config:
         env_file = ".env"

@@ -15,9 +15,9 @@
       {
         "kty": "EC",
         "crv": "P-256",
-        "x": "base64url-encoded-x-coordinate",
-        "y": "base64url-encoded-y-coordinate",
-        "d": "base64url-encoded-private-key"
+        "x": "NX5B2b_T9_CN7CqNN35qB3v12o6iGL7ospcwTAoTF6E",
+        "y": "j7zlhcUGYGsnwZSp2vvekvguZsIHcFxitDU-F2846fo",
+        "d": "cinXNXdPhitUJiUpDld7yOuwHI5g4wbpCyrdXTFxk3Q"
       }
     ]
   }
