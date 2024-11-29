@@ -48,9 +48,9 @@ def get_password_hash(password: str) -> str:
 
 
 def get_user(db, handle: str) -> Optional[UserInDB]:
-    if handle in db:
-        user_dict = db[handle]
-        return UserInDB(**user_dict)
+    for user in db.values():
+        if user["handle"] == handle:
+            return UserInDB(**user)
     return None
 
 
@@ -82,15 +82,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
 
     try:
         # Decode the token
+        print(f"Token: {token}")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Payload: {payload}")
         handle: str = payload.get("sub")
         if handle is None:
             raise credentials_exception
         token_data = TokenData(handle=handle)
-    except JWTError:
+    except JWTError as e:
+        print(f"JWTError: {e}")
         raise credentials_exception
 
     # Retrieve the user from DB
+    print(fake_users_db)
     user = get_user(fake_users_db, handle=token_data.handle)
     if user is None:
         raise credentials_exception
