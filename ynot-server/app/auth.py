@@ -82,15 +82,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
 
     try:
         # Decode the token
-        print(f"Token: {token}")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(f"Payload: {payload}")
         handle: str = payload.get("sub")
         if handle is None:
             raise credentials_exception
         token_data = TokenData(handle=handle)
     except JWTError as e:
-        print(f"JWTError: {e}")
         raise credentials_exception
 
     # Retrieve the user from DB
