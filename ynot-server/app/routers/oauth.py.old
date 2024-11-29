@@ -16,7 +16,7 @@ code_verifiers = {}
 
 def generate_pkce_pair():
     code_verifier = (
-        base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("utf-8")
+        base64.urlsafe_b64encode(secrets.token_bytes(64)).rstrip(b"=").decode("utf-8")
     )
     code_challenge = (
         base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode("utf-8")).digest())
@@ -35,7 +35,7 @@ async def client_metadata():
         "client_uri": "https://ynot.lol/",
         "dpop_bound_access_tokens": True,
         "grant_types": ["authorization_code", "refresh_token"],
-        "redirect_uris": ["http://ynot.lol/oauth/callback"],
+        "redirect_uris": ["https://ynot.lol/oauth/callback"],
         "response_types": ["code"],
         "scope": "atproto transition:generic",
         "token_endpoint_auth_method": "private_key_jwt",

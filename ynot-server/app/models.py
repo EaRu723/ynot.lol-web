@@ -1,7 +1,8 @@
+from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
@@ -52,3 +53,37 @@ class SiteBase(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# atproto models
+class User(BaseModel):
+    handle: str
+    description: str | None = None
+    disabled: bool | None = None
+
+
+class UserInDB(User):
+    hashed_password: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class PostRecordRequest(BaseModel):
+    username: str
+    collection: str
+    record: dict
+
+
+class GetRecordRequest(BaseModel):
+    username: str
+    collection: str
+    rkey: str
+
+
+class BlogPost(BaseModel):
+    title: str
+    content: str
+    created_at: datetime = Field(default_factory=datetime.now)

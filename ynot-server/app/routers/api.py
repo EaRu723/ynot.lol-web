@@ -1,10 +1,26 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Request
+from atproto import Client
+from fastapi import APIRouter, Depends, Request, status, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from app.models import Site, Tag, SiteBase, TagBase
+from app.models import Site, Tag, SiteBase, TagBase, BlogPost
 from app.db.db import get_async_session
+from app.auth import (
+    UserInDB,
+    authenticate_user,
+    create_access_token,
+    get_current_active_user,
+    fake_users_db,
+    User,
+    Token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    get_password_hash,
+    get_user,
+)
+from datetime import timedelta
+from atproto import models
 
 router = APIRouter()
 
@@ -181,3 +197,79 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(Tag))
     tags = result.scalars().all()
     return tags
+
+
+@router.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    client = Client()
+    profile = client.login(form_data.username, form_data.password)
+    if not profile:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect handle or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return {"profile": profile}
+
+
+@router.post("/blog/post")
+async def create_blog_post(
+    blog_post: BlogPost, current_user: User = Depends(get_current_active_user)
+):
+    client = Client()
+    client.login(current_user.handle, current_user.password)
+
+    response = client.com.atproto.repo.create_record(
+        data = models.ComAtprotoRepoCreateRecord.Data(
+            repo=client.me.did,
+            collection=f"test.blog",
+            record=blog_post,
+        )
+    )
+
+    if not response or not hasattr(response, "uri"):
+        raise HTTPException(status_code=500, detail="Failed to create blog post")
+
+    return {
+        "response": response,
+        "at_url": f"https://{client.pds}/xrpc/com.atproto.repo.getRecord?uri={response.uri}",
+    }
+
+
+@router.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = get_user(fake_users_db, form_data.username)
+    if not user:
+        client = Client()
+        try:
+            profile = client.login(form_data.username, form_data.password)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid ATProto/Bluesky credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        # Add user to database
+        user_data = {
+            "handle": profile.handle,
+            "description": profile.description,
+            "hashed_password": get_password_hash(form_data.password),
+            "disabled": False,
+        }        
+        fake_users_db[profile.display_name] = user_data
+        user = UserInDB(**user_data)
+        print(fake_users_db)
+
+    # Generate JWT token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.handle}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/users/me", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
