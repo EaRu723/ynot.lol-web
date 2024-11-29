@@ -64,6 +64,7 @@ class User(BaseModel):
 
 class UserInDB(User):
     hashed_password: str
+    session: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
