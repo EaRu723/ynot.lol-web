@@ -19,6 +19,7 @@ from app.auth import (
     get_password_hash,
     get_user,
 )
+from app.clients import get_async_client
 from datetime import timedelta
 from atproto import models
 
@@ -201,8 +202,8 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    client = Client()
-    profile = client.login(form_data.username, form_data.password)
+    client = get_async_client()
+    profile = await client.login(form_data.username, form_data.password)
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -214,16 +215,24 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @router.post("/blog/post")
 async def create_blog_post(
-    blog_post: BlogPost, current_user: User = Depends(get_current_active_user)
+    blog_post: BlogPost, current_user: UserInDB = Depends(get_current_active_user)
 ):
-    client = Client()
-    client.login(current_user.handle, current_user.password)
+    client = get_async_client()
+    # Use the stored session string to create a client
+    if not current_user.session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing atproto session. Please re-authenticate.",
+        )
+    client.login(session_string=current_user.session)
 
-    response = client.com.atproto.repo.create_record(
+    record_data = blog_post.model_dump()
+
+    response = await client.com.atproto.repo.create_record(
         data = models.ComAtprotoRepoCreateRecord.Data(
             repo=client.me.did,
-            collection=f"test.blog",
-            record=blog_post,
+            collection="com.example.blog",
+            record=record_data,
         )
     )
 
@@ -232,7 +241,6 @@ async def create_blog_post(
 
     return {
         "response": response,
-        "at_url": f"https://{client.pds}/xrpc/com.atproto.repo.getRecord?uri={response.uri}",
     }
 
 
@@ -240,9 +248,9 @@ async def create_blog_post(
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = get_user(fake_users_db, form_data.username)
     if not user:
-        client = Client()
+        client = get_async_client()
         try:
-            profile = client.login(form_data.username, form_data.password)
+            profile = await client.login(form_data.username, form_data.password)
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -250,11 +258,15 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
+        # Export session string
+        session_string = client.export_session_string()
+
         # Add user to database
         user_data = {
             "handle": profile.handle,
             "description": profile.description,
             "hashed_password": get_password_hash(form_data.password),
+            "session": session_string,
             "disabled": False,
         }        
         fake_users_db[profile.display_name] = user_data
