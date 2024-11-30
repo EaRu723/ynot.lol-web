@@ -396,7 +396,7 @@
           const urls = document.getElementById("urls").value;
           const tags = document.getElementById("tags").value;
 
-          const response = await fetch("/api/post", {
+          const response = await apiRequest("/api/post", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -424,6 +424,24 @@
         sessionStorage.removeItem("handle");
         document.getElementById("loginButton").style.display = "block";
         document.getElementById("loggedInMenu").style.display = "none";
+      }
+
+      async function apiRequest(url, options = {}) {
+        const token = sessionStorage.getItem("access_token");
+        options.headers = {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${token}`,
+        };
+
+        const response = await fetch(url, options);
+
+        if (response.status === 401) {
+          alert("Session expired. Please log in again.");
+          handleSignOut();
+          return;
+        }
+
+        return response;
       }
     </script>
   </body>
