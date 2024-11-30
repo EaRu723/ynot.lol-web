@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -13,7 +13,7 @@
         gap: 0.5rem;
       }
 
-      .loginModal {
+      .modal {
         position: fixed;
         display: none;
         z-index: 1;
@@ -34,18 +34,6 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-      }
-
-      .postModal {
-        position: fixed;
-        display: none;
-        z-index: 1;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.5); /* Modal background */
       }
 
       .postModal-content {
@@ -141,7 +129,7 @@
       </div>
     </main>
 
-    <div id="loginModal" class="loginModal">
+    <div id="loginModal" class="modal">
       <div class="loginModal-content">
         <span class="close" onclick="closeLoginModal()" style="cursor: pointer"
           >&times;</span
@@ -162,7 +150,7 @@
       </div>
     </div>
 
-    <div id="postModal" class="postModal">
+    <div id="postModal" class="modal">
       <div class="postModal-content">
         <span class="close" onclick="closePostModal()" style="cursor: pointer"
           >&times;</span
@@ -296,7 +284,7 @@
             site.name.toLowerCase().includes(searchInput) ||
             site.site_metadata.toLowerCase().includes(searchInput) ||
             site.tags.some((tag) =>
-              tag.name.toLowerCase().includes(searchInput)
+              tag.name.toLowerCase().includes(searchInput),
             );
 
           const matchesTags =
@@ -369,7 +357,7 @@
             updateAuthUI();
           } else {
             alert(
-              "Login failed. Double check your atproto handle and password."
+              "Login failed. Double check your atproto handle and password.",
             );
           }
         });
