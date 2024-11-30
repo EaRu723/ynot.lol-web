@@ -392,7 +392,7 @@
         if (handle) {
           document.getElementById("loginButton").style.display = "none";
           const userHandleElement = document.getElementById("userHandle");
-          userHandleElement.textContent = handle;
+          userHandleElement.innerHTML = `<a href="/user/${handle}/profile">${handle}</a>`;
           const loggedInMenu = document.getElementById("loggedInMenu");
           loggedInMenu.style.display = "flex";
         }

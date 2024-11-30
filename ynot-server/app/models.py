@@ -105,6 +105,7 @@ class RecordPost(BaseModel):
     urls: List[str]
     tags: List[str]
     created_at: datetime = Field(default_factory=datetime.now)
+    time_elapsed: str
 
 class DeletePost(BaseModel):
     collection: str
