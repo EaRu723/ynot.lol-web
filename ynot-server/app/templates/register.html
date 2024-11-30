@@ -40,24 +40,24 @@
         .getElementById("login-form")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
-          const username = document.getElementById("handle").value;
+          const handle = document.getElementById("handle").value;
           const password = document.getElementById("password").value;
 
           const response = await fetch("/api/token", {
             method: "POST",
             headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
+              "Content-Type": "application/json",
             },
-            body: new URLSearchParams({
-              username: username,
+            body: JSON.stringify({
+              handle: handle,
               password: password,
             }),
           });
 
           if (response.ok) {
-            // const data = await response.json();
-            // sessionStorage.setItem("access_token", data.access_token);
-            console.log(response);
+            const data = await response.json();
+            sessionStorage.setItem("access_token", data.access_token);
+            console.log(data);
             alert("Login successful");
           } else {
             alert("Login failed");

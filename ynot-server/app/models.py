@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from pydantic import BaseModel, Field
@@ -33,6 +33,14 @@ class Site(Base):
     site_metadata = Column(String, index=True)
     tags = relationship("Tag", secondary=site_tag_association, back_populates="sites")
 
+class User(Base):
+    __tablename__ = "users"
+    handle = Column(String, primary_key=True, index=True)
+    description = Column(String, nullable=True)
+    disabled = Column(Boolean, nullable=True)
+    hashed_password = Column(String, nullable=False)
+    session = Column(String, nullable=True)
+
 
 class TagBase(BaseModel):
     id: int
@@ -55,17 +63,36 @@ class SiteBase(BaseModel):
         from_attributes = True
 
 
+class UserLogin(BaseModel):
+    handle: str
+    password: str
+
+
 # atproto models
-class User(BaseModel):
+class UserBase(BaseModel):
     handle: str
     description: str | None = None
     disabled: bool | None = None
 
+    class Config:
+        from_attributes = True
+class UserCreate(BaseModel):
+    handle: str
+    password: str
+    description: str | None = None
+    disabled: bool | None = None
 
-class UserInDB(User):
+class UserInDB(UserBase):
     hashed_password: str
     session: Optional[str] = None
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    handle: Optional[str] = None
 
 class LoginRequest(BaseModel):
     username: str

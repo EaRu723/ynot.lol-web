@@ -5,16 +5,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from app.models import Site, Tag, SiteBase, TagBase, BlogPost
+from app.models import Site, Tag, SiteBase, TagBase, BlogPost, Token, UserBase, UserLogin
 from app.db.db import get_async_session
 from app.auth import (
     UserInDB,
     authenticate_user,
     create_access_token,
     get_current_active_user,
-    fake_users_db,
     User,
-    Token,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_password_hash,
     get_user,
@@ -200,7 +198,7 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
     return tags
 
 
-@router.post("/login")
+@router.post("/get-profile")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     client = get_async_client()
     profile = await client.login(form_data.username, form_data.password)
@@ -245,13 +243,15 @@ async def create_blog_post(
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = get_user(fake_users_db, form_data.username)
+async def login_for_access_token(form_data: UserLogin, db: AsyncSession = Depends(get_async_session)):
+    print(form_data)
+    user = await get_user(db, form_data.handle)
     if not user:
         client = get_async_client()
         try:
-            profile = await client.login(form_data.username, form_data.password)
-        except Exception:
+            profile = await client.login(form_data.handle, form_data.password)
+        except Exception as e:
+            print(e)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid ATProto/Bluesky credentials",
@@ -269,18 +269,20 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             "session": session_string,
             "disabled": False,
         }        
-        fake_users_db[profile.display_name] = user_data
+        new_user = User(**user_data)
+        db.add(new_user)
+        await db.commit()
         user = UserInDB(**user_data)
 
     # Generate JWT token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.handle}, expires_delta=access_token_expires
+    access_token = await create_access_token(
+        db=db ,data={"sub": user.handle}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/users/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+@router.get("/users/me", response_model=UserBase)
+async def read_users_me(current_user: UserBase = Depends(get_current_active_user)):
     return current_user
 

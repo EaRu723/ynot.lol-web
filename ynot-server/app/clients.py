@@ -1,5 +1,6 @@
 from atproto import AsyncClient, SessionEvent
-from app.auth import get_user, fake_users_db
+from app.auth import get_user
+from app.db.db import get_async_session
 
 # Initialize the AsyncClient
 async_client = AsyncClient()
@@ -10,9 +11,12 @@ async def on_session_change(event, session):
     if event in (SessionEvent.CREATE, SessionEvent.REFRESH):
         print(f"Session changed: {event}")
         # Save the updated session string back to the user's record
-        user = get_user(fake_users_db, session.did)
-        if user:
-            user.atproto_session = session.export()
+        async for db in get_async_session():
+            user = await get_user(db, session.handle)
+            if user:
+                user.session = session.session_string
+                db.add(user)
+                await db.commit()
 
 # Export the client for use in other modules
 def get_async_client() -> AsyncClient:

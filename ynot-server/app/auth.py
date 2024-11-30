@@ -5,9 +5,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from app.config import settings
-from app.models import User, UserInDB
+from app.db.db import get_async_session
+from app.models import TokenData, UserInDB, User
 
 # Secret key to encode and decode JWT tokens
 SECRET_KEY = settings.jwt_secret
@@ -20,24 +22,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # OAuth2 scheme for token extraction
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# In-memory user store; replace with a database in production
-fake_users_db = {
-    "johndoe": {
-        "handle": "johndoe.com",
-        "hashed_password": pwd_context.hash("secret"),
-        "disabled": False,
-    }
-}
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    handle: Optional[str] = None
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -47,21 +31,23 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def get_user(db, handle: str) -> Optional[UserInDB]:
-    for user in db.values():
-        if user["handle"] == handle:
-            return UserInDB(**user)
+# Retrieve a user from the database by handle
+async def get_user(db: AsyncSession, handle: str) -> Optional[UserInDB]:
+    result = await db.execute(select(User).where(User.handle == handle))
+    user = result.scalars().first()
+    if user:
+        return UserInDB(**user.__dict__)
     return None
 
 
-def authenticate_user(db, handle: str, password: str) -> Optional[UserInDB]:
-    user = get_user(db, handle)
+async def authenticate_user(db: AsyncSession, handle: str, password: str) -> Optional[UserInDB]:
+    user = await get_user(db, handle)
     if not user or not verify_password(password, user.hashed_password):
         return None
     return user
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+async def create_access_token(db: AsyncSession, data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now() + expires_delta
@@ -69,11 +55,25 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    handle = data.get("sub")
+    user = await get_user(db, handle)
+    if not user:
+        user_data = {
+            "handle": handle,
+            "description": data.get("description"),
+            "hashed_password": get_password_hash(data.get("password")),
+            "disabled": False,
+        }
+        new_user = User(**user_data)
+        db.add(new_user)
+        await db.commit()
+
     return encoded_jwt
 
 
 # Validates the JWT token and returns the corresponding user
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_session)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -91,8 +91,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         raise credentials_exception
 
     # Retrieve the user from DB
-    print(fake_users_db)
-    user = get_user(fake_users_db, handle=token_data.handle)
+    user = await get_user(db, handle=token_data.handle)
     if user is None:
         raise credentials_exception
     return user
