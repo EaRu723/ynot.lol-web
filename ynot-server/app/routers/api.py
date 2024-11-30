@@ -4,7 +4,17 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from app.models import DeletePost, Site, Tag, SiteBase, TagBase, Token, UserBase, UserLogin, RecordPost
+from app.models import (
+    DeletePost,
+    Site,
+    Tag,
+    SiteBase,
+    TagBase,
+    Token,
+    UserBase,
+    UserLogin,
+    RecordPost,
+)
 from app.db.db import get_async_session
 from app.auth import (
     User,
@@ -207,8 +217,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
     return {"profile": profile}
 
+
 @router.post("/post")
-async def post_record(form_data: RecordPost, current_user: User = Depends(get_current_active_user)):
+async def post_record(
+    form_data: RecordPost, current_user: User = Depends(get_current_active_user)
+):
     client = get_async_client()
     if not current_user.session:
         raise HTTPException(
@@ -221,7 +234,7 @@ async def post_record(form_data: RecordPost, current_user: User = Depends(get_cu
     record_data = form_data.model_dump()
 
     response = await client.com.atproto.repo.create_record(
-        data = models.ComAtprotoRepoCreateRecord.Data(
+        data=models.ComAtprotoRepoCreateRecord.Data(
             repo=client.me.did,
             collection="com.ynot.post",
             record=record_data,
@@ -235,8 +248,11 @@ async def post_record(form_data: RecordPost, current_user: User = Depends(get_cu
         "response": response,
     }
 
+
 @router.delete("/post")
-async def delete_record(request: DeletePost, current_user: User = Depends(get_current_active_user)):
+async def delete_record(
+    request: DeletePost, current_user: User = Depends(get_current_active_user)
+):
     client = get_async_client()
     if not current_user.session:
         raise HTTPException(
@@ -249,19 +265,21 @@ async def delete_record(request: DeletePost, current_user: User = Depends(get_cu
     try:
         response = await client.com.atproto.repo.delete_record(
             models.ComAtprotoRepoDeleteRecord.Data(
-                repo=client.me.did,
-                collection=request.collection,
-                rkey=request.rkey
+                repo=client.me.did, collection=request.collection, rkey=request.rkey
             )
         )
     except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to delete record: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete record: {str(e)}"
+        )
 
     return {"status": "Record deleted successfully", "commit": response.commit}
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: UserLogin, db: AsyncSession = Depends(get_async_session)):
+async def login_for_access_token(
+    form_data: UserLogin, db: AsyncSession = Depends(get_async_session)
+):
     print(form_data)
     user = await get_user(db, form_data.handle)
     if not user:
@@ -292,11 +310,10 @@ async def login_for_access_token(form_data: UserLogin, db: AsyncSession = Depend
         await db.commit()
         user = new_user
 
-
     # Generate JWT token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
-        db=db ,data={"sub": user.handle}, expires_delta=access_token_expires
+        db=db, data={"sub": user.handle}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer", "handle": user.handle}
 
