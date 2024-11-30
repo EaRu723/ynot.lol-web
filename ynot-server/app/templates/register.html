@@ -19,22 +19,6 @@
       <button type="submit">Login</button>
     </form>
 
-    <h2>Read from PDS</h2>
-    <form id="pds-form">
-      <label for="collection">Collection:</label>
-      <input
-        type="text"
-        id="collection"
-        name="collection"
-        required
-      /><br /><br />
-      <label for="rkey">Record Key:</label>
-      <input type="text" id="rkey" name="rkey" required /><br /><br />
-      <button type="submit">Read</button>
-    </form>
-
-    <pre id="response"></pre>
-
     <script>
       document
         .getElementById("login-form")
@@ -62,39 +46,6 @@
           } else {
             alert("Login failed");
           }
-        });
-
-      document
-        .getElementById("pds-form")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const collection = document.getElementById("collection").value;
-          const rkey = document.getElementById("rkey").value;
-          const token = sessionStorage.getItem("access_token");
-
-          if (!token) {
-            alert("Please log in first.");
-            return;
-          }
-
-          const response = await fetch("/api/pds/read", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + token,
-            },
-            body: JSON.stringify({
-              collection: collection,
-              rkey: rkey,
-            }),
-          });
-
-          const responseData = await response.json();
-          document.getElementById("response").textContent = JSON.stringify(
-            responseData,
-            null,
-            2
-          );
         });
     </script>
   </body>

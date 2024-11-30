@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
-from app.models import Site, Tag, SiteBase, TagBase, BlogPost, Token, UserBase, UserLogin
+from app.models import DeletePost, Site, Tag, SiteBase, TagBase, Token, UserBase, UserLogin, RecordPost
 from app.db.db import get_async_session
 from app.auth import (
     UserInDB,
@@ -210,36 +210,57 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
     return {"profile": profile}
 
-
-@router.post("/blog/post")
-async def create_blog_post(
-    blog_post: BlogPost, current_user: UserInDB = Depends(get_current_active_user)
-):
+@router.post("/post")
+async def post_record(form_data: RecordPost, current_user: User = Depends(get_current_active_user)):
     client = get_async_client()
-    # Use the stored session string to create a client
     if not current_user.session:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing atproto session. Please re-authenticate.",
         )
-    client.login(session_string=current_user.session)
 
-    record_data = blog_post.model_dump()
+    await client.login(session_string=current_user.session)
+
+    record_data = form_data.model_dump()
 
     response = await client.com.atproto.repo.create_record(
         data = models.ComAtprotoRepoCreateRecord.Data(
             repo=client.me.did,
-            collection="com.example.blog",
+            collection="com.ynot.post",
             record=record_data,
         )
     )
 
     if not response or not hasattr(response, "uri"):
-        raise HTTPException(status_code=500, detail="Failed to create blog post")
+        raise HTTPException(status_code=500, detail="Failed to create record")
 
     return {
         "response": response,
     }
+
+@router.delete("/post")
+async def delete_record(request: DeletePost, current_user: User = Depends(get_current_active_user)):
+    client = get_async_client()
+    if not current_user.session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing atproto session. Please re-authenticate.",
+        )
+
+    await client.login(session_string=current_user.session)
+
+    try:
+        response = await client.com.atproto.repo.delete_record(
+            models.ComAtprotoRepoDeleteRecord.Data(
+                repo=client.me.did,
+                collection=request.collection,
+                rkey=request.rkey
+            )
+        )
+    except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to delete record: {str(e)}")
+
+    return {"status": "Record deleted successfully", "commit": response.commit}
 
 
 @router.post("/token", response_model=Token)
@@ -272,14 +293,15 @@ async def login_for_access_token(form_data: UserLogin, db: AsyncSession = Depend
         new_user = User(**user_data)
         db.add(new_user)
         await db.commit()
-        user = UserInDB(**user_data)
+        user = new_user
+    
 
     # Generate JWT token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
         db=db ,data={"sub": user.handle}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "handle": user.handle}
 
 
 @router.get("/users/me", response_model=UserBase)

@@ -14,7 +14,7 @@ async def on_session_change(event, session):
         async for db in get_async_session():
             user = await get_user(db, session.handle)
             if user:
-                user.session = session.session_string
+                user.session = session.export()
                 db.add(user)
                 await db.commit()
 

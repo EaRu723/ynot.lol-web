@@ -67,8 +67,6 @@ class UserLogin(BaseModel):
     handle: str
     password: str
 
-
-# atproto models
 class UserBase(BaseModel):
     handle: str
     description: str | None = None
@@ -76,6 +74,7 @@ class UserBase(BaseModel):
 
     class Config:
         from_attributes = True
+
 class UserCreate(BaseModel):
     handle: str
     password: str
@@ -89,6 +88,7 @@ class UserInDB(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    handle: str
 
 
 class TokenData(BaseModel):
@@ -99,19 +99,13 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class PostRecordRequest(BaseModel):
-    username: str
-    collection: str
-    record: dict
+class RecordPost(BaseModel):
+    title: str
+    description: str
+    urls: List[str]
+    tags: List[str]
+    created_at: datetime = Field(default_factory=datetime.now)
 
-
-class GetRecordRequest(BaseModel):
-    username: str
+class DeletePost(BaseModel):
     collection: str
     rkey: str
-
-
-class BlogPost(BaseModel):
-    title: str
-    content: str
-    created_at: datetime = Field(default_factory=datetime.now)

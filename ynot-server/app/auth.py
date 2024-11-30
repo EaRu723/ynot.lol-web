@@ -32,11 +32,11 @@ def get_password_hash(password: str) -> str:
 
 
 # Retrieve a user from the database by handle
-async def get_user(db: AsyncSession, handle: str) -> Optional[UserInDB]:
+async def get_user(db: AsyncSession, handle: str) -> Optional[User]:
     result = await db.execute(select(User).where(User.handle == handle))
     user = result.scalars().first()
     if user:
-        return UserInDB(**user.__dict__)
+        return user
     return None
 
 
