@@ -1,24 +1,7 @@
-from typing import List, Optional
-from atproto import Client
-from fastapi import APIRouter, Depends, Request, status, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy.orm import joinedload
-from app.models import Site, Tag, SiteBase, TagBase, Token, UserBase, UserLogin, RecordPost
-from app.db.db import get_async_session
-from app.auth import (
-    UserInDB,
-    authenticate_user,
-    create_access_token,
-    get_current_active_user,
-    User,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    get_password_hash,
-    get_user,
-)
+from typing import List
+from fastapi import APIRouter
+from app.models import RecordPost
 from app.clients import get_async_client
-from datetime import timedelta
 from atproto import models
 
 router = APIRouter()

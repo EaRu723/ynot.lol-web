@@ -1,6 +1,5 @@
-from typing import List, Optional
-from atproto import Client
-from fastapi import APIRouter, Depends, Request, status, HTTPException
+from typing import List
+from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -8,11 +7,9 @@ from sqlalchemy.orm import joinedload
 from app.models import DeletePost, Site, Tag, SiteBase, TagBase, Token, UserBase, UserLogin, RecordPost
 from app.db.db import get_async_session
 from app.auth import (
-    UserInDB,
-    authenticate_user,
+    User,
     create_access_token,
     get_current_active_user,
-    User,
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_password_hash,
     get_user,
@@ -289,12 +286,12 @@ async def login_for_access_token(form_data: UserLogin, db: AsyncSession = Depend
             "hashed_password": get_password_hash(form_data.password),
             "session": session_string,
             "disabled": False,
-        }        
+        }
         new_user = User(**user_data)
         db.add(new_user)
         await db.commit()
         user = new_user
-    
+
 
     # Generate JWT token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -307,4 +304,3 @@ async def login_for_access_token(form_data: UserLogin, db: AsyncSession = Depend
 @router.get("/users/me", response_model=UserBase)
 async def read_users_me(current_user: UserBase = Depends(get_current_active_user)):
     return current_user
-
