@@ -412,6 +412,7 @@
 
           if (response.ok) {
             alert("Post successful");
+            document.getElementById("post-form").reset();
             closePostModal();
             fetchSites();
           } else {
