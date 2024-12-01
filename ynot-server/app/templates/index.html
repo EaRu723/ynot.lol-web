@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -284,7 +284,7 @@
             site.name.toLowerCase().includes(searchInput) ||
             site.site_metadata.toLowerCase().includes(searchInput) ||
             site.tags.some((tag) =>
-              tag.name.toLowerCase().includes(searchInput),
+              tag.name.toLowerCase().includes(searchInput)
             );
 
           const matchesTags =
@@ -357,7 +357,7 @@
             updateAuthUI();
           } else {
             alert(
-              "Login failed. Double check your atproto handle and password.",
+              "Login failed. Double check your atproto handle and password."
             );
           }
         });
@@ -417,7 +417,10 @@
           const urls = Array.from(urlInputs)
             .map((input) => input.value.trim())
             .filter((url) => url.trim() !== ""); // Filter out empty URLs
-          const tags = document.getElementById("tags").value.split(" ");
+          const tags = document
+            .getElementById("tags")
+            .value.split(/\s+/)
+            .filter((tag) => tag.trim() !== ""); // Split by whitespace and filter out empty tags
 
           for (const url of urls) {
             if (!isValidURL(url)) {
@@ -437,6 +440,7 @@
               description: description,
               urls: urls,
               tags: tags,
+              collection: "com.ynot.post"
             }),
           });
 
@@ -468,7 +472,9 @@
 
         if (response.status === 401) {
           alert("Session expired. Please log in again.");
+          closePostModal();
           handleSignOut();
+          openLoginModal();
           return;
         }
 

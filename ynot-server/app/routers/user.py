@@ -32,11 +32,11 @@ async def resolve_handle_to_did(handle: str) -> str:
 
 
 @router.get("/{handle}/posts", response_model=List[RecordPost])
-async def get_posts(handle: str):
+async def get_posts(handle: str, collection: str = "com.ynot.post"):
     client = get_async_client()
     did = await resolve_handle_to_did(handle)
     response = await client.com.atproto.repo.list_records(
-        models.ComAtprotoRepoListRecords.Params(repo=did, collection="com.ynot.post")
+        models.ComAtprotoRepoListRecords.Params(repo=did, collection=collection)
     )
 
     posts = parse_obj_as(List[RecordPost], [
@@ -45,6 +45,7 @@ async def get_posts(handle: str):
             "description": record.value.description,
             "urls": record.value.urls,
             "tags": record.value.tags,
+            "uri": record.uri,
             "created_at": datetime.fromisoformat(record.value.created_at),
             "time_elapsed": time_elapsed(datetime.fromisoformat(record.value.created_at))
         }

@@ -1,0 +1,92 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #efebe0;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.main {
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* Banner */
+.banner {
+  width: 100%; /* Full width of the container */
+  height: 200px;
+  background-color: #c0c0c0; /* Placeholder for banner */
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 10px;
+}
+
+.profile-picture {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #808080; /* Placeholder for profile picture */
+  border: 3px solid white;
+}
+
+/* Profile Info */
+.profile-info {
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  text-align: left; /* Left align text */
+}
+
+.profile-info h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #333;
+}
+
+.profile-info p {
+  margin: 5px 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.profile-info .handle {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.posts-header {
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.post {
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.post-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.post-description {
+  margin: 5px 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.post-urls {
+  margin: 5px 0;
+  font-size: 0.9rem;
+}
+
+.post-tags {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: #999;
+}
