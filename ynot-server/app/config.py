@@ -21,7 +21,6 @@ class Settings(BaseSettings):
     atprotocol_redirect_uri: str
     path_to_private_key: str
     jwt_secret: str
-    react_app_base_url: str
 
     class Config:
         env_file = ".env"

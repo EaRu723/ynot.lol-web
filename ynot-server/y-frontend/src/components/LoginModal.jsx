@@ -1,8 +1,8 @@
 import React from "react";
 import "../styles/LoginModal.css";
 
-function LoginModal({ onClose }) {
-  const URL = process.env.REACT_APP_BASE_URL;
+function LoginModal({ onClose, onLogin }) {
+  const URL = import.meta.env.VITE_API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +19,7 @@ function LoginModal({ onClose }) {
       const data = await response.json();
       sessionStorage.setItem("access_token", data.access_token);
       sessionStorage.setItem("handle", data.handle);
-      onClose();
+      onLogin(data.handle);
     } else {
       alert("Login failed");
     }
