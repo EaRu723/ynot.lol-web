@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import "../styles/PostPreview.css";
+import { refreshToken, handleLogout } from "../utils/auth";
 
-function PostPreview({ post, onEdit, onDelete }) {
+function PostPreview({ post, onEdit, setPosts }) {
+  const URL = import.meta.env.VITE_API_BASE_URL;
   const [menuOpen, setMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -9,8 +11,44 @@ function PostPreview({ post, onEdit, onDelete }) {
   };
 
   const handleShare = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/post/${post.rkey}`);
+    navigator.clipboard.writeText(
+      `${window.location.origin}/post/${post.rkey}`
+    );
     alert("Post link copied to clipboard!");
+  };
+
+  const deletePost = async (collection, rkey) => {
+    const shouldDelete = window.confirm(
+      "Are you sure you want to delete this post?"
+    );
+    if (!shouldDelete) return;
+
+    try {
+      const response = await fetch(`${URL}/api/post`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+        },
+        body: JSON.stringify({ collection, rkey }),
+      });
+
+      if (response.ok) {
+        alert("Post deleted successfully.");
+        setPosts((prevPosts) => prevPosts.filter((post) => post.rkey !== rkey));
+      } else {
+        throw new Error("Failed to delete post");
+      }
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleDelete = async (collection, rkey) => {
+    const tokenRefreshed = await refreshToken();
+    if (!tokenRefreshed) {
+      deletePost(collection, rkey);
+    }
   };
 
   return (
@@ -29,11 +67,9 @@ function PostPreview({ post, onEdit, onDelete }) {
                   Edit
                 </button>
               )}
-              {onDelete && (
-                <button onClick={() => onDelete(post.collection, post.rkey)}>
-                  Delete
-                </button>
-              )}
+              <button onClick={() => handleDelete(post.collection, post.rkey)}>
+                Delete
+              </button>
             </div>
           )}
         </div>
@@ -52,7 +88,7 @@ function PostPreview({ post, onEdit, onDelete }) {
         ))}
       </div>
       <div className="post-timestamp">
-        <small>Posted {post.time_elapsed} ago</small>
+        <small>{post.time_elapsed}</small>
       </div>
     </div>
   );

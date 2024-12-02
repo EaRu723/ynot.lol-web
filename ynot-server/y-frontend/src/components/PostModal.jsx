@@ -20,6 +20,9 @@ function PostModal({ onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const tokenRefreshed = await refreshToken();
+    if (!tokenRefreshed) return;
+
     const title = e.target.title.value;
     const description = e.target.description.value;
     const tags = e.target.tags.value

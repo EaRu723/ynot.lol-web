@@ -23,6 +23,8 @@ from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_password_hash,
     get_user,
+    create_refresh_token,
+    decode_refresh_token,
 )
 from app.clients import get_async_client
 from datetime import timedelta
@@ -315,7 +317,28 @@ async def login_for_access_token(
     access_token = await create_access_token(
         db=db, data={"sub": user.handle}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer", "handle": user.handle}
+    refresh_token = create_refresh_token(data={"sub": user.handle})
+
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "handle": user.handle}
+
+@router.post("/refresh-token")
+async def refresh_token(refresh_token: str):
+    try:
+        payload = decode_refresh_token(refresh_token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        new_token = await create_access_token(payload["sub"])
+        return {"access_token": new_token, "token_type": "bearer"}
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired or invalid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @router.get("/users/me", response_model=UserBase)

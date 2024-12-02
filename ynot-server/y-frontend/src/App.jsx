@@ -60,7 +60,7 @@ function App() {
     );
   };
 
-  const checkAuthentication = async () => {
+  const checkAuthentication = () => {
     const token = sessionStorage.getItem("access_token");
     const handle = sessionStorage.getItem("handle");
     if (token && handle) {
@@ -73,7 +73,7 @@ function App() {
     setIsLoggedIn(true);
     setUserHandle(handle);
     setLoginModalOpen(false);
-    window.location.reload();
+    window.location.reload(); // Refresh the page on successful login
   };
 
   const handleLogout = () => {
@@ -83,10 +83,40 @@ function App() {
     setUserHandle("");
   };
 
+  const refreshToken = async () => {
+    const refreshToken = sessionStorage.getItem("refresh_token");
+    if (!refreshToken) return;
+
+    try {
+      const response = await fetch("/api/refresh-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        sessionStorage.setItem("access_token", data.access_token);
+      } else {
+        handleLogout();
+      }
+    } catch (error) {
+      console.error("Error refreshing token:", error);
+      handleLogout();
+    }
+  };
+
+  useEffect(() => {
+    const interval = setInterval(refreshToken, 15 * 60 * 1000); // Refresh token every 15 minutes
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <main>
       <h1>
-        <a href="/">Discover cool <i>people</i>.</a>
+        <a href="/" style={{ textDecoration: "none" }}>
+          Discover cool <i>people</i>.
+        </a>
       </h1>
       <Routes>
         <Route

@@ -34,33 +34,6 @@ function UserProfile() {
     fetchUserPosts();
   }, [handle]);
 
-  const deletePost = async (collection, rkey) => {
-    const shouldDelete = window.confirm(
-      "Are you sure you want to delete this post?"
-    );
-    if (!shouldDelete) return;
-
-    try {
-      const response = await fetch(`${URL}/api/post`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
-        },
-        body: JSON.stringify({ collection, rkey }),
-      });
-
-      if (response.ok) {
-        alert("Post deleted successfully.");
-        setPosts((prevPosts) => prevPosts.filter((post) => post.rkey !== rkey));
-      } else {
-        throw new Error("Failed to delete post");
-      }
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
   const handleEdit = (collection, rkey) => {
     navigate(`/edit?collection=${collection}&rkey=${rkey}`);
   };
@@ -81,7 +54,7 @@ function UserProfile() {
             key={post.rkey}
             post={post}
             onEdit={handleEdit}
-            onDelete={deletePost}
+            setPosts={setPosts}
           />
         ))}
       </div>
