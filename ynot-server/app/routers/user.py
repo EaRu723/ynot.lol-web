@@ -39,13 +39,15 @@ async def get_posts(handle: str, collection: str = "com.ynot.post"):
         models.ComAtprotoRepoListRecords.Params(repo=did, collection=collection)
     )
 
+
     posts = parse_obj_as(List[RecordPost], [
         {
             "title": record.value.title,
             "description": record.value.description,
             "urls": record.value.urls,
             "tags": record.value.tags,
-            "uri": record.uri,
+            "collection": record.uri.split("/")[-2],
+            "rkey": record.uri.split("/")[-1],
             "created_at": datetime.fromisoformat(record.value.created_at),
             "time_elapsed": time_elapsed(datetime.fromisoformat(record.value.created_at))
         }

@@ -104,7 +104,8 @@ class RecordPost(BaseModel):
     description: str
     urls: List[str]
     tags: List[str]
-    uri: Optional[str] = None
+    collection: Optional[str] = None
+    rkey: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.now)
     time_elapsed: Optional[str] = None
 

@@ -168,9 +168,19 @@
             <div class="post-menu">
               <button class="menu-button">⋮</button>
               <div class="menu-dropdown">
-                <a href="#">Edit</a>
+                <a href="#"
+                  id = "editMenuButton"
+                  data-collection="{{ post.collection }}"
+                  data-rkey="{{ post.rkey }}"
+                  >Edit</a>
                 <a href="#">Share</a>
-                <a href="#">Delete</a>
+                <a
+                  href="#"
+                  id="deleteMenuButton"
+                  data-collection="{{ post.collection }}"
+                  data-rkey="{{ post.rkey }}"
+                  >Delete</a
+                >
               </div>
             </div>
           </div>
@@ -190,21 +200,75 @@
   </body>
 
   <script>
-    document.addEventListener("click", (event) => {
-    // Close any open menus when clicking outside
-    const openMenus = document.querySelectorAll(".menu-dropdown");
-    openMenus.forEach((menu) => {
-      if (!menu.parentNode.contains(event.target)) {
-        menu.style.display = "none";
+    async function apiRequest(url, options = {}) {
+      const token = sessionStorage.getItem("access_token");
+      options.headers = {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+      };
+
+      const response = await fetch(url, options);
+
+      if (response.status === 401) {
+        alert("Session expired. Please log in again.");
+        window.location.href = "/";
+        return;
+      }
+
+      return response;
+    }
+
+    document.addEventListener("click", async (event) => {
+      // Close any open menus when clicking outside
+      const openMenus = document.querySelectorAll(".menu-dropdown");
+      openMenus.forEach((menu) => {
+        if (!menu.parentNode.contains(event.target)) {
+          menu.style.display = "none";
+        }
+      });
+
+      // Toggle the clicked menu
+      if (event.target.classList.contains("menu-button")) {
+        const dropdown = event.target.nextElementSibling;
+        dropdown.style.display =
+                dropdown.style.display === "block" ? "none" : "block";
+      }
+
+      // Handle edit button click
+      if (event.target.id === "editMenuButton") {
+        const collection = event.target.getAttribute("data-collection");
+        const rkey = event.target.getAttribute("data-rkey");
+        window.location.href = `/edit?collection=${collection}&rkey=${rkey}`;
+      }
+
+      // Handle delete button click
+      if (event.target.id === "deleteMenuButton") {
+        const shouldDelete = confirm(
+                "Are you sure you want to delete this post?"
+        );
+        if (!shouldDelete) {
+          return;
+        }
+        const collection = event.target.getAttribute("data-collection");
+        const rkey = event.target.getAttribute("data-rkey");
+        const response = await apiRequest("/api/post", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          },
+          body: JSON.stringify({
+            collection,
+            rkey,
+          }),
+        });
+        if (response.ok) {
+          alert("Successfully deleted post");
+          window.location.reload();
+        } else {
+          alert("Failed to delete post");
+        }
       }
     });
-
-    // Toggle the clicked menu
-    if (event.target.classList.contains("menu-button")) {
-      const dropdown = event.target.nextElementSibling;
-      dropdown.style.display =
-        dropdown.style.display === "block" ? "none" : "block";
-    }
-  });
   </script>
 </html>
