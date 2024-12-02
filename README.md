@@ -11,8 +11,6 @@ Served at `http://localhost:8000`
 
 Environment variables (`ynot-server/.env`):
 
-If this file does not exist, create it.
-
 ```
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
@@ -22,7 +20,16 @@ POSTGRES_PORT=5432
 
 APP_PORT=8000
 APP_ENV=development
-```
-You should be able to plug and play a `.env` with these values.
+API_BASE_URL=http://localhost
 
-To populate the database with sample data, send a `POST` request to `http://localhost:8000/api/insert-sample-data`.
+APP_URL=http://localhost:8000
+ATPROTOCOL_CLIENT_ID=http://ynot.lol/static/client-metadata.json
+ATPROTOCOL_CLIENT_SECRET=your-client-secret
+ATPROTOCOL_REDIRECT_URI=http://ynot.lol/oauth/callback
+PATH_TO_PRIVATE_KEY=path-to-private-key
+
+
+JWT_SECRET=🤐
+```
+
+To populate the database with sample data, send a `GET` request to `http://localhost:8000/api/insert-sample-data`.

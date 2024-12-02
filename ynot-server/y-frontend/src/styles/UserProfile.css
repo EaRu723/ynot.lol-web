@@ -1,0 +1,53 @@
+/* General Styles */
+body {
+  font-family: Arial, sans-serif;
+  color: #333;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.main {
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+/* Profile Information */
+.profile-info {
+  padding: 20px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.profile-info h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #333;
+}
+
+.profile-info p {
+  margin: 5px 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.profile-info .handle {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+/* Posts Section */
+.posts-header {
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+
+.posts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 10px 20px;
+}

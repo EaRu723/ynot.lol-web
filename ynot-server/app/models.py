@@ -1,7 +1,8 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Table
+from datetime import datetime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
@@ -21,6 +22,7 @@ class Tag(Base):
     name = Column(String, unique=True, index=True)
     sites = relationship("Site", secondary=site_tag_association, back_populates="tags")
 
+
 class Site(Base):
     __tablename__ = "sites"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -30,6 +32,15 @@ class Site(Base):
     url = Column(String, unique=True, index=True)
     site_metadata = Column(String, index=True)
     tags = relationship("Tag", secondary=site_tag_association, back_populates="sites")
+
+class User(Base):
+    __tablename__ = "users"
+    handle = Column(String, primary_key=True, index=True)
+    description = Column(String, nullable=True)
+    disabled = Column(Boolean, nullable=True)
+    hashed_password = Column(String, nullable=False)
+    session = Column(String, nullable=True)
+
 
 class TagBase(BaseModel):
     id: int
@@ -51,3 +62,57 @@ class SiteBase(BaseModel):
     class Config:
         from_attributes = True
 
+
+class UserLogin(BaseModel):
+    handle: str
+    password: str
+
+class UserBase(BaseModel):
+    handle: str
+    description: str | None = None
+    disabled: bool | None = None
+
+    class Config:
+        from_attributes = True
+
+class UserCreate(BaseModel):
+    handle: str
+    password: str
+    description: str | None = None
+    disabled: bool | None = None
+
+class UserInDB(UserBase):
+    hashed_password: str
+    session: Optional[str] = None
+
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    handle: str
+
+class RefreshToken(BaseModel):
+    refresh_token: str
+
+
+class TokenData(BaseModel):
+    handle: Optional[str] = None
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RecordPost(BaseModel):
+    title: str
+    description: str
+    urls: List[str]
+    tags: List[str]
+    collection: Optional[str] = None
+    rkey: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    time_elapsed: Optional[str] = None
+
+class DeletePost(BaseModel):
+    collection: str
+    rkey: str
