@@ -21,3 +21,4 @@ app.include_router(user.router, prefix="/user")
 
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/", StaticFiles(directory="y-frontend/dist", html=True), name="frontend")
