@@ -7,7 +7,7 @@ import UserProfile from "./components/UserProfile";
 import "./styles/styles.css";
 
 function App() {
-  const API_URL = import.meta.env.VITE_API_BASE_URL;
+  const API_URL = import.meta.env.VITE_APP_API_URL;
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
@@ -19,7 +19,7 @@ function App() {
 
   const fetchSites = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/sites`);
+      const response = await fetch(`${API_URL}/sites`);
       const data = await response.json();
       setSites(data);
       setFilteredSites(data);
@@ -30,7 +30,7 @@ function App() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/tags`);
+      const response = await fetch(`${API_URL}/tags`);
       const data = await response.json();
       setTags(data);
     } catch (error) {
@@ -88,7 +88,7 @@ function App() {
     if (!refreshToken) return;
 
     try {
-      const response = await fetch("/api/refresh-token", {
+      const response = await fetch(`${API_URL}/refresh-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: refreshToken }),

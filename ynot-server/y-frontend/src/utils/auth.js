@@ -7,7 +7,7 @@ export const refreshToken = async () => {
   }
 
   try {
-    const response = await fetch(`${URL}/api/refresh-token`, {
+    const response = await fetch(`${URL}/refresh-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),

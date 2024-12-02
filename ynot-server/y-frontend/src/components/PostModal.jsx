@@ -38,7 +38,7 @@ function PostModal({ onClose }) {
       }
     }
 
-    const response = await fetch(`${API_URL}/api/post`, {
+    const response = await fetch(`${API_URL}/post`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

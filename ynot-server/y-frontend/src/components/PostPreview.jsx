@@ -24,7 +24,7 @@ function PostPreview({ post, onEdit, setPosts }) {
     if (!shouldDelete) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/post`, {
+      const response = await fetch(`${API_URL}/post`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -47,9 +47,9 @@ function PostPreview({ post, onEdit, setPosts }) {
   const handleDelete = async (collection, rkey) => {
     const tokenRefreshed = await refreshToken();
     if (!tokenRefreshed) {
-        alert("Session expired, please log in");
-        handleLogout();
-        return;
+      alert("Session expired, please log in");
+      handleLogout();
+      return;
     }
     deletePost(collection, rkey);
   };

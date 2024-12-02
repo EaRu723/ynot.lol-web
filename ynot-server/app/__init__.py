@@ -13,8 +13,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(views.router)
-app.include_router(api.router, prefix="/api")
+# app.include_router(views.router)
+app.include_router(api.router)
 app.include_router(user.router, prefix="/user")
 
 # Mount React static files directory
