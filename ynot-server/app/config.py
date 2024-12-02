@@ -16,8 +16,6 @@ class Settings(BaseSettings):
     postgres_port: int
     app_port: int
     app_env: str
-    api_base_url: str
-    app_url: str
     atprotocol_client_id: str
     atprotocol_client_secret: str
     atprotocol_redirect_uri: str

@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: ynot
+    container_name: app
     restart: always
     ports:
       - "8000:${APP_PORT}"

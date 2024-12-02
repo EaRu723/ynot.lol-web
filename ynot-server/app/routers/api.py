@@ -6,6 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 from app.models import (
     DeletePost,
+    RefreshToken,
     Site,
     Tag,
     SiteBase,
@@ -23,6 +24,8 @@ from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     get_password_hash,
     get_user,
+    create_refresh_token,
+    decode_refresh_token,
 )
 from app.clients import get_async_client
 from datetime import timedelta
@@ -248,6 +251,35 @@ async def post_record(
         "response": response,
     }
 
+@router.put("/post")
+async def edit_record(
+    form_data: RecordPost, current_user: User = Depends(get_current_active_user)
+):
+    client = get_async_client()
+    if not current_user.session:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing atproto session. Please re-authenticate.",
+        )
+
+    await client.login(session_string=current_user.session)
+
+    record_data = form_data.model_dump()
+
+    response = await client.com.atproto.repo.put_record(
+        data=models.ComAtprotoRepoPutRecord.Data(
+            repo=client.me.did,
+            collection="com.ynot.post",
+            rkey=record_data.get("rkey"),
+            record=record_data,
+        )
+    )
+
+    if not response or not hasattr(response, "uri"):
+        raise HTTPException(status_code=500, detail="Failed to update record")
+
+    return {"response": response}
+
 
 @router.delete("/post")
 async def delete_record(
@@ -280,11 +312,11 @@ async def delete_record(
 async def login_for_access_token(
     form_data: UserLogin, db: AsyncSession = Depends(get_async_session)
 ):
-    print(form_data)
     user = await get_user(db, form_data.handle)
     if not user:
         client = get_async_client()
         try:
+            # verify credentials with ATProto
             profile = await client.login(form_data.handle, form_data.password)
         except Exception as e:
             print(e)
@@ -315,7 +347,29 @@ async def login_for_access_token(
     access_token = await create_access_token(
         db=db, data={"sub": user.handle}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer", "handle": user.handle}
+    refresh_token = create_refresh_token(data={"sub": user.handle})
+
+    response: Token = {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "handle": user.handle}
+    return response
+
+@router.post("/refresh-token")
+async def refresh_token(request: RefreshToken):
+    try:
+        payload = decode_refresh_token(request.refresh_token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        new_token = create_refresh_token(data={"sub": payload["sub"]})
+        return {"access_token": new_token, "token_type": "bearer"}
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired or invalid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @router.get("/users/me", response_model=UserBase)
