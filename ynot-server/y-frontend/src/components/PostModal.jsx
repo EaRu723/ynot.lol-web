@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "../styles/PostModal.css";
+import { refreshToken } from "../utils/auth";
 
 function PostModal({ onClose }) {
   const URL = import.meta.env.VITE_API_BASE_URL;

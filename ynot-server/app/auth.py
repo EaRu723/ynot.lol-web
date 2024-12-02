@@ -82,8 +82,10 @@ def create_refresh_token(data: dict) -> str:
 def decode_refresh_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(payload)
         return payload
-    except JWTError:
+    except JWTError as e:
+        print(e)
         return None
 
 

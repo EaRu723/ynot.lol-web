@@ -47,8 +47,11 @@ function PostPreview({ post, onEdit, setPosts }) {
   const handleDelete = async (collection, rkey) => {
     const tokenRefreshed = await refreshToken();
     if (!tokenRefreshed) {
-      deletePost(collection, rkey);
+        alert("Session expired, please log in");
+        handleLogout();
+        return;
     }
+    deletePost(collection, rkey);
   };
 
   return (
