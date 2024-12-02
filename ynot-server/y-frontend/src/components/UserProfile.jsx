@@ -9,12 +9,12 @@ function UserProfile() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
   useEffect(() => {
     const fetchUserPosts = async () => {
       try {
-        const response = await fetch(`${URL}/user/${handle}/posts`, {
+        const response = await fetch(`${API_URL}/user/${handle}/posts`, {
           headers: {
             Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
           },

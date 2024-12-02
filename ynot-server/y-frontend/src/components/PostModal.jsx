@@ -3,7 +3,7 @@ import "../styles/PostModal.css";
 import { refreshToken } from "../utils/auth";
 
 function PostModal({ onClose }) {
-  const URL = import.meta.env.VITE_API_BASE_URL;
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [urlFieldsCount, setUrlFieldsCount] = useState(1);
   const [urls, setUrls] = useState([""]);
 
@@ -38,7 +38,7 @@ function PostModal({ onClose }) {
       }
     }
 
-    const response = await fetch(`${URL}/api/post`, {
+    const response = await fetch(`${API_URL}/api/post`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

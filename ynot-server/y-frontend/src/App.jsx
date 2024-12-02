@@ -7,7 +7,7 @@ import UserProfile from "./components/UserProfile";
 import "./styles/styles.css";
 
 function App() {
-  const URL = import.meta.env.VITE_API_BASE_URL;
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
@@ -19,7 +19,7 @@ function App() {
 
   const fetchSites = async () => {
     try {
-      const response = await fetch(`${URL}/api/sites`);
+      const response = await fetch(`${API_URL}/api/sites`);
       const data = await response.json();
       setSites(data);
       setFilteredSites(data);
@@ -30,7 +30,7 @@ function App() {
 
   const fetchTags = async () => {
     try {
-      const response = await fetch(`${URL}/api/tags`);
+      const response = await fetch(`${API_URL}/api/tags`);
       const data = await response.json();
       setTags(data);
     } catch (error) {

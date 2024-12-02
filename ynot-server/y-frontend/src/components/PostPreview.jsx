@@ -3,7 +3,7 @@ import "../styles/PostPreview.css";
 import { refreshToken, handleLogout } from "../utils/auth";
 
 function PostPreview({ post, onEdit, setPosts }) {
-  const URL = import.meta.env.VITE_API_BASE_URL;
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [menuOpen, setMenuOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -24,7 +24,7 @@ function PostPreview({ post, onEdit, setPosts }) {
     if (!shouldDelete) return;
 
     try {
-      const response = await fetch(`${URL}/api/post`, {
+      const response = await fetch(`${API_URL}/api/post`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",

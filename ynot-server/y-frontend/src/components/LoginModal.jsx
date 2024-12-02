@@ -2,14 +2,14 @@ import React from "react";
 import "../styles/LoginModal.css";
 
 function LoginModal({ onClose, onLogin }) {
-  const URL = import.meta.env.VITE_API_BASE_URL;
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const handle = e.target.handle.value;
     const password = e.target.password.value;
 
-    const response = await fetch(`${URL}/api/token`, {
+    const response = await fetch(`${API_URL}/api/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ handle, password }),
