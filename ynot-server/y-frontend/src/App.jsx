@@ -7,7 +7,8 @@ import UserProfile from "./components/UserProfile";
 import "./styles/styles.css";
 
 function App() {
-  const API_URL = import.meta.env.VITE_APP_API_URL;
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
+  console.log(API_URL);
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
