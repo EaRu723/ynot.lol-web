@@ -8,7 +8,7 @@ cd ynot-server/y-frontend
 npm run dev
 ```
 
-Served at `http://localhost:8000`. For questions, email [arnav@surve.dev](mailto:arnav@surve.dev).
+Served at `http://localhost:5173`. Email [arnav@surve.dev](mailto:arnav@surve.dev) for questions.
 
 ---
 
