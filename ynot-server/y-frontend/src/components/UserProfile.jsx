@@ -10,7 +10,7 @@ function UserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const API_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/";
+    import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     const fetchUserPosts = async () => {
