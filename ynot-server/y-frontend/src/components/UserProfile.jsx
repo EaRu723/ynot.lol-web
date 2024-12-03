@@ -15,11 +15,7 @@ function UserProfile() {
   useEffect(() => {
     const fetchUserPosts = async () => {
       try {
-        const response = await fetch(`${API_URL}/user/${handle}/posts`, {
-          headers: {
-            Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
-          },
-        });
+        const response = await fetch(`${API_URL}/user/${handle}/posts`);
         if (!response.ok) {
           throw new Error("Failed to fetch user posts");
         }
@@ -34,10 +30,6 @@ function UserProfile() {
 
     fetchUserPosts();
   }, [handle]);
-
-  const handleEdit = (collection, rkey) => {
-    navigate(`/edit?collection=${collection}&rkey=${rkey}`);
-  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -54,7 +46,6 @@ function UserProfile() {
           <PostPreview
             key={post.rkey}
             post={post}
-            onEdit={handleEdit}
             setPosts={setPosts}
           />
         ))}

@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from app.routers import api, views, user
+from app.routers import api, user
 
 app = FastAPI()
 
@@ -20,7 +19,3 @@ app.add_middleware(
 # app.include_router(views.router)
 app.include_router(api.router, prefix="/api")
 app.include_router(user.router, prefix="/api/user")
-
-# Mount React static files directory
-# app.mount("/", StaticFiles(directory="y-frontend/dist", html=True), name="frontend")
-

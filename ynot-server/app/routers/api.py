@@ -251,6 +251,7 @@ async def post_record(
         "response": response,
     }
 
+
 @router.put("/post")
 async def edit_record(
     form_data: RecordPost, current_user: User = Depends(get_current_active_user)
@@ -349,8 +350,14 @@ async def login_for_access_token(
     )
     refresh_token = create_refresh_token(data={"sub": user.handle})
 
-    response: Token = {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "handle": user.handle}
+    response: Token = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "handle": user.handle,
+    }
     return response
+
 
 @router.post("/refresh-token")
 async def refresh_token(request: RefreshToken):
