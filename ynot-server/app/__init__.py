@@ -19,7 +19,7 @@ app.add_middleware(
 
 # app.include_router(views.router)
 app.include_router(api.router, prefix="/api")
-app.include_router(user.router, prefix="/user")
+app.include_router(user.router, prefix="/api/user")
 
 # Mount React static files directory
 # app.mount("/", StaticFiles(directory="y-frontend/dist", html=True), name="frontend")
