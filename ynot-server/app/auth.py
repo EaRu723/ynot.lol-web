@@ -41,14 +41,18 @@ async def get_user(db: AsyncSession, handle: str) -> Optional[User]:
     return None
 
 
-async def authenticate_user(db: AsyncSession, handle: str, password: str) -> Optional[UserInDB]:
+async def authenticate_user(
+    db: AsyncSession, handle: str, password: str
+) -> Optional[UserInDB]:
     user = await get_user(db, handle)
     if not user or not verify_password(password, user.hashed_password):
         return None
     return user
 
 
-async def create_access_token(db: AsyncSession, data: dict, expires_delta: Optional[timedelta] = None) -> str:
+async def create_access_token(
+    db: AsyncSession, data: dict, expires_delta: Optional[timedelta] = None
+) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now() + expires_delta
@@ -72,12 +76,14 @@ async def create_access_token(db: AsyncSession, data: dict, expires_delta: Optio
 
     return encoded_jwt
 
+
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.now() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def decode_refresh_token(token: str) -> Optional[dict]:
     try:
@@ -90,7 +96,9 @@ def decode_refresh_token(token: str) -> Optional[dict]:
 
 
 # Validates the JWT token and returns the corresponding user
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_session)) -> User:
+async def get_current_user(
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_async_session)
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -104,7 +112,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         if handle is None:
             raise credentials_exception
         token_data = TokenData(handle=handle)
-    except JWTError as e:
+    except JWTError:
         raise credentials_exception
 
     # Retrieve the user from DB
@@ -120,3 +128,4 @@ async def get_current_active_user(
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+

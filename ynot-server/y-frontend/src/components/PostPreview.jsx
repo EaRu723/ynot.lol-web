@@ -1,10 +1,13 @@
 import React, { useState } from "react";
+import PostModal from "./PostModal";
 import "../styles/PostPreview.css";
 import { refreshToken, handleLogout } from "../utils/auth";
 
-function PostPreview({ post, onEdit, setPosts }) {
+function PostPreview({ post, setPosts }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
@@ -54,6 +57,24 @@ function PostPreview({ post, onEdit, setPosts }) {
     deletePost(collection, rkey);
   };
 
+  const handleEdit = async (post) => {
+    const tokenRefreshed = await refreshToken();
+    if (!tokenRefreshed) {
+      alert("Session expired, please log in");
+      handleLogout();
+      return;
+    }
+
+    setSelectedPost(post);
+    setIsEditModalOpen(true);
+  }
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedPost(null);
+    window.location.reload();
+  }
+
   return (
     <div className="post">
       <div className="post-header">
@@ -65,10 +86,16 @@ function PostPreview({ post, onEdit, setPosts }) {
           {menuOpen && (
             <div className="menu-dropdown">
               <button onClick={handleShare}>Share</button>
-              {onEdit && (
-                <button onClick={() => onEdit(post.collection, post.rkey)}>
-                  Edit
-                </button>
+              <button onClick={() => handleEdit(post)}>
+                Edit
+              </button>
+              {isEditModalOpen && (
+                <PostModal
+                  post={selectedPost}
+                  rkey={selectedPost.rkey}
+                  onClose={handleCloseEditModal}
+                  setPosts={setPosts}
+                />
               )}
               <button onClick={() => handleDelete(post.collection, post.rkey)}>
                 Delete

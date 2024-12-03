@@ -9,7 +9,7 @@ function LoginModal({ onClose, onLogin }) {
     const handle = e.target.handle.value;
     const password = e.target.password.value;
 
-    const response = await fetch(`/api/token`, {
+    const response = await fetch(`${API_URL}/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ handle, password }),

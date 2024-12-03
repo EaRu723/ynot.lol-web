@@ -180,9 +180,8 @@ function App() {
                 {tags.map((tag) => (
                   <button
                     key={tag.name}
-                    className={`tagButton ${
-                      selectedTags.has(tag.name) ? "selected" : ""
-                    }`}
+                    className={`tagButton ${selectedTags.has(tag.name) ? "selected" : ""
+                      }`}
                     onClick={() => toggleTag(tag.name)}
                   >
                     {tag.name}
