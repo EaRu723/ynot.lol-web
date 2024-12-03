@@ -46,7 +46,7 @@ JWT_SECRET=🤐
 This is the URL for the API. Set this to `http://127.0.0.1:8000` for local development.
 
 ```
-VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
 To populate the database with sample site and tags data, send a `GET` request to `http://localhost:8000/api/insert-sample-data`. Otherwise, the home page will be empty.
