@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import ShowcaseGrid from "./components/ShowcaseGrid";
 import LoginModal from "./components/LoginModal";
@@ -89,10 +89,15 @@ function App() {
     if (!refreshToken) return;
 
     try {
-      const response = await fetch(`${API_URL}/refresh-token`, {
+      const response = await fetch(`${API_URL}/token/refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          refresh_token: refreshToken,
+        }),
+        credentials: "include",
       });
 
       if (response.ok) {
@@ -110,7 +115,7 @@ function App() {
   useEffect(() => {
     const interval = setInterval(refreshToken, 15 * 60 * 1000); // Refresh token every 15 minutes
     return () => clearInterval(interval);
-  }, []);
+  });
 
   return (
     <main>
@@ -180,8 +185,9 @@ function App() {
                 {tags.map((tag) => (
                   <button
                     key={tag.name}
-                    className={`tagButton ${selectedTags.has(tag.name) ? "selected" : ""
-                      }`}
+                    className={`tagButton ${
+                      selectedTags.has(tag.name) ? "selected" : ""
+                    }`}
                     onClick={() => toggleTag(tag.name)}
                   >
                     {tag.name}
