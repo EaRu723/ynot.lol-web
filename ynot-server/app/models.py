@@ -1,12 +1,15 @@
 from datetime import datetime
 from typing import List, Optional
+import uuid
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID 
+from uuid import UUID as pyUUID
 
-Base = declarative_base()
+Base = declarative_base(metadata = MetaData())
 
 site_tag_association = Table(
     "site_tag_association",
@@ -123,3 +126,33 @@ class RecordPost(BaseModel):
 class DeletePost(BaseModel):
     collection: str
     rkey: str
+    class Config:
+        from_attributes = True
+
+class OAuthAuthRequest(Base):
+    __tablename__ = "oauth_auth_request"
+
+    state = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    authserver_iss = Column(String, nullable=False)
+    did = Column(String, nullable=True)
+    handle = Column(String, nullable=True)
+    pds_url = Column(String, nullable=True)
+    pkce_verifier = Column(String, nullable=False)
+    scope = Column(String, nullable=False)
+    dpop_authserver_nonce = Column(String, nullable=False)
+    dpop_private_ec_key = Column(JSON, nullable=False)
+
+class OAuthAuthRequestBase(BaseModel):
+    state: pyUUID
+    authserver_iss: str
+    did: Optional[str] = None
+    handle: Optional[str] = None
+    pds_url: Optional[str] = None
+    pkce_verifier: str
+    scope: str
+    dpop_authserver_nonce: str
+    dpop_private_ec_key: dict
+
+    class Config:
+        arbitrary_types_allowed = True
+        from_attributes = True
