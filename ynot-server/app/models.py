@@ -1,10 +1,10 @@
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from pydantic import BaseModel, Field
-from typing import List, Optional
-
 
 Base = declarative_base()
 
@@ -92,7 +92,6 @@ class UserInDB(UserBase):
 
 class Token(BaseModel):
     access_token: str
-    refresh_token: str
     token_type: str
     handle: str
 

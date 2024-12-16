@@ -1,9 +1,11 @@
 from typing import List
-from fastapi import APIRouter, Depends, status, HTTPException
+from datetime import timedelta
+from fastapi import APIRouter, Depends, status, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
+from atproto import models
 from app.models import (
     DeletePost,
     RefreshToken,
@@ -22,14 +24,13 @@ from app.auth import (
     create_access_token,
     get_current_active_user,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    REFRESH_TOKEN_EXPIRE_DAYS,
     get_password_hash,
     get_user,
     create_refresh_token,
     decode_refresh_token,
 )
 from app.clients import get_async_client
-from datetime import timedelta
-from atproto import models
 
 router = APIRouter()
 
@@ -150,6 +151,7 @@ sites = [
 
 
 async def insert_sample_data(session: AsyncSession):
+    """Insert sample data into the database"""
     async with session.begin():
         # Insert tags if they do not exist
         for tag in tags:
@@ -181,21 +183,25 @@ async def insert_sample_data(session: AsyncSession):
                     tags=tag_objs,
                 )
                 session.add(site_obj)
+        await session.commit()
 
 
 @router.get("/insert-sample-data")
 async def insert_data(session: AsyncSession = Depends(get_async_session)):
+    """Insert sample data into the database"""
     await insert_sample_data(session)
     return {"message": "Sample data inserted successfully"}
 
 
 @router.get("/ping")
 async def ping():
+    """Check if the API is running"""
     return {"message": "pong"}
 
 
 @router.get("/sites", response_model=List[SiteBase])
 async def get_sites(session: AsyncSession = Depends(get_async_session)):
+    """Get all sites"""
     result = await session.execute(select(Site).options(joinedload(Site.tags)))
     sites = result.unique().scalars().all()
     return sites
@@ -311,7 +317,9 @@ async def delete_record(
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
-    form_data: UserLogin, db: AsyncSession = Depends(get_async_session)
+    form_data: UserLogin,
+    db: AsyncSession = Depends(get_async_session),
+    response=Response,
 ):
     user = await get_user(db, form_data.handle)
     if not user:
@@ -348,19 +356,26 @@ async def login_for_access_token(
     access_token = await create_access_token(
         db=db, data={"sub": user.handle}, expires_delta=access_token_expires
     )
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token = create_refresh_token(data={"sub": user.handle})
 
-    response: Token = {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "handle": user.handle,
-    }
-    return response
+    response = Response()
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="Lax",
+        max_age=refresh_token_expires.total_seconds(),
+        path="/token/refresh",
+    )
+
+    return {"access_token": access_token, "token_type": "bearer", "handle": user.handle}
 
 
-@router.post("/refresh-token")
+@router.post("/token/refresh", response_model=Token)
 async def refresh_token(request: RefreshToken):
+    """Refresh access token using refresh token"""
     try:
         payload = decode_refresh_token(request.refresh_token)
         if not payload:

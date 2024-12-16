@@ -13,12 +13,12 @@ function LoginModal({ onClose, onLogin }) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ handle, password }),
+      credentials: "include",
     });
 
     if (response.ok) {
       const data = await response.json();
       sessionStorage.setItem("access_token", data.access_token);
-      sessionStorage.setItem("refresh_token", data.refresh_token);
       sessionStorage.setItem("handle", data.handle);
       onLogin(data.handle);
     } else {

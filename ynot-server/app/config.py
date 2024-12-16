@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     atprotocol_redirect_uri: str
     path_to_private_key: str
     jwt_secret: str
+    private_jwk: str
 
     class Config:
         env_file = ".env"
