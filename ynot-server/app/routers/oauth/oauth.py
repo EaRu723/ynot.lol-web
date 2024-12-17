@@ -37,7 +37,7 @@ assert "d" not in public_jwk, "Public JWK should not contain private key"
 
 @router.get("/client-metadata.json")
 async def oauth_client_metadata(request: Request):
-    app_url = str(request.base_url)
+    # app_url = str(request.base_url)
 
     response_data = {
         "client_id": "http://localhost",
@@ -94,7 +94,7 @@ async def oauth_login(request: Request, handle: str = Form(...), db: AsyncSessio
     # Generate DPoP private signing key for this account session
     dpop_private_jwk = JsonWebKey.generate_key("EC", "P-256", is_private=True)
 
-    scope = "atproto transition:generic"
+    scope = "transition:generic"
 
     # app_url = str(request.base_url).replace("http://", "https://")
     # redirect_uri = f"{app_url}/oauth/callback"
