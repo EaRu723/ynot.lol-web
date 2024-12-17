@@ -132,7 +132,7 @@ class DeletePost(BaseModel):
 class OAuthAuthRequest(Base):
     __tablename__ = "oauth_auth_request"
 
-    state = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    state = Column(String, primary_key=True)
     authserver_iss = Column(String, nullable=False)
     did = Column(String, nullable=True)
     handle = Column(String, nullable=True)
@@ -143,7 +143,7 @@ class OAuthAuthRequest(Base):
     dpop_private_ec_key = Column(JSON, nullable=False)
 
 class OAuthAuthRequestBase(BaseModel):
-    state: pyUUID
+    state: str
     authserver_iss: str
     did: Optional[str] = None
     handle: Optional[str] = None

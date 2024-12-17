@@ -35,30 +35,6 @@ public_jwk = {"crv":"P-256","x":"h-5kXZ-Z9J3f2zyH1vhQ_k_vk-e29PK-dUuBKRol-Ts","y
 assert "d" not in public_jwk, "Public JWK should not contain private key"
 
 
-@router.get("/client-metadata.json")
-async def oauth_client_metadata(request: Request):
-    # app_url = str(request.base_url)
-
-    response_data = {
-        "client_id": "http://localhost",
-        "application_type": "web",
-        "client_name": "Y",
-        "client_uri": "https://ynot.lol/",
-        "dpop_bound_access_tokens": True,
-        "grant_types": ["authorization_code", "refresh_token"],
-        "redirect_uris": ["http://localhost:8000/callback"],
-        "response_types": ["code"],
-        "scope": "atproto transition:generic",
-        "token_endpoint_auth_method": "private_key_jwt",
-        "token_endpoint_auth_signing_alg": "ES256",
-        "jwks": {
-          "keys": [public_jwk]
-        }
-    }
-
-    return JSONResponse(content = response_data)
-
-
 @router.post("/login")
 async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSession = Depends(get_async_session)):
     # Login can start with a handle, DID, or auth server URL. We can call whatever the user supplied as the "handle".
@@ -99,8 +75,8 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # app_url = str(request.base_url).replace("http://", "https://")
     # redirect_uri = f"{app_url}/oauth/callback"
     # client_id = f"{app_url}oauth/client-metadata.json"
-    redirect_uri = "http://localhost:8000/oauth/callback"
-    client_id = "http://localhost"
+    redirect_uri = "https://ynot.lol/oauth/callback"
+    client_id = "https://ynot.lol/client-metadata.json"
 
     # Submit OAuth Pushed Authorization Request (PAR) to the Authorization Server
     pkce_verifier, state, dpop_authserver_nonce, resp = send_par_auth_request(
