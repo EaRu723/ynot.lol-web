@@ -48,7 +48,7 @@ async def oauth_client_metadata(request: Request):
         "grant_types": ["authorization_code", "refresh_token"],
         "redirect_uris": ["http://localhost:8000/callback"],
         "response_types": ["code"],
-        "scope": "transition:generic",
+        "scope": "atproto transition:generic",
         "token_endpoint_auth_method": "private_key_jwt",
         "token_endpoint_auth_signing_alg": "ES256",
         "jwks": {
@@ -60,20 +60,20 @@ async def oauth_client_metadata(request: Request):
 
 
 @router.post("/login")
-async def oauth_login(request: Request, handle: str = Form(...), db: AsyncSession = Depends(get_async_session)):
+async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSession = Depends(get_async_session)):
     # Login can start with a handle, DID, or auth server URL. We can call whatever the user supplied as the "handle".
-    if is_valid_handle(handle) or is_valid_did(handle):
-        login_hint = handle
-        did, handle, did_doc = resolve_identity(handle)
+    if is_valid_handle(identifier) or is_valid_did(identifier):
+        login_hint = identifier
+        did, identifier, did_doc = resolve_identity(identifier)
         pds_url = pds_endpoint(did_doc)
-        print(f"Account {handle} is at {pds_url}")
+        print(f"Account {identifier} is at {pds_url}")
         authserver_url = resolve_pds_authserver(pds_url)
-    elif handle.startswith("https://") and is_safe_url(handle):
+    elif identifier.startswith("https://") and is_safe_url(identifier):
         # When starting with an auth server URL, we don't have info about the account yet
-        did, handle, pds_url = None, None, None
+        did, identifier, pds_url = None, None, None
         login_hint = None
         # Check if this is a PDS URL, otherwise assume it is an authorization server
-        initial_url = handle
+        initial_url = identifier
         try:
             authserver_url = resolve_pds_authserver(initial_url)
         except Exception:
@@ -94,7 +94,7 @@ async def oauth_login(request: Request, handle: str = Form(...), db: AsyncSessio
     # Generate DPoP private signing key for this account session
     dpop_private_jwk = JsonWebKey.generate_key("EC", "P-256", is_private=True)
 
-    scope = "transition:generic"
+    scope = "atproto transition:generic"
 
     # app_url = str(request.base_url).replace("http://", "https://")
     # redirect_uri = f"{app_url}/oauth/callback"
@@ -124,7 +124,7 @@ async def oauth_login(request: Request, handle: str = Form(...), db: AsyncSessio
             state=state,
             authserver_iss=authserver_meta["issuer"],
             did=did,
-            handle=handle,
+            handle=identifier,
             pds_url=pds_url,
             pkce_verifier=pkce_verifier,
             scope=scope,
