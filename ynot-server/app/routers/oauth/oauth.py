@@ -40,15 +40,15 @@ async def oauth_client_metadata(request: Request):
     app_url = str(request.base_url)
 
     response_data = {
-        "client_id": "https://ynot.lol/oauth/client-metadata.json",
+        "client_id": "http://localhost",
         "application_type": "web",
-        "client_name": "Y: The discovery engine",
+        "client_name": "Y",
         "client_uri": "https://ynot.lol/",
         "dpop_bound_access_tokens": True,
         "grant_types": ["authorization_code", "refresh_token"],
-        "redirect_uris": ["https://ynot.lol/oauth/callback"],
+        "redirect_uris": ["http://localhost:8000/callback"],
         "response_types": ["code"],
-        "scope": "atproto transition:generic",
+        "scope": "transition:generic",
         "token_endpoint_auth_method": "private_key_jwt",
         "token_endpoint_auth_signing_alg": "ES256",
         "jwks": {
@@ -62,7 +62,7 @@ async def oauth_client_metadata(request: Request):
 @router.post("/login")
 async def oauth_login(request: Request, handle: str = Form(...), db: AsyncSession = Depends(get_async_session)):
     # Login can start with a handle, DID, or auth server URL. We can call whatever the user supplied as the "handle".
-    if (is_valid_handle(handle) or is_valid_did(handle)):
+    if is_valid_handle(handle) or is_valid_did(handle):
         login_hint = handle
         did, handle, did_doc = resolve_identity(handle)
         pds_url = pds_endpoint(did_doc)
@@ -96,9 +96,11 @@ async def oauth_login(request: Request, handle: str = Form(...), db: AsyncSessio
 
     scope = "atproto transition:generic"
 
-    app_url = str(request.base_url).replace("http://", "https://")
-    redirect_uri = f"{app_url}/oauth/callback"
-    client_id = f"{app_url}oauth/client-metadata.json"
+    # app_url = str(request.base_url).replace("http://", "https://")
+    # redirect_uri = f"{app_url}/oauth/callback"
+    # client_id = f"{app_url}oauth/client-metadata.json"
+    redirect_uri = "http://localhost:8000/oauth/callback"
+    client_id = "http://localhost"
 
     # Submit OAuth Pushed Authorization Request (PAR) to the Authorization Server
     pkce_verifier, state, dpop_authserver_nonce, resp = send_par_auth_request(

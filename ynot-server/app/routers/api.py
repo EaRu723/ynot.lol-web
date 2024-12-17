@@ -215,7 +215,7 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
 
 
 @router.post("/get-profile")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+async def get_profile(form_data: OAuth2PasswordRequestForm = Depends()):
     client = get_async_client()
     profile = await client.login(form_data.username, form_data.password)
     if not profile:
