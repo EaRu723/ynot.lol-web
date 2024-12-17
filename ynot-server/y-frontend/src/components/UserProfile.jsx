@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
 import "../styles/UserProfile.css";
+import Header from "./Header.jsx";
 
 function UserProfile() {
   const { handle } = useParams();
@@ -36,6 +37,7 @@ function UserProfile() {
 
   return (
     <div className="main">
+      <Header />
       <div className="profile-info">
         <h1>{handle}'s activity</h1>
         <p className="handle">@{handle}</p>

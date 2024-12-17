@@ -4,7 +4,9 @@ import ShowcaseGrid from "./components/ShowcaseGrid";
 import LoginModal from "./components/LoginModal";
 import PostModal from "./components/PostModal";
 import UserProfile from "./components/UserProfile";
+import OAuthLogin from "./components/OAuthLogin";
 import "./styles/styles.css";
+import Header from "./components/Header.jsx";
 
 function App() {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -119,16 +121,12 @@ function App() {
 
   return (
     <main>
-      <h1>
-        <a href="/" style={{ textDecoration: "none" }}>
-          Discover cool <i>people</i>.
-        </a>
-      </h1>
       <Routes>
         <Route
           path="/"
           element={
             <div>
+              <Header />
               <div className="search-and-register">
                 <div>
                   {isLoggedIn ? (
@@ -199,6 +197,7 @@ function App() {
           }
         />
         <Route path="/:handle/profile" element={<UserProfile />} />
+        <Route path="/oauth/login" element={<OAuthLogin />} />
       </Routes>
     </main>
   );

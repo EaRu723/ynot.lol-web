@@ -18,6 +18,6 @@ app.add_middleware(
 )
 
 # app.include_router(views.router)
-app.include_router(oauth.router, prefix="/oauth")
 app.include_router(api.router, prefix="/api")
+app.include_router(oauth.router, prefix="/api/oauth")
 app.include_router(user.router, prefix="/api/user")

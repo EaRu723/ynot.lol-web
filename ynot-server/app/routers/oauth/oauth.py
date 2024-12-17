@@ -119,4 +119,5 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     auth_url = authserver_meta["authorization_endpoint"]
     assert is_safe_url(auth_url)
     qparam = urlencode({"client_id": client_id, "request_uri": par_request_uri})
-    return RedirectResponse(url=f"{auth_url}?{qparam}")
+    print(f"redirecting to {auth_url}?{qparam}")
+    return JSONResponse(content={"redirect_url": f"{auth_url}?{qparam}"})
