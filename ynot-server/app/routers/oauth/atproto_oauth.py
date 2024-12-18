@@ -1,17 +1,18 @@
+from http.client import HTTPException
 from urllib.parse import urlparse
 from typing import Any, Tuple
 import time
 import json
-from authlib.jose import JsonWebKey
+from authlib.jose import JsonWebKey, jwt
 from authlib.common.security import generate_token
-from authlib.jose import jwt
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
 
 from app.routers.oauth.atproto_security import is_safe_url, hardened_http
+from app.models import OAuthAuthRequest
 
 
 # Checks an Authorization Server metadata response against atproto OAuth requirements
-def is_valid_authserver_meta(obj: dict, url: str) -> bool:
+async def is_valid_authserver_meta(obj: dict, url: str) -> bool:
     fetch_url = urlparse(url)
     issuer_url = urlparse(obj["issuer"])
     assert issuer_url.hostname == fetch_url.hostname
@@ -43,7 +44,7 @@ def is_valid_authserver_meta(obj: dict, url: str) -> bool:
 # Takes a Resource Server (PDS) URL, and tries to resolve it to an Authorization Server host/origin
 async def resolve_pds_authserver(url: str) -> str:
     # IMPORTANT: PDS endpoint URL is untrusted input, SSRF mitigations are needed
-    assert is_safe_url(url)
+    assert await is_safe_url(url)
     with hardened_http.get_session() as sess:
         resp = sess.get(f"{url}/.well-known/oauth-protected-resource")
     resp.raise_for_status()
@@ -56,14 +57,14 @@ async def resolve_pds_authserver(url: str) -> str:
 # Does an HTTP GET for Authorization Server (entryway) metadata, verify the contents, and return the metadata as a dict
 async def fetch_authserver_meta(url: str) -> dict:
     # IMPORTANT: Authorization Server URL is untrusted input, SSRF mitigations are needed
-    assert is_safe_url(url)
+    assert await is_safe_url(url)
     with hardened_http.get_session() as sess:
         resp = sess.get(f"{url}/.well-known/oauth-authorization-server")
     resp.raise_for_status()
 
     authserver_meta = resp.json()
     # print("Auth Server Metadata: " + json.dumps(authserver_meta, indent=2))
-    assert is_valid_authserver_meta(authserver_meta, url)
+    assert await is_valid_authserver_meta(authserver_meta, url)
     return authserver_meta
 
 
@@ -87,7 +88,7 @@ async def client_assertion_jwt(
 async def authserver_dpop_jwt(
     method: str, url: str, nonce: str, dpop_private_jwk: JsonWebKey
 ) -> str:
-    dpop_pub_jwk = dpop_private_jwk.as_dict(is_private=False)
+    dpop_pub_jwk = json.loads(dpop_private_jwk.as_json(is_private=False))
     body = {
         "jti": generate_token(),
         "htm": method,
@@ -152,7 +153,7 @@ async def send_par_auth_request(
     # print(par_body)
 
     # IMPORTANT: Pushed Authorization Request URL is untrusted input, SSRF mitigations are needed
-    assert is_safe_url(par_url)
+    assert await is_safe_url(par_url)
     with hardened_http.get_session() as sess:
         resp = sess.post(
             par_url,
@@ -186,19 +187,19 @@ async def send_par_auth_request(
 # Completes the auth flow by sending an initial auth token request.
 # Returns token response (dict) and DPoP nonce (str)
 async def initial_token_request(
-    auth_request: dict,
+    auth_request: OAuthAuthRequest,
     code: str,
     app_url: str,
     client_secret_jwk: JsonWebKey,
 ) -> Tuple[dict, str]:
-    authserver_url = auth_request["authserver_iss"]
+    authserver_url = auth_request.authserver_iss
 
     # Re-fetch server metadata
-    authserver_meta = fetch_authserver_meta(authserver_url)
+    authserver_meta = await fetch_authserver_meta(authserver_url)
 
     # Construct auth token request fields
-    client_id = f"{app_url}oauth/client-metadata.json"
-    redirect_uri = f"{app_url}oauth/callback"
+    client_id = "https://ynot.lol/client-metadata.json"
+    redirect_uri = "http://127.0.0.1:8000/api/oauth/callback"
 
     # Self-signed JWT using the private key declared in client metadata JWKS (confidential client)
     client_assertion = await client_assertion_jwt(
@@ -210,7 +211,7 @@ async def initial_token_request(
         "redirect_uri": redirect_uri,
         "grant_type": "authorization_code",
         "code": code,
-        "code_verifier": auth_request["pkce_verifier"],
+        "code_verifier": auth_request.pkce_verifier,
         "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
         "client_assertion": client_assertion,
     }
@@ -218,15 +219,15 @@ async def initial_token_request(
     # Create DPoP header JWT, using the existing DPoP signing key for this account/session
     token_url = authserver_meta["token_endpoint"]
     dpop_private_jwk = JsonWebKey.import_key(
-        json.loads(auth_request["dpop_private_jwk"])
+        auth_request.dpop_private_ec_key
     )
-    dpop_authserver_nonce = auth_request["dpop_authserver_nonce"]
+    dpop_authserver_nonce = auth_request.dpop_authserver_nonce
     dpop_proof = await authserver_dpop_jwt(
         "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
     )
 
     # IMPORTANT: Token URL is untrusted input, SSRF mitigations are needed
-    assert is_safe_url(token_url)
+    assert await is_safe_url(token_url)
     with hardened_http.get_session() as sess:
         resp = sess.post(token_url, data=params, headers={"DPoP": dpop_proof})
 
@@ -234,10 +235,10 @@ async def initial_token_request(
     if resp.status_code == 400 and resp.json()["error"] == "use_dpop_nonce":
         dpop_authserver_nonce = resp.headers["DPoP-Nonce"]
         print(f"retrying with new auth server DPoP nonce: {dpop_authserver_nonce}")
-        # print(server_nonce)
         dpop_proof = await authserver_dpop_jwt(
             "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
         )
+        print(f"dpop proof: {dpop_proof}")
         with hardened_http.get_session() as sess:
             resp = sess.post(token_url, data=params, headers={"DPoP": dpop_proof})
 

@@ -1,13 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
-import uuid
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON, Text
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID 
-from uuid import UUID as pyUUID
 
 Base = declarative_base(metadata = MetaData())
 
@@ -129,19 +126,6 @@ class DeletePost(BaseModel):
     class Config:
         from_attributes = True
 
-class OAuthAuthRequest(Base):
-    __tablename__ = "oauth_auth_request"
-
-    state = Column(String, primary_key=True)
-    authserver_iss = Column(String, nullable=False)
-    did = Column(String, nullable=True)
-    handle = Column(String, nullable=True)
-    pds_url = Column(String, nullable=True)
-    pkce_verifier = Column(String, nullable=False)
-    scope = Column(String, nullable=False)
-    dpop_authserver_nonce = Column(String, nullable=False)
-    dpop_private_ec_key = Column(JSON, nullable=False)
-
 class OAuthAuthRequestBase(BaseModel):
     state: str
     authserver_iss: str
@@ -157,6 +141,19 @@ class OAuthAuthRequestBase(BaseModel):
         arbitrary_types_allowed = True
         from_attributes = True
 
+class OAuthAuthRequest(Base):
+    __tablename__ = "oauth_auth_request"
+
+    state = Column(String, primary_key=True)
+    authserver_iss = Column(String, nullable=False)
+    did = Column(String, nullable=True)
+    handle = Column(String, nullable=True)
+    pds_url = Column(String, nullable=True)
+    pkce_verifier = Column(String, nullable=False)
+    scope = Column(String, nullable=False)
+    dpop_authserver_nonce = Column(String, nullable=False)
+    dpop_private_ec_key = Column(JSON, nullable=False)
+
 class OAuthSession(Base):
     __tablename__ = "oauth_session"
     did = Column(String, primary_key=True)
@@ -166,4 +163,4 @@ class OAuthSession(Base):
     access_token = Column(String)
     refresh_token = Column(String)
     dpop_authserver_nonce = Column(String)
-    dpop_private_jwk = Column(Text)
+    dpop_private_jwk = Column(JSON, nullable=False)

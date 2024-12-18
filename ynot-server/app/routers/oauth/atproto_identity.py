@@ -64,7 +64,7 @@ async def resolve_handle(handle: str) -> Optional[str]:
             val = record.to_text().replace('"', "")
             if val.startswith("did="):
                 val = val[4:]
-                if is_valid_did(val):
+                if await is_valid_did(val):
                     return val
     except Exception:
         pass

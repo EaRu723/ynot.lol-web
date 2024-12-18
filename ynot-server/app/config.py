@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     path_to_private_key: str
     jwt_secret: str
     private_jwk: str
+    session_secret: str
 
     class Config:
         env_file = ".env"

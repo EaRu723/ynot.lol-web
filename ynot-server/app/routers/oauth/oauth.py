@@ -1,18 +1,14 @@
 import json
-from typing import Any, Tuple
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode
 
-from authlib.common.security import generate_token
-from authlib.jose import JsonWebKey, jwt
-from authlib.oauth2.rfc7636 import create_s256_code_challenge
+from authlib.jose import JsonWebKey
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
-from joserfc.jwk import ECKey
-from sqlalchemy.exc import SQLAlchemyError
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from app.models import OAuthAuthRequest
+from app.models import OAuthAuthRequest, OAuthSession
 from app.config import settings
 from app.db.db import get_async_session
 from app.routers.oauth.atproto_identity import (is_valid_did, is_valid_handle,
@@ -22,18 +18,20 @@ from app.routers.oauth.atproto_oauth import (fetch_authserver_meta,
                                              send_par_auth_request,
                                              initial_token_request)
 from app.routers.oauth.atproto_security import is_safe_url
+from app.middleware.user_middleware import login_required
 
 router = APIRouter()
 
+
 private_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
-public_jwk = {"crv":"P-256","x":"h-5kXZ-Z9J3f2zyH1vhQ_k_vk-e29PK-dUuBKRol-Ts","y":"HApZBEHhq7bk3l1W8KxyYEea9uWmU5_gtuis-f78jDI","kty":"EC","kid":"demo-1734311812"}
+public_jwk = {"crv":"P-256","x":"PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE","y":"gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI","kty":"EC","kid":"demo-1734490496"}
 assert "d" not in public_jwk, "Public JWK should not contain private key"
 
 
 @router.post("/login")
 async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSession = Depends(get_async_session)):
     # Login can start with a handle, DID, or auth server URL. We can call whatever the user supplied as the "handle".
-    if is_valid_handle(identifier) or is_valid_did(identifier):
+    if await is_valid_handle(identifier) or is_valid_did(identifier):
         login_hint = identifier
         did, identifier, did_doc = await resolve_identity(identifier)
         pds_url = await pds_endpoint(did_doc)
@@ -41,7 +39,7 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
         authserver_url = await resolve_pds_authserver(pds_url)
     elif identifier.startswith("https://") and await is_safe_url(identifier):
         # When starting with an auth server URL, we don't have info about the account yet
-        did, identifier, pds_url = None, None, None
+        did, identifier, pds_url = '', '', ''
         login_hint = None
         # Check if this is a PDS URL, otherwise assume it is an authorization server
         initial_url = identifier
@@ -64,13 +62,14 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     
     # Generate DPoP private signing key for this account session
     dpop_private_jwk = JsonWebKey.generate_key("EC", "P-256", is_private=True)
+    print(f"JWK {dpop_private_jwk.as_json(is_private=True)}")
 
     scope = "atproto transition:generic"
 
     # app_url = str(request.base_url).replace("http://", "https://")
-    # redirect_uri = f"{app_url}/oauth/callback"
+    # redirect_uri = f"{app_url}/api/oauth/callback"
     # client_id = f"{app_url}oauth/client-metadata.json"
-    redirect_uri = "https://ynot.lol/api/oauth/callback"
+    redirect_uri = "http://127.0.0.1:8000/api/oauth/callback"
     client_id = "https://ynot.lol/client-metadata.json"
 
     # Submit OAuth Pushed Authorization Request (PAR) to the Authorization Server
@@ -100,7 +99,7 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
             pkce_verifier=pkce_verifier,
             scope=scope,
             dpop_authserver_nonce=dpop_authserver_nonce,
-            dpop_private_ec_key=dpop_private_jwk.as_dict(private=True),
+            dpop_private_ec_key=json.loads(dpop_private_jwk.as_json(is_private=True)),
         )
         db.add(oauth_request)
         await db.commit()
@@ -124,7 +123,7 @@ async def oauth_callback(
         iss: str,
         code: str,
         db: AsyncSession = Depends(get_async_session),
-):
+) -> dict:
     # Look up auth request by state
     query = select(OAuthAuthRequest).where(OAuthAuthRequest.state == state)
     result = await db.execute(query)
@@ -165,3 +164,67 @@ async def oauth_callback(
         if not is_valid_did(did):
             raise HTTPException(status_code=400, detail="Invalid DID")
         did, handle, did_doc = await resolve_identity(did)
+        pds_url = await pds_endpoint(did_doc)
+        authserver_url = await resolve_pds_authserver(pds_url)
+        if authserver_url != iss:
+            raise HTTPException(status_code=400, detail="Issuer mismatch")
+
+    # Verify scopes
+    if row.scope != tokens.get("scope", ""):
+        raise HTTPException(status_code=400, detail="Scope mismatch")
+
+    # Save session in the database
+    new_session = OAuthSession(
+        did=did,
+        handle=handle,
+        pds_url=pds_url,
+        authserver_iss=iss,
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        dpop_authserver_nonce=dpop_authserver_nonce,
+        dpop_private_jwk=row.dpop_private_ec_key,
+    )
+
+    try:
+        db.add(new_session)
+        await db.commit()
+    except IntegrityError as e:
+        await db.rollback()
+        if "unique constraint" in str(e.orig):
+            print(f"Failed to save oauth_auth_request to DB: {e}")
+            raise HTTPException(status_code=500, detail="A session for this user already exists")
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Failed to save oauth_auth_request to DB: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save OAuth session")
+
+    request.session["user_did"] = did
+    request.session["user_handle"] = handle
+
+    print(request.session.get("user_did"))
+    print(request.session.get("user_handle"))
+
+    return {"message": "Login successful", "user": {"did": did, "handle": handle}}
+
+
+
+@router.get("/logout")
+async def oauth_logout(request: Request, db: AsyncSession = Depends(get_async_session), user=Depends(login_required)) -> dict:
+    # Clear session data
+    user_did = request.session.pop("user_did", None)
+    request.session.pop("user_handle", None)
+
+    if user_did:
+        try:
+            query = delete(OAuthSession).where(OAuthSession.did == user_did)
+            await db.execute(query)
+            await db.commit()
+        except SQLAlchemyError as e:
+            await db.rollback()
+            raise HTTPException(status_code=500, detail="Failed to delete session")
+
+    return {"message": "Successfully logged out"}
+
+@router.get("/whoami")
+async def whoami(request: Request, user = Depends(login_required)):
+    return {"user": {"handle": request.session["user_handle"], "did": request.session["user_did"]}}

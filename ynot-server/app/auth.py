@@ -34,7 +34,8 @@ def get_password_hash(password: str) -> str:
 
 # Retrieve a user from the database by handle
 async def get_user(db: AsyncSession, handle: str) -> Optional[User]:
-    result = await db.execute(select(User).where(User.handle == handle))
+    query = select(User).where(User.handle == handle)
+    result = await db.execute(query)
     user = result.scalars().first()
     if user:
         return user
