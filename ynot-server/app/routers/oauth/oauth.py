@@ -1,32 +1,27 @@
 import json
-from typing import Tuple, Any
+from typing import Any, Tuple
+from urllib.parse import urlencode, urlparse
+
+from authlib.common.security import generate_token
+from authlib.jose import JsonWebKey, jwt
+from authlib.oauth2.rfc7636 import create_s256_code_challenge
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
-from urllib.parse import urlencode, urlparse
 from joserfc.jwk import ECKey
-from authlib.jose import jwt, JsonWebKey
-from authlib.common.security import generate_token
-from authlib.oauth2.rfc7636 import create_s256_code_challenge
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 
-from app import models
+from app.models import OAuthAuthRequest
 from app.config import settings
 from app.db.db import get_async_session
-from app.routers.oauth.atproto_identity import (
-    is_valid_did,
-    is_valid_handle,
-    resolve_identity,
-    pds_endpoint,
-)
-from app.routers.oauth.atproto_oauth import (
-    fetch_authserver_meta,
-    resolve_pds_authserver,
-    send_par_auth_request,
-
-)
+from app.routers.oauth.atproto_identity import (is_valid_did, is_valid_handle,
+                                                pds_endpoint, resolve_identity)
+from app.routers.oauth.atproto_oauth import (fetch_authserver_meta,
+                                             resolve_pds_authserver,
+                                             send_par_auth_request,
+                                             initial_token_request)
 from app.routers.oauth.atproto_security import is_safe_url
-
 
 router = APIRouter()
 
@@ -40,18 +35,18 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # Login can start with a handle, DID, or auth server URL. We can call whatever the user supplied as the "handle".
     if is_valid_handle(identifier) or is_valid_did(identifier):
         login_hint = identifier
-        did, identifier, did_doc = resolve_identity(identifier)
-        pds_url = pds_endpoint(did_doc)
+        did, identifier, did_doc = await resolve_identity(identifier)
+        pds_url = await pds_endpoint(did_doc)
         print(f"Account {identifier} is at {pds_url}")
-        authserver_url = resolve_pds_authserver(pds_url)
-    elif identifier.startswith("https://") and is_safe_url(identifier):
+        authserver_url = await resolve_pds_authserver(pds_url)
+    elif identifier.startswith("https://") and await is_safe_url(identifier):
         # When starting with an auth server URL, we don't have info about the account yet
         did, identifier, pds_url = None, None, None
         login_hint = None
         # Check if this is a PDS URL, otherwise assume it is an authorization server
         initial_url = identifier
         try:
-            authserver_url = resolve_pds_authserver(initial_url)
+            authserver_url = await resolve_pds_authserver(initial_url)
         except Exception:
             authserver_url = initial_url
     else:
@@ -60,9 +55,9 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # Fetch auth server metadata
     # NOTE auth server URL is untrusted input, SSRF mitigations are needed
     print(f"Resolving auth server metadata at {authserver_url}")
-    assert is_safe_url(authserver_url)
+    assert await is_safe_url(authserver_url)
     try:
-        authserver_meta = fetch_authserver_meta(authserver_url)
+        authserver_meta = await fetch_authserver_meta(authserver_url)
     except Exception as e:
         print(f"Failed to fetch auth server metadata: {e}")
         return JSONResponse(content = {"error": "Failed to fetch auth server metadata"})
@@ -75,11 +70,11 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # app_url = str(request.base_url).replace("http://", "https://")
     # redirect_uri = f"{app_url}/oauth/callback"
     # client_id = f"{app_url}oauth/client-metadata.json"
-    redirect_uri = "https://ynot.lol/oauth/callback"
+    redirect_uri = "https://ynot.lol/api/oauth/callback"
     client_id = "https://ynot.lol/client-metadata.json"
 
     # Submit OAuth Pushed Authorization Request (PAR) to the Authorization Server
-    pkce_verifier, state, dpop_authserver_nonce, resp = send_par_auth_request(
+    pkce_verifier, state, dpop_authserver_nonce, resp = await send_par_auth_request(
         authserver_url,
         authserver_meta,
         login_hint,
@@ -96,7 +91,7 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
 
     print(f"saving oauth_auth_request to DB for state {state}")
     try:
-        oauth_request = models.OAuthAuthRequest(
+        oauth_request = OAuthAuthRequest(
             state=state,
             authserver_iss=authserver_meta["issuer"],
             did=did,
@@ -117,7 +112,56 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # Redirect the user to the Authorization Server to complete the browser auth flow
     # IMPORTANT: Authorization endpoint URL is untrusted input, security mitigations are needed before redirecting user
     auth_url = authserver_meta["authorization_endpoint"]
-    assert is_safe_url(auth_url)
+    assert await is_safe_url(auth_url)
     qparam = urlencode({"client_id": client_id, "request_uri": par_request_uri})
     print(f"redirecting to {auth_url}?{qparam}")
     return JSONResponse(content={"redirect_url": f"{auth_url}?{qparam}"})
+
+@router.get("/callback")
+async def oauth_callback(
+        request: Request,
+        state: str,
+        iss: str,
+        code: str,
+        db: AsyncSession = Depends(get_async_session),
+):
+    # Look up auth request by state
+    query = select(OAuthAuthRequest).where(OAuthAuthRequest.state == state)
+    result = await db.execute(query)
+    row = result.scalar()
+
+    if not row:
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+    # Delete auth request to prevent replay attacks
+    try:
+        delete_query = delete(OAuthAuthRequest).where(OAuthAuthRequest.state == row.state)
+        await db.execute(delete_query)
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete OAuth auth request")
+
+    # Verify iss and state
+    if row.authserver_iss != iss or row.state != state:
+        raise HTTPException(status_code=400, detail="Invalid issuer or state")
+
+    # Complete the auth flow by requesting tokens
+    app_url = str(request.base_url).replace("http://", "https://")
+    try:
+        tokens, dpop_authserver_nonce = await initial_token_request(
+            row, code, app_url, private_jwk
+        )
+    except HTTPException as e:
+        raise HTTPException(status_code=500, detail=f"Token request failed: {str(e)}")
+
+    # Resolve identity if necessary
+    if row.did:
+        did, handle, pds_url = row.did, row.handle, row.pds_url
+        if tokens["sub"] != did:
+            raise HTTPException(status_code=400, detail="DID mismatch")
+    else:
+        did = tokens["sub"]
+        if not is_valid_did(did):
+            raise HTTPException(status_code=400, detail="Invalid DID")
+        did, handle, did_doc = await resolve_identity(did)

@@ -2,8 +2,8 @@ from typing import List
 from datetime import timedelta
 from fastapi import APIRouter, Depends, status, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 from atproto import models
 from app.models import (

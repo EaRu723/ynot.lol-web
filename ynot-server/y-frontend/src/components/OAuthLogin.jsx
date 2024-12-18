@@ -56,7 +56,7 @@ function OAuthLogin() {
             <hr style={{color: "lightgray"}}/>
             <div>
                 <h1>Login with atproto</h1>
-                <p>Provide your handle or DID to authorize and existing account with PDS.</p>
+                <p>Provide your handle or DID to authorize an existing account.</p>
                 <p>You can also supply a PDS/entryway URL (eg. https://pds.example.com).</p>
             </div>
             <div>

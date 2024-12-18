@@ -3,7 +3,7 @@ from typing import List, Optional
 import uuid
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID 
@@ -156,3 +156,14 @@ class OAuthAuthRequestBase(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         from_attributes = True
+
+class OAuthSession(Base):
+    __tablename__ = "oauth_session"
+    did = Column(String, primary_key=True)
+    handle = Column(String)
+    pds_url = Column(String)
+    authserver_iss = Column(String)
+    access_token = Column(String)
+    refresh_token = Column(String)
+    dpop_authserver_nonce = Column(String)
+    dpop_private_jwk = Column(Text)

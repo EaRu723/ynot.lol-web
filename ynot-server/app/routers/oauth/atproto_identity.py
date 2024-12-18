@@ -10,43 +10,43 @@ HANDLE_REGEX = r"^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA
 DID_REGEX = r"^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$"
 
 
-def is_valid_handle(handle: str) -> bool:
+async def is_valid_handle(handle: str) -> bool:
     return re.match(HANDLE_REGEX, handle) is not None
 
 
-def is_valid_did(did: str) -> bool:
+async def is_valid_did(did: str) -> bool:
     return re.match(DID_REGEX, did) is not None
 
 
-def handle_from_doc(doc: dict) -> Optional[str]:
+async def handle_from_doc(doc: dict) -> Optional[str]:
     for aka in doc.get("alsoKnownAs", []):
         if aka.startswith("at://"):
             handle = aka[5:]
-            if is_valid_handle(handle):
+            if await is_valid_handle(handle):
                 return handle
     return None
 
 
 # resolves an identity (handle or DID) to a DID, handle, and DID document. verifies handle bi-directionally.
-def resolve_identity(atid: str) -> Tuple[str, str, dict]:
-    if is_valid_handle(atid):
+async def resolve_identity(atid: str) -> Tuple[str, str, dict]:
+    if await is_valid_handle(atid):
         handle = atid
-        did = resolve_handle(handle)
+        did = await resolve_handle(handle)
         if not did:
             raise Exception("Failed to resolve handle: " + handle)
-        doc = resolve_did(did)
+        doc = await resolve_did(did)
         if not doc:
             raise Exception("Failed to resolve DID: " + did)
-        doc_handle = handle_from_doc(doc)
+        doc_handle = await handle_from_doc(doc)
         if not doc_handle or doc_handle != handle:
             raise Exception("Handle did not match DID: " + handle)
         return did, handle, doc
     if is_valid_did(atid):
         did = atid
-        doc = resolve_did(did)
+        doc = await resolve_did(did)
         if not doc:
             raise Exception("Failed to resolve DID: " + did)
-        handle = handle_from_doc(doc)
+        handle = await handle_from_doc(doc)
         if not handle:
             raise Exception("Handle did not match DID: " + handle)
         if resolve_handle(handle) != did:
@@ -56,7 +56,7 @@ def resolve_identity(atid: str) -> Tuple[str, str, dict]:
     raise Exception("identifier not a handle or DID: " + atid)
 
 
-def resolve_handle(handle: str) -> Optional[str]:
+async def resolve_handle(handle: str) -> Optional[str]:
 
     # first try TXT record
     try:
@@ -85,7 +85,7 @@ def resolve_handle(handle: str) -> Optional[str]:
     return None
 
 
-def resolve_did(did: str) -> Optional[dict]:
+async def resolve_did(did: str) -> Optional[dict]:
     if did.startswith("did:plc:"):
         # NOTE: 'did' is untrusted input, but has been validated by regex by this point
         resp = requests.get(f"https://plc.directory/{did}")
@@ -109,7 +109,7 @@ def resolve_did(did: str) -> Optional[dict]:
     raise ValueError("unsupported DID type")
 
 
-def pds_endpoint(doc: dict) -> str:
+async def pds_endpoint(doc: dict) -> str:
     for svc in doc["service"]:
         if svc["id"] == "#atproto_pds":
             return svc["serviceEndpoint"]

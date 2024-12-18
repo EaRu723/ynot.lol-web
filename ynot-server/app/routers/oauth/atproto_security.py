@@ -4,7 +4,7 @@ import requests_hardened
 
 # this is a crude/partial filter that looks at HTTPS URLs and checks if they seem "safe" for server-side requests (SSRF). This is only a partial mitigation, the actual HTTP client also needs to prevent other attacks and behaviors.
 # this isn't a fully complete or secure implementation
-def is_safe_url(url):
+async def is_safe_url(url):
     parts = urlparse(url)
     if not (
         parts.scheme == "https"

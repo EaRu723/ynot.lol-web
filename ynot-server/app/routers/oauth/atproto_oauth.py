@@ -41,7 +41,7 @@ def is_valid_authserver_meta(obj: dict, url: str) -> bool:
 
 
 # Takes a Resource Server (PDS) URL, and tries to resolve it to an Authorization Server host/origin
-def resolve_pds_authserver(url: str) -> str:
+async def resolve_pds_authserver(url: str) -> str:
     # IMPORTANT: PDS endpoint URL is untrusted input, SSRF mitigations are needed
     assert is_safe_url(url)
     with hardened_http.get_session() as sess:
@@ -54,7 +54,7 @@ def resolve_pds_authserver(url: str) -> str:
 
 
 # Does an HTTP GET for Authorization Server (entryway) metadata, verify the contents, and return the metadata as a dict
-def fetch_authserver_meta(url: str) -> dict:
+async def fetch_authserver_meta(url: str) -> dict:
     # IMPORTANT: Authorization Server URL is untrusted input, SSRF mitigations are needed
     assert is_safe_url(url)
     with hardened_http.get_session() as sess:
@@ -67,7 +67,7 @@ def fetch_authserver_meta(url: str) -> dict:
     return authserver_meta
 
 
-def client_assertion_jwt(
+async def client_assertion_jwt(
     client_id: str, authserver_url: str, private_jwk: JsonWebKey
 ) -> str:
     client_assertion = jwt.encode(
@@ -84,7 +84,7 @@ def client_assertion_jwt(
     return client_assertion
 
 
-def authserver_dpop_jwt(
+async def authserver_dpop_jwt(
     method: str, url: str, nonce: str, dpop_private_jwk: JsonWebKey
 ) -> str:
     dpop_pub_jwk = dpop_private_jwk.as_dict(is_private=False)
@@ -107,7 +107,7 @@ def authserver_dpop_jwt(
 
 # Prepares and sends a pushed auth request (PAR) via HTTP POST to the Authorization Server.
 # Returns "state" id HTTP response on success, without checking HTTP response status
-def send_par_auth_request(
+async def send_par_auth_request(
     authserver_url: str,
     authserver_meta: dict,
     login_hint: str,
@@ -126,13 +126,13 @@ def send_par_auth_request(
     code_challenge_method = "S256"
 
     # Self-signed JWT using the private key declared in client metadata JWKS (confidential client)
-    client_assertion = client_assertion_jwt(
+    client_assertion = await client_assertion_jwt(
         client_id, authserver_url, client_secret_jwk
     )
 
     # Create DPoP header JWT; we don't have a server Nonce yet
     dpop_authserver_nonce = ""
-    dpop_proof = authserver_dpop_jwt(
+    dpop_proof = await authserver_dpop_jwt(
         "POST", par_url, dpop_authserver_nonce, dpop_private_jwk
     )
 
@@ -167,7 +167,7 @@ def send_par_auth_request(
     if resp.status_code == 400 and resp.json()["error"] == "use_dpop_nonce":
         dpop_authserver_nonce = resp.headers["DPoP-Nonce"]
         print(f"retrying with new auth server DPoP nonce: {dpop_authserver_nonce}")
-        dpop_proof = authserver_dpop_jwt(
+        dpop_proof = await authserver_dpop_jwt(
             "POST", par_url, dpop_authserver_nonce, dpop_private_jwk
         )
         with hardened_http.get_session() as sess:
@@ -185,7 +185,7 @@ def send_par_auth_request(
 
 # Completes the auth flow by sending an initial auth token request.
 # Returns token response (dict) and DPoP nonce (str)
-def initial_token_request(
+async def initial_token_request(
     auth_request: dict,
     code: str,
     app_url: str,
@@ -201,7 +201,7 @@ def initial_token_request(
     redirect_uri = f"{app_url}oauth/callback"
 
     # Self-signed JWT using the private key declared in client metadata JWKS (confidential client)
-    client_assertion = client_assertion_jwt(
+    client_assertion = await client_assertion_jwt(
         client_id, authserver_url, client_secret_jwk
     )
 
@@ -221,7 +221,7 @@ def initial_token_request(
         json.loads(auth_request["dpop_private_jwk"])
     )
     dpop_authserver_nonce = auth_request["dpop_authserver_nonce"]
-    dpop_proof = authserver_dpop_jwt(
+    dpop_proof = await authserver_dpop_jwt(
         "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
     )
 
@@ -235,7 +235,7 @@ def initial_token_request(
         dpop_authserver_nonce = resp.headers["DPoP-Nonce"]
         print(f"retrying with new auth server DPoP nonce: {dpop_authserver_nonce}")
         # print(server_nonce)
-        dpop_proof = authserver_dpop_jwt(
+        dpop_proof = await authserver_dpop_jwt(
             "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
         )
         with hardened_http.get_session() as sess:
@@ -250,7 +250,7 @@ def initial_token_request(
 
 
 # Returns token response (dict) and DPoP nonce (str)
-def refresh_token_request(
+async def refresh_token_request(
     user: dict,
     app_url: str,
     client_secret_jwk: JsonWebKey,
@@ -264,7 +264,7 @@ def refresh_token_request(
     client_id = f"{app_url}oauth/client-metadata.json"
 
     # Self-signed JWT using the private key declared in client metadata JWKS (confidential client)
-    client_assertion = client_assertion_jwt(
+    client_assertion = await client_assertion_jwt(
         client_id, authserver_url, client_secret_jwk
     )
 
@@ -280,7 +280,7 @@ def refresh_token_request(
     token_url = authserver_meta["token_endpoint"]
     dpop_private_jwk = JsonWebKey.import_key(json.loads(user["dpop_private_jwk"]))
     dpop_authserver_nonce = user["dpop_authserver_nonce"]
-    dpop_proof = authserver_dpop_jwt(
+    dpop_proof = await authserver_dpop_jwt(
         "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
     )
 
@@ -294,7 +294,7 @@ def refresh_token_request(
         dpop_authserver_nonce = resp.headers["DPoP-Nonce"]
         print(f"retrying with new auth server DPoP nonce: {dpop_authserver_nonce}")
         # print(server_nonce)
-        dpop_proof = authserver_dpop_jwt(
+        dpop_proof = await authserver_dpop_jwt(
             "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
         )
         with hardened_http.get_session() as sess:
@@ -309,7 +309,7 @@ def refresh_token_request(
     return token_body, dpop_authserver_nonce
 
 
-def pds_dpop_jwt(
+async def pds_dpop_jwt(
     method: str,
     url: str,
     iss: str,
@@ -340,7 +340,7 @@ def pds_dpop_jwt(
 
 # Helper to demonstrate making a request (HTTP GET or POST) to the user's PDS ("Resource Server" in OAuth terminology) using DPoP and access token.
 # This method returns a 'requests' reponse, without checking status code.
-def pds_authed_req(method: str, url: str, user: dict, db: Any, body=None) -> Any:
+async def pds_authed_req(method: str, url: str, user: dict, db: Any, body=None) -> Any:
     dpop_private_jwk = JsonWebKey.import_key(json.loads(user["dpop_private_jwk"]))
     dpop_pds_nonce = user["dpop_pds_nonce"]
     access_token = user["access_token"]
