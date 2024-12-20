@@ -2,11 +2,11 @@ import json
 from urllib.parse import urlencode
 
 from authlib.jose import JsonWebKey
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 
 from app.models import OAuthAuthRequest, OAuthSession
 from app.config import settings
@@ -18,10 +18,10 @@ from app.routers.oauth.atproto_oauth import (fetch_authserver_meta,
                                              send_par_auth_request,
                                              initial_token_request)
 from app.routers.oauth.atproto_security import is_safe_url
+from app.routers.oauth.atproto_oauth import refresh_token_request
 from app.middleware.user_middleware import login_required
 
 router = APIRouter()
-
 
 private_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
 public_jwk = {"crv":"P-256","x":"PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE","y":"gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI","kty":"EC","kid":"demo-1734490496"}
@@ -69,7 +69,7 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # app_url = str(request.base_url).replace("http://", "https://")
     # redirect_uri = f"{app_url}/api/oauth/callback"
     # client_id = f"{app_url}oauth/client-metadata.json"
-    redirect_uri = "http://127.0.0.1:8000/api/oauth/callback"
+    redirect_uri = f"{settings.app_url}/api/oauth/callback"
     client_id = "https://ynot.lol/client-metadata.json"
 
     # Submit OAuth Pushed Authorization Request (PAR) to the Authorization Server
@@ -119,6 +119,7 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
 @router.get("/callback")
 async def oauth_callback(
         request: Request,
+        response: Response,
         state: str,
         iss: str,
         code: str,
@@ -204,7 +205,25 @@ async def oauth_callback(
     print(request.session.get("user_did"))
     print(request.session.get("user_handle"))
 
-    return {"message": "Login successful", "user": {"did": did, "handle": handle}}
+    return RedirectResponse(url="/")
+
+@router.get("/refresh")
+async def oauth_refresh(request: Request, db = Depends(get_async_session), user = Depends(login_required)):
+    tokens, dpop_authserver_nonce = await refresh_token_request(
+        request.session.get(user), settings.app_url, private_jwk
+    )
+
+    user_did = request.session.pop("user_did", None)
+
+    try:
+        query = update(OAuthSession).where(OAuthSession.did == user_did)
+        await db.execute(query)
+        await db.commit()
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update session")
+
+    return RedirectResponse("/")
 
 
 
@@ -219,12 +238,8 @@ async def oauth_logout(request: Request, db: AsyncSession = Depends(get_async_se
             query = delete(OAuthSession).where(OAuthSession.did == user_did)
             await db.execute(query)
             await db.commit()
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             await db.rollback()
             raise HTTPException(status_code=500, detail="Failed to delete session")
 
     return {"message": "Successfully logged out"}
-
-@router.get("/whoami")
-async def whoami(request: Request, user = Depends(login_required)):
-    return {"user": {"handle": request.session["user_handle"], "did": request.session["user_did"]}}

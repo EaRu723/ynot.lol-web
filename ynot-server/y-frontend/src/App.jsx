@@ -7,10 +7,11 @@ import UserProfile from "./components/UserProfile";
 import OAuthLogin from "./components/OAuthLogin";
 import "./styles/styles.css";
 import Header from "./components/Header.jsx";
+import Whoami from "./components/Whoami.jsx";
 
 function App() {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
-  console.log(API_URL);
+  console.log("API URL: " + API_URL);
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
@@ -198,6 +199,7 @@ function App() {
         />
         <Route path="/:handle/profile" element={<UserProfile />} />
         <Route path="/oauth/login" element={<OAuthLogin />} />
+        <Route path="/whoami" element={<Whoami />} />
       </Routes>
     </main>
   );

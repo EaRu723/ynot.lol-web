@@ -1,6 +1,6 @@
 from typing import List
 from datetime import timedelta
-from fastapi import APIRouter, Depends, status, HTTPException, Response
+from fastapi import APIRouter, Depends, status, HTTPException, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,6 +31,7 @@ from app.auth import (
     decode_refresh_token,
 )
 from app.clients import get_async_client
+from app.middleware.user_middleware import login_required
 
 router = APIRouter()
 
@@ -397,3 +398,7 @@ async def refresh_token(request: RefreshToken):
 @router.get("/users/me", response_model=UserBase)
 async def read_users_me(current_user: UserBase = Depends(get_current_active_user)):
     return current_user
+
+@router.get("/whoami")
+async def whoami(request: Request, user = Depends(login_required)):
+    return {"user": {"handle": user.handle, "did": user.did}}
