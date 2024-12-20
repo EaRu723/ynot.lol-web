@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import ShowcaseGrid from "./components/ShowcaseGrid";
-import LoginModal from "./components/LoginModal";
 import PostModal from "./components/PostModal";
 import UserProfile from "./components/UserProfile";
 import OAuthLogin from "./components/OAuthLogin";
@@ -9,10 +8,10 @@ import "./styles/styles.css";
 import Header from "./components/Header.jsx";
 import Whoami from "./components/Whoami.jsx";
 
+
 function App() {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   console.log("API URL: " + API_URL);
-  const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
   const [tags, setTags] = useState([]);
@@ -20,6 +19,7 @@ function App() {
   const [filteredSites, setFilteredSites] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userHandle, setUserHandle] = useState("");
+  const [userDid, setUserDid] = useState("");
 
   const fetchSites = async () => {
     try {
@@ -64,61 +64,41 @@ function App() {
     );
   };
 
-  const checkAuthentication = () => {
-    const token = sessionStorage.getItem("access_token");
-    const handle = sessionStorage.getItem("handle");
-    if (token && handle) {
-      setIsLoggedIn(true);
-      setUserHandle(handle);
-    }
-  };
-
-  const handleLogin = (handle) => {
-    setIsLoggedIn(true);
-    setUserHandle(handle);
-    setLoginModalOpen(false);
-    window.location.reload(); // Refresh the page on successful login
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("handle");
-    setIsLoggedIn(false);
-    setUserHandle("");
-  };
-
-  const refreshToken = async () => {
-    const refreshToken = sessionStorage.getItem("refresh_token");
-    if (!refreshToken) return;
-
+  const checkAuthentication = async () => {
     try {
-      const response = await fetch(`${API_URL}/token/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refresh_token: refreshToken,
-        }),
+      const response = await fetch(`${API_URL}/whoami`, {
+        method: "GET",
         credentials: "include",
       });
 
       if (response.ok) {
         const data = await response.json();
-        sessionStorage.setItem("access_token", data.access_token);
+        setIsLoggedIn(true);
+        setUserHandle(data.user.handle);
+        setUserDid(data.user.did);
       } else {
-        handleLogout();
+        setIsLoggedIn(false);
       }
     } catch (error) {
-      console.error("Error refreshing token:", error);
-      handleLogout();
+      console.error("Error checking authentication:", error);
+      setIsLoggedIn(false);
     }
   };
 
-  useEffect(() => {
-    const interval = setInterval(refreshToken, 15 * 60 * 1000); // Refresh token every 15 minutes
-    return () => clearInterval(interval);
-  });
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/oauth/logout`, {
+        method: "GET",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Error logging out:", error);
+    } finally {
+        setIsLoggedIn(false);
+        setUserHandle("");
+        sessionStorage.clear();
+    }
+  };
 
   return (
     <main>
@@ -148,17 +128,11 @@ function App() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => setLoginModalOpen(true)}
+                      onClick={() => (window.location.href = `/oauth/login`)}
                       style={{ cursor: "pointer" }}
                     >
                       Log in
                     </button>
-                  )}
-                  {isLoginModalOpen && (
-                    <LoginModal
-                      onClose={() => setLoginModalOpen(false)}
-                      onLogin={handleLogin}
-                    />
                   )}
                   {isPostModalOpen && (
                     <PostModal onClose={() => setPostModalOpen(false)} />

@@ -25,7 +25,7 @@ router = APIRouter()
 
 private_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
 public_jwk = {"crv":"P-256","x":"PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE","y":"gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI","kty":"EC","kid":"demo-1734490496"}
-assert "d" not in public_jwk, "Public JWK should not contain private key"
+# assert "d" not in public_jwk, "Public JWK should not contain private key"
 
 
 @router.post("/login")

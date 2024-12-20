@@ -14,9 +14,9 @@ from app.models import (
     SiteBase,
     TagBase,
     Token,
-    UserBase,
     UserLogin,
     RecordPost,
+    OAuthSession,
 )
 from app.db.db import get_async_session
 from app.auth import (
@@ -32,6 +32,7 @@ from app.auth import (
 )
 from app.clients import get_async_client
 from app.middleware.user_middleware import login_required
+from app.routers.oauth.atproto_oauth import pds_authed_req
 
 router = APIRouter()
 
@@ -230,32 +231,32 @@ async def get_profile(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @router.post("/post")
 async def post_record(
-    form_data: RecordPost, current_user: User = Depends(get_current_active_user)
+    form_data: RecordPost, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
 ):
-    client = get_async_client()
-    if not current_user.session:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing atproto session. Please re-authenticate.",
-        )
+    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.createRecord"
 
-    await client.login(session_string=current_user.session)
+    record_data = form_data.dict()
 
-    record_data = form_data.model_dump()
+    body = {
+        "repo": user.did,
+        "collection": "com.y.post",
+        # "validate": "true",
+        "record": record_data,
+    }
 
-    response = await client.com.atproto.repo.create_record(
-        data=models.ComAtprotoRepoCreateRecord.Data(
-            repo=client.me.did,
-            collection="com.ynot.post",
-            record=record_data,
-        )
-    )
+    print(body)
+    print(type(body))
 
-    if not response or not hasattr(response, "uri"):
+    response = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+    print(f"Response Status Code: {response.status_code}")
+    print(f"Response Headers: {response.headers}")
+    print(f"Response Body: {response.text}")
+
+    if "uri" not in response.json():
         raise HTTPException(status_code=500, detail="Failed to create record")
 
     return {
-        "response": response,
+        "response": response.json(),
     }
 
 
@@ -394,11 +395,6 @@ async def refresh_token(request: RefreshToken):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-
-@router.get("/users/me", response_model=UserBase)
-async def read_users_me(current_user: UserBase = Depends(get_current_active_user)):
-    return current_user
-
 @router.get("/whoami")
-async def whoami(request: Request, user = Depends(login_required)):
+async def whoami(request: Request, user: OAuthSession = Depends(login_required)):
     return {"user": {"handle": user.handle, "did": user.did}}

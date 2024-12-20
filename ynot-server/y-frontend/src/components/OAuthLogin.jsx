@@ -53,7 +53,6 @@ function OAuthLogin() {
     return (
         <div>
             <Header />
-            <hr style={{color: "lightgray"}}/>
             <div>
                 <h1>Login with atproto</h1>
                 <p>Provide your handle or DID to authorize an existing account.</p>

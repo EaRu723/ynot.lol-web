@@ -1,6 +1,9 @@
+import json
 import os
+from pathlib import Path
+from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,8 +49,26 @@ app.include_router(api.router, prefix="/api")
 app.include_router(oauth.router, prefix="/api/oauth")
 app.include_router(user.router, prefix="/api/user")
 
-app.mount("/assets", StaticFiles(directory="y-frontend/dist/assets"), name="static")
+# Load lexicons
+lexicon_dir = Path(__file__).parent / "lexicons"
+lexicons = {}
 
+for lexicon_file in lexicon_dir.glob("*.json"):
+    with open(lexicon_file) as f:
+        lexicon = json.load(f)
+        lexicons[lexicon['id']] = lexicon
+
+@app.get("/lexicon/{lexicon_id}")
+async def get_lexicon(lexicon_id: str):
+    lexicon = lexicons.get(lexicon_id)
+    if lexicon:
+        return lexicon
+    else:
+        raise HTTPException(status_code=404, detail="Lexicon not found")
+
+
+# Load static React files
+app.mount("/assets", StaticFiles(directory="y-frontend/dist/assets"), name="static")
 @app.get("/{full_path:path}")
 async def serve_static(full_path: str):
     file_path = os.path.join("y-frontend/dist", full_path)

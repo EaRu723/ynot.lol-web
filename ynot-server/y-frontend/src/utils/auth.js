@@ -15,7 +15,7 @@ export const refreshToken = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      sessionStorage.setItem("access_token", data.access_token);
+
       return true;
     } else {
       alert("Please log in");

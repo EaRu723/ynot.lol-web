@@ -39,7 +39,7 @@
 
 - lazy loading iframes, images
 - minify CSS, JS
-- caching static assets
+- caching lexicons assets
     - CDN?
 
 

@@ -2,20 +2,18 @@ import React, { useState, useEffect } from "react";
 import "../styles/PostModal.css";
 import { refreshToken } from "../utils/auth";
 
-function PostModal({ onClose, post = null, rkey = null }) {
+function PostModal({ onClose, post = null }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [urlFieldsCount, setUrlFieldsCount] = useState(post ? post.urls.length : 1);
   const [urls, setUrls] = useState(post ? post.urls : [""]);
-  const [title, setTitle] = useState(post ? post.title : "");
-  const [description, setDescription] = useState(post ? post.description : "");
+  const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
   const [tagInput, setTagInput] = useState("");
 
   useEffect(() => {
     if (post) {
       setUrls(post.urls);
-      setTitle(post.title);
-      setDescription(post.description);
+      setNote(post.note);
       setTags(post.tags);
     }
   }, [post]);
@@ -59,8 +57,6 @@ function PostModal({ onClose, post = null, rkey = null }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const tokenRefreshed = await refreshToken();
-    if (!tokenRefreshed) return;
 
     const validUrls = urls.filter((url) => url.trim() !== "");
     for (const url of validUrls) {
@@ -71,19 +67,16 @@ function PostModal({ onClose, post = null, rkey = null }) {
     }
 
     const payload = {
-      title,
-      description,
+      note,
       urls: validUrls,
       tags,
-      collection: "com.ynot.post",
-      rkey,
     };
 
     const response = await fetch(`${API_URL}/post`, {
       method: post ? "PUT" : "POST",
+      credentials: "include",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(payload),
     });
@@ -109,30 +102,21 @@ function PostModal({ onClose, post = null, rkey = null }) {
   return (
     <div className="modal">
       <div className="modal-content">
-        <span className="close" onClick={onClose} style={{ cursor: "pointer" }}>
-          &times;
-        </span>
+        <div>
+          <span className="close" onClick={onClose} style={{cursor: "pointer"}}>
+            &times;
+          </span>
+        </div>
         <h2>{post ? "Edit" : "Post"}</h2>
         <form id="post-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="title">Title:</label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="description">Description:</label>
+            <label htmlFor="note">Note:</label>
             <textarea
-              id="description"
-              name="description"
+              id="note"
+              name="note"
               rows="4"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
             ></textarea>
           </div>
           <div className="form-group" style={{ gap: "0.5rem" }}>

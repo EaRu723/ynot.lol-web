@@ -1,14 +1,16 @@
-from http.client import HTTPException
 from urllib.parse import urlparse
 from typing import Any, Tuple
 import time
 import json
 from authlib.jose import JsonWebKey, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import update
 from authlib.common.security import generate_token
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
 
 from app.routers.oauth.atproto_security import is_safe_url, hardened_http
-from app.models import OAuthAuthRequest
+from app.models import OAuthAuthRequest, OAuthSession
+from app.config import settings
 
 
 # Checks an Authorization Server metadata response against atproto OAuth requirements
@@ -252,17 +254,17 @@ async def initial_token_request(
 
 # Returns token response (dict) and DPoP nonce (str)
 async def refresh_token_request(
-    user: dict,
+    user: OAuthSession,
     app_url: str,
     client_secret_jwk: JsonWebKey,
 ) -> Tuple[dict, str]:
-    authserver_url = user["authserver_iss"]
+    authserver_url = user.authserver_iss
 
     # Re-fetch server metadata
-    authserver_meta = fetch_authserver_meta(authserver_url)
+    authserver_meta = await fetch_authserver_meta(authserver_url)
 
     # Construct token request fields
-    client_id = f"{app_url}oauth/client-metadata.json"
+    client_id = "https://ynot.lol/client-metadata.json"
 
     # Self-signed JWT using the private key declared in client metadata JWKS (confidential client)
     client_assertion = await client_assertion_jwt(
@@ -272,15 +274,15 @@ async def refresh_token_request(
     params = {
         "client_id": client_id,
         "grant_type": "refresh_token",
-        "refresh_token": user["refresh_token"],
+        "refresh_token": user.refresh_token,
         "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
         "client_assertion": client_assertion,
     }
 
     # Create DPoP header JWT, using the existing DPoP signing key for this account/session
     token_url = authserver_meta["token_endpoint"]
-    dpop_private_jwk = JsonWebKey.import_key(json.loads(user["dpop_private_jwk"]))
-    dpop_authserver_nonce = user["dpop_authserver_nonce"]
+    dpop_private_jwk = JsonWebKey.import_key(json.loads(user.dpop_private_jwk))
+    dpop_authserver_nonce = user.dpop_authserver_nonce
     dpop_proof = await authserver_dpop_jwt(
         "POST", token_url, dpop_authserver_nonce, dpop_private_jwk
     )
@@ -340,18 +342,22 @@ async def pds_dpop_jwt(
 
 
 # Helper to demonstrate making a request (HTTP GET or POST) to the user's PDS ("Resource Server" in OAuth terminology) using DPoP and access token.
-# This method returns a 'requests' reponse, without checking status code.
-async def pds_authed_req(method: str, url: str, user: dict, db: Any, body=None) -> Any:
-    dpop_private_jwk = JsonWebKey.import_key(json.loads(user["dpop_private_jwk"]))
-    dpop_pds_nonce = user["dpop_pds_nonce"]
-    access_token = user["access_token"]
+# This method returns a 'requests' response, without checking status code.
+async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSession, body=None) -> Any:
+    dpop_private_jwk = JsonWebKey.import_key(json.loads(user.dpop_private_jwk))
+    dpop_pds_nonce = user.dpop_authserver_nonce
+    access_token = user.access_token
+
+    # Ensure body is JSON-serializable before posting
+    if body:
+        body = json.loads(json.dumps(body, default=str))
 
     # Might need to retry request with a new nonce.
     for i in range(2):
-        dpop_jwt = pds_dpop_jwt(
-            "POST",
+        dpop_jwt = await pds_dpop_jwt(
+            method,
             url,
-            user["authserver_iss"],
+            user.authserver_iss,
             access_token,
             dpop_pds_nonce,
             dpop_private_jwk,
@@ -367,21 +373,55 @@ async def pds_authed_req(method: str, url: str, user: dict, db: Any, body=None) 
                 json=body,
             )
 
+        # Log response details for debugging
+        print(f"Response Status Code: {resp.status_code}")
+        print(f"Response Headers: {resp.headers}")
+        print(f"Response Body: {resp.text}")
+
+
+        # Handle 401 (expired token)
+        if resp.status_code == 401 and "invalid_token" in resp.text:
+            print("Token expired, attempting to refresh...")
+            app_url = settings.app_url
+            client_secret_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
+
+            token_body, new_nonce = await refresh_token_request(
+                user, app_url, client_secret_jwk
+            )
+
+            # Update session with refreshed tokens
+            access_token = token_body["access_token"]
+            refresh_token = token_body.get("refresh_token", user.refresh_token)  # Fall back to existing refresh token
+            dpop_pds_nonce = new_nonce
+
+            async with db.begin():
+                await db.execute(
+                    update(OAuthSession)
+                    .where(OAuthSession.did == user.did)
+                    .values(
+                        access_token=access_token,
+                        refresh_token=refresh_token,
+                        dpop_authserver_nonce=dpop_pds_nonce,
+                    )
+                )
+            continue
+
         # If we got a new server-provided DPoP nonce, store it in database and retry.
-        # NOTE: the type of error might also be communicated in the `WWW-Authenticate` HTTP response header.
-        if resp.status_code in [400, 401] and resp.json()["error"] == "use_dpop_nonce":
-            # print(resp.headers)
+        # if resp.json()["error"] == "use_dpop_nonce":
+        if "dpop-nonce" in resp.headers:
+            print(resp.headers)
             dpop_pds_nonce = resp.headers["DPoP-Nonce"]
             print(f"retrying with new PDS DPoP nonce: {dpop_pds_nonce}")
-            # update session database with new nonce
-            cur = db.cursor()
-            cur.execute(
-                "UPDATE oauth_session SET dpop_pds_nonce = ? WHERE did = ?;",
-                [dpop_pds_nonce, user["did"]],
-            )
-            db.commit()
-            cur.close()
+
+            # Update session database with new nonce
+            async with db.begin():
+                await db.execute(
+                    update(OAuthSession)
+                    .where(OAuthSession.did == user.did)
+                    .values(dpop_authserver_nonce=dpop_pds_nonce)
+                )
             continue
         break
 
     return resp
+

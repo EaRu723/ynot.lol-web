@@ -32,7 +32,7 @@ APP_ENV=development
 API_BASE_URL=http://localhost
 
 APP_URL=http://localhost:8000
-ATPROTOCOL_CLIENT_ID=http://ynot.lol/static/client-metadata.json
+ATPROTOCOL_CLIENT_ID=http://ynot.lol/client-metadata.json
 ATPROTOCOL_CLIENT_SECRET=your-client-secret
 ATPROTOCOL_REDIRECT_URI=http://ynot.lol/oauth/callback
 PATH_TO_PRIVATE_KEY=path-to-your-private-key
