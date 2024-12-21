@@ -22,6 +22,7 @@ function UserProfile() {
         }
         const data = await response.json();
         setPosts(data);
+        console.log(data);
       } catch (err) {
         setError(err.message);
       } finally {

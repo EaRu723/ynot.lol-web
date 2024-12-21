@@ -288,7 +288,7 @@ async def refresh_token_request(
     )
 
     # IMPORTANT: Token URL is untrusted input, SSRF mitigations are needed
-    assert is_safe_url(token_url)
+    assert await is_safe_url(token_url)
     with hardened_http.get_session() as sess:
         resp = sess.post(token_url, data=params, headers={"DPoP": dpop_proof})
 
@@ -363,15 +363,29 @@ async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSes
             dpop_private_jwk,
         )
 
+        print(f"Generated DPoP JWT: {dpop_jwt}")
+
         with hardened_http.get_session() as sess:
-            resp = sess.post(
-                url,
-                headers={
-                    "Authorization": f"DPoP {access_token}",
-                    "DPoP": dpop_jwt,
-                },
-                json=body,
-            )
+            if method.upper() == "GET":
+                resp = sess.get(
+                    url,
+                    headers={
+                        "Authorization": f"DPoP {access_token}",
+                        "DPoP": dpop_jwt,
+                    },
+                    params=body,
+                )
+            elif method.upper() == "POST":
+                resp = sess.post(
+                    url,
+                    headers={
+                        "Authorization": f"DPoP {access_token}",
+                        "DPoP": dpop_jwt,
+                    },
+                    json=body,
+                )
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
 
         # Log response details for debugging
         print(f"Response Status Code: {resp.status_code}")

@@ -26,14 +26,19 @@ function PostPreview({ post, setPosts }) {
     );
     if (!shouldDelete) return;
 
+    const payload = {
+      "collection": collection,
+      "rkey": rkey,
+    }
+
     try {
       const response = await fetch(`${API_URL}/post`, {
         method: "DELETE",
+        credentials: "include",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${sessionStorage.getItem("access_token")}`,
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({ collection, rkey }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -45,16 +50,6 @@ function PostPreview({ post, setPosts }) {
     } catch (error) {
       alert(error.message);
     }
-  };
-
-  const handleDelete = async (collection, rkey) => {
-    const tokenRefreshed = await refreshToken();
-    if (!tokenRefreshed) {
-      alert("Session expired, please log in");
-      handleLogout();
-      return;
-    }
-    deletePost(collection, rkey);
   };
 
   const handleEdit = async (post) => {
@@ -78,7 +73,7 @@ function PostPreview({ post, setPosts }) {
   return (
     <div className="post">
       <div className="post-header">
-        <div className="post-title">{post.title}</div>
+        {/*<div className="post-title">{post.title}</div>*/}
         <div className="post-menu">
           <button className="menu-button" onClick={toggleMenu}>
             ⋮
@@ -97,14 +92,14 @@ function PostPreview({ post, setPosts }) {
                   setPosts={setPosts}
                 />
               )}
-              <button onClick={() => handleDelete(post.collection, post.rkey)}>
+              <button onClick={() => deletePost(post.collection, post.rkey)}>
                 Delete
               </button>
             </div>
           )}
         </div>
       </div>
-      <pre className="post-description">{post.description}</pre>
+      <pre className="post-description">{post.note}</pre>
       <div className="post-urls">
         {post.urls.map((url, index) => (
           <a key={index} href={url} target="_blank" rel="noopener noreferrer">

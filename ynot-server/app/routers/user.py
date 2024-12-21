@@ -1,11 +1,14 @@
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic.deprecated.tools import parse_obj_as
-from app.models import RecordPost
+from app.models import FrontendPost
 from app.clients import get_async_client
-from atproto import models
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
+
+from app.middleware.user_middleware import login_required
+from app.routers.oauth.atproto_oauth import pds_authed_req
+from app.db.db import get_async_session
 
 router = APIRouter()
 
@@ -34,30 +37,37 @@ async def resolve_handle_to_did(handle: str) -> str:
         )
 
 
-@router.get("/{handle}/posts", response_model=List[RecordPost])
-async def get_posts(handle: str, collection: str = "com.ynot.post"):
-    client = get_async_client()
+@router.get("/{handle}/posts", response_model=List[FrontendPost])
+async def get_posts(handle: str, collection: str = "com.y.post", user = Depends(login_required), db = Depends(get_async_session)):
     did = await resolve_handle_to_did(handle)
-    response = await client.com.atproto.repo.list_records(
-        models.ComAtprotoRepoListRecords.Params(repo=did, collection=collection)
-    )
+    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.listRecords"
+
+    params = {
+        "repo": did,
+        "collection": collection,
+    }
+
+    response = await pds_authed_req("GET", req_url, user=user, db=db, body=params)
+    response_body = response.json()
+
+    if "records" not in response_body:
+        raise HTTPException(status_code=500, detail="Invalid response from PDS")
 
     posts = parse_obj_as(
-        List[RecordPost],
+        List[FrontendPost],
         [
             {
-                "title": record.value.title,
-                "description": record.value.description,
-                "urls": record.value.urls,
-                "tags": record.value.tags,
-                "collection": record.uri.split("/")[-2],
-                "rkey": record.uri.split("/")[-1],
-                "created_at": datetime.fromisoformat(record.value.created_at),
+                "note": record["value"]["note"],
+                "urls": record["value"]["urls"],
+                "tags": record["value"]["tags"],
+                "collection": record["uri"].split("/")[-2],
+                "rkey": record["uri"].split("/")[-1],
+                "created_at": datetime.fromisoformat(record["value"]["created_at"]),
                 "time_elapsed": time_elapsed(
-                    datetime.fromisoformat(record.value.created_at)
+                    datetime.fromisoformat(record["value"]["created_at"])
                 ),
             }
-            for record in response.records
+            for record in response_body["records"]
         ],
     )
 

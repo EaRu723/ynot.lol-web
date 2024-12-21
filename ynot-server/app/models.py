@@ -109,15 +109,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# class RecordPost(BaseModel):
-#     title: str
-#     description: str
-#     urls: List[str]
-#     tags: List[str]
-#     collection: Optional[str] = None
-#     rkey: Optional[str] = None
-#     created_at: datetime = Field(default_factory=datetime.now)
-#     time_elapsed: Optional[str] = None
+class FrontendPost(BaseModel):
+    note: str
+    urls: List[str]
+    tags: List[str]
+    collection: Optional[str] = None
+    rkey: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    time_elapsed: Optional[str] = None
 
 class RecordPost(BaseModel):
     note: str
@@ -125,7 +124,8 @@ class RecordPost(BaseModel):
     urls: List[str]
     createdAt: datetime = Field(default_factory=datetime.now)
 
-class DeletePost(BaseModel):
+
+class RecordDelete(BaseModel):
     collection: str
     rkey: str
     class Config:

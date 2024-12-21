@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from atproto import models
 from app.models import (
-    DeletePost,
+    RecordDelete,
     RefreshToken,
     Site,
     Tag,
@@ -244,13 +244,7 @@ async def post_record(
         "record": record_data,
     }
 
-    print(body)
-    print(type(body))
-
     response = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
-    print(f"Response Status Code: {response.status_code}")
-    print(f"Response Headers: {response.headers}")
-    print(f"Response Body: {response.text}")
 
     if "uri" not in response.json():
         raise HTTPException(status_code=500, detail="Failed to create record")
@@ -292,29 +286,22 @@ async def edit_record(
 
 @router.delete("/post")
 async def delete_record(
-    request: DeletePost, current_user: User = Depends(get_current_active_user)
+    request: RecordDelete, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
 ):
-    client = get_async_client()
-    if not current_user.session:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing atproto session. Please re-authenticate.",
-        )
+    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.deleteRecord"
 
-    await client.login(session_string=current_user.session)
+    body = {
+        "repo": user.did,
+        "collection": request.collection,
+        "rkey": request.rkey
+    }
 
-    try:
-        response = await client.com.atproto.repo.delete_record(
-            models.ComAtprotoRepoDeleteRecord.Data(
-                repo=client.me.did, collection=request.collection, rkey=request.rkey
-            )
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to delete record: {str(e)}"
-        )
+    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+    print(resp)
 
-    return {"status": "Record deleted successfully", "commit": response.commit}
+
+
+    return {"status": "Record deleted successfully", "response": resp}
 
 
 @router.post("/token", response_model=Token)
