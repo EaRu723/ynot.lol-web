@@ -8,7 +8,7 @@ cd ynot-server/y-frontend
 npm run build
 ```
 
-Served at `http://localhost:8000`. Email [arnav@surve.dev](mailto:arnav@surve.dev) for questions.
+Served at `http://127.0.0.1:8000`. Email [arnav@surve.dev](mailto:arnav@surve.dev) for questions.
 
 **NOTE:** `npm run build` build should be used in development due to the way session authentication is set up for same URL cookies.
 Also note that this requires you use `127.0.0.1` instead of `localhost` *specifically*. This is to keep the environment
