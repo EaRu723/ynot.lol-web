@@ -38,7 +38,7 @@ async def resolve_handle_to_did(user: OAuthSession = Depends(login_required), db
 
 
 @router.get("/{handle}/posts", response_model=List[FrontendPost])
-async def get_posts(handle: str, collection: str = "com.y.post", user: OAuthSession = Depends(login_required), db = Depends(get_async_session)):
+async def get_posts(handle: str, collection: str = "com.y.post", user: OAuthSession = Depends(login_required), db = Depends(get_async_session)) -> List[FrontendPost]:
     did = await resolve_handle_to_did(user, db)
     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.listRecords"
 
