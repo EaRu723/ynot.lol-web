@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import PostModal from "./PostModal";
 import "../styles/PostPreview.css";
-import { refreshToken, handleLogout } from "../utils/auth";
 
 function PostPreview({ post, setPosts }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -20,7 +19,7 @@ function PostPreview({ post, setPosts }) {
     alert("Post link copied to clipboard!");
   };
 
-  const deletePost = async (collection, rkey) => {
+  const handleDelete = async (collection, rkey) => {
     const shouldDelete = window.confirm(
       "Are you sure you want to delete this post?"
     );
@@ -44,22 +43,14 @@ function PostPreview({ post, setPosts }) {
       if (response.ok) {
         alert("Post deleted successfully.");
         setPosts((prevPosts) => prevPosts.filter((post) => post.rkey !== rkey));
-      } else {
-        throw new Error("Failed to delete post");
       }
     } catch (error) {
-      alert(error.message);
+      console.error("Delete Post Error:", error);
+      alert(`An error occurred: ${error.message || "Unknown error"}`);
     }
   };
 
   const handleEdit = async (post) => {
-    const tokenRefreshed = await refreshToken();
-    if (!tokenRefreshed) {
-      alert("Session expired, please log in");
-      handleLogout();
-      return;
-    }
-
     setSelectedPost(post);
     setIsEditModalOpen(true);
   }
@@ -73,7 +64,6 @@ function PostPreview({ post, setPosts }) {
   return (
     <div className="post">
       <div className="post-header">
-        {/*<div className="post-title">{post.title}</div>*/}
         <div className="post-menu">
           <button className="menu-button" onClick={toggleMenu}>
             ⋮
@@ -87,12 +77,10 @@ function PostPreview({ post, setPosts }) {
               {isEditModalOpen && (
                 <PostModal
                   post={selectedPost}
-                  rkey={selectedPost.rkey}
                   onClose={handleCloseEditModal}
-                  setPosts={setPosts}
                 />
               )}
-              <button onClick={() => deletePost(post.collection, post.rkey)}>
+              <button onClick={() => handleDelete(post.collection, post.rkey)}>
                 Delete
               </button>
             </div>

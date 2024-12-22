@@ -1,36 +1,19 @@
 from typing import List
-from datetime import timedelta
-from fastapi import APIRouter, Depends, status, HTTPException, Response, Request
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-from atproto import models
 from app.models import (
+    RecordPost,
+    RecordPut,
     RecordDelete,
-    RefreshToken,
     Site,
     Tag,
     SiteBase,
     TagBase,
-    Token,
-    UserLogin,
-    RecordPost,
     OAuthSession,
 )
 from app.db.db import get_async_session
-from app.auth import (
-    User,
-    create_access_token,
-    get_current_active_user,
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_DAYS,
-    get_password_hash,
-    get_user,
-    create_refresh_token,
-    decode_refresh_token,
-)
-from app.clients import get_async_client
 from app.middleware.user_middleware import login_required
 from app.routers.oauth.atproto_oauth import pds_authed_req
 
@@ -216,26 +199,13 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
     return tags
 
 
-@router.post("/get-profile")
-async def get_profile(form_data: OAuth2PasswordRequestForm = Depends()):
-    client = get_async_client()
-    profile = await client.login(form_data.username, form_data.password)
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect handle or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return {"profile": profile}
-
-
 @router.post("/post")
 async def post_record(
     form_data: RecordPost, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
 ):
     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.createRecord"
 
-    record_data = form_data.dict()
+    record_data = form_data.model_dump()
 
     body = {
         "repo": user.did,
@@ -244,44 +214,37 @@ async def post_record(
         "record": record_data,
     }
 
-    response = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
 
-    if "uri" not in response.json():
+    if "uri" not in resp.json():
         raise HTTPException(status_code=500, detail="Failed to create record")
 
     return {
-        "response": response.json(),
+        "response": resp.json()
     }
 
 
 @router.put("/post")
 async def edit_record(
-    form_data: RecordPost, current_user: User = Depends(get_current_active_user)
+    request: RecordPut, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
 ):
-    client = get_async_client()
-    if not current_user.session:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing atproto session. Please re-authenticate.",
-        )
+    parsed_req = request.model_dump()
 
-    await client.login(session_string=current_user.session)
+    # Convert to type RecordPost to comply with the lexicon. This effectively drops the rkey field
+    # which we do not want in the record body but still want to include in the PDS request.
+    record_body = RecordPost(**parsed_req).model_dump()
 
-    record_data = form_data.model_dump()
+    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.putRecord"
 
-    response = await client.com.atproto.repo.put_record(
-        data=models.ComAtprotoRepoPutRecord.Data(
-            repo=client.me.did,
-            collection="com.ynot.post",
-            rkey=record_data.get("rkey"),
-            record=record_data,
-        )
-    )
+    body = {
+        "repo": user.did,
+        "collection": "com.y.post",
+        "rkey": parsed_req.get("rkey"),
+        "record": record_body,
+    }
 
-    if not response or not hasattr(response, "uri"):
-        raise HTTPException(status_code=500, detail="Failed to update record")
-
-    return {"response": response}
+    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+    return {"status": "Record updated successfully", "response": resp.json()}
 
 
 @router.delete("/post")
@@ -297,90 +260,7 @@ async def delete_record(
     }
 
     resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
-    print(resp)
-
-
-
-    return {"status": "Record deleted successfully", "response": resp}
-
-
-@router.post("/token", response_model=Token)
-async def login_for_access_token(
-    form_data: UserLogin,
-    db: AsyncSession = Depends(get_async_session),
-    response=Response,
-):
-    user = await get_user(db, form_data.handle)
-    if not user:
-        client = get_async_client()
-        try:
-            # verify credentials with ATProto
-            profile = await client.login(form_data.handle, form_data.password)
-        except Exception as e:
-            print(e)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid ATProto/Bluesky credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # Export session string
-        session_string = client.export_session_string()
-
-        # Add user to database
-        user_data = {
-            "handle": profile.handle,
-            "description": profile.description,
-            "hashed_password": get_password_hash(form_data.password),
-            "session": session_string,
-            "disabled": False,
-        }
-        new_user = User(**user_data)
-        db.add(new_user)
-        await db.commit()
-        user = new_user
-
-    # Generate JWT token
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = await create_access_token(
-        db=db, data={"sub": user.handle}, expires_delta=access_token_expires
-    )
-    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    refresh_token = create_refresh_token(data={"sub": user.handle})
-
-    response = Response()
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="Lax",
-        max_age=refresh_token_expires.total_seconds(),
-        path="/token/refresh",
-    )
-
-    return {"access_token": access_token, "token_type": "bearer", "handle": user.handle}
-
-
-@router.post("/token/refresh", response_model=Token)
-async def refresh_token(request: RefreshToken):
-    """Refresh access token using refresh token"""
-    try:
-        payload = decode_refresh_token(request.refresh_token)
-        if not payload:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        new_token = create_refresh_token(data={"sub": payload["sub"]})
-        return {"access_token": new_token, "token_type": "bearer"}
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired or invalid",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return {"status": "Record deleted successfully", "response": resp.json()}
 
 @router.get("/whoami")
 async def whoami(request: Request, user: OAuthSession = Depends(login_required)):

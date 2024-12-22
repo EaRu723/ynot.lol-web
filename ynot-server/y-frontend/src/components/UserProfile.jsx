@@ -6,7 +6,6 @@ import Header from "./Header.jsx";
 
 function UserProfile() {
   const { handle } = useParams();
-  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,7 +21,6 @@ function UserProfile() {
         }
         const data = await response.json();
         setPosts(data);
-        console.log(data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -47,7 +45,6 @@ function UserProfile() {
       <div className="posts-container">
         {posts.map((post) => (
           <PostPreview
-            key={post.rkey}
             post={post}
             setPosts={setPosts}
           />

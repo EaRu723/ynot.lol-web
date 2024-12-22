@@ -19,7 +19,6 @@ function App() {
   const [filteredSites, setFilteredSites] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userHandle, setUserHandle] = useState("");
-  const [userDid, setUserDid] = useState("");
 
   const fetchSites = async () => {
     try {
@@ -42,7 +41,7 @@ function App() {
     }
   };
 
-  useEffect(() => {
+  useEffect( () => {
     fetchSites();
     fetchTags();
     checkAuthentication();
@@ -75,7 +74,6 @@ function App() {
         const data = await response.json();
         setIsLoggedIn(true);
         setUserHandle(data.user.handle);
-        setUserDid(data.user.did);
       } else {
         setIsLoggedIn(false);
       }

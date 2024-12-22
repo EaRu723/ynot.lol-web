@@ -341,7 +341,7 @@ async def pds_dpop_jwt(
     return dpop_proof
 
 
-# Helper to demonstrate making a request (HTTP GET or POST) to the user's PDS ("Resource Server" in OAuth terminology) using DPoP and access token.
+# Helper to make a request (HTTP GET or POST) to the user's PDS ("Resource Server" in OAuth terminology) using DPoP and access token.
 # This method returns a 'requests' response, without checking status code.
 async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSession, body=None) -> Any:
     dpop_private_jwk = JsonWebKey.import_key(json.loads(user.dpop_private_jwk))
@@ -352,7 +352,7 @@ async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSes
     if body:
         body = json.loads(json.dumps(body, default=str))
 
-    # Might need to retry request with a new nonce.
+    # Usually need to retry request with a new nonce
     for i in range(2):
         dpop_jwt = await pds_dpop_jwt(
             method,
@@ -392,6 +392,8 @@ async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSes
         print(f"Response Headers: {resp.headers}")
         print(f"Response Body: {resp.text}")
 
+        if resp.status_code in [200, 201]:
+            return resp
 
         # Handle 401 (expired token)
         if resp.status_code == 401 and "invalid_token" in resp.text:
@@ -421,7 +423,6 @@ async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSes
             continue
 
         # If we got a new server-provided DPoP nonce, store it in database and retry.
-        # if resp.json()["error"] == "use_dpop_nonce":
         if "dpop-nonce" in resp.headers:
             print(resp.headers)
             dpop_pds_nonce = resp.headers["DPoP-Nonce"]
@@ -435,6 +436,7 @@ async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSes
                     .values(dpop_authserver_nonce=dpop_pds_nonce)
                 )
             continue
+
         break
 
     return resp

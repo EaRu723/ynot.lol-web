@@ -1,8 +1,7 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic.deprecated.tools import parse_obj_as
-from app.models import FrontendPost
-from app.clients import get_async_client
+from app.models import FrontendPost, OAuthSession
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
 
@@ -26,20 +25,21 @@ def time_elapsed(created_at: datetime) -> str:
         return f"{delta.days}d"
 
 
-async def resolve_handle_to_did(handle: str) -> str:
+async def resolve_handle_to_did(user: OAuthSession = Depends(login_required), db = Depends(get_async_session)) -> str:
+    req_url = f"{user.pds_url}/xrpc/com.atproto.identity.resolveHandle"
     try:
-        client = get_async_client()
-        response = await client.com.atproto.identity.resolve_handle({"handle": handle})
-        return response.did
-    except Exception:
+        response = await pds_authed_req("GET", req_url, user=user, db=db, body={"handle": user.handle})
+        return response.json()["did"]
+    except Exception as e:
+        print(e)
         raise HTTPException(
-            status_code=404, detail=f"Unable to resolve handle: {handle}"
+            status_code=404, detail=f"Unable to resolve handle: {user.handle}"
         )
 
 
 @router.get("/{handle}/posts", response_model=List[FrontendPost])
-async def get_posts(handle: str, collection: str = "com.y.post", user = Depends(login_required), db = Depends(get_async_session)):
-    did = await resolve_handle_to_did(handle)
+async def get_posts(handle: str, collection: str = "com.y.post", user: OAuthSession = Depends(login_required), db = Depends(get_async_session)):
+    did = await resolve_handle_to_did(user, db)
     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.listRecords"
 
     params = {

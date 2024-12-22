@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../styles/PostModal.css";
-import { refreshToken } from "../utils/auth";
 
-function PostModal({ onClose, post = null }) {
+function PostModal({ post, onClose = null }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [urlFieldsCount, setUrlFieldsCount] = useState(post ? post.urls.length : 1);
   const [urls, setUrls] = useState(post ? post.urls : [""]);
@@ -71,6 +70,10 @@ function PostModal({ onClose, post = null }) {
       urls: validUrls,
       tags,
     };
+
+    if (post && post.rkey) {
+      payload.rkey = post.rkey;
+    }
 
     const response = await fetch(`${API_URL}/post`, {
       method: post ? "PUT" : "POST",

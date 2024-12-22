@@ -1,0 +1,35 @@
+{
+  "lexicon": 1,
+  "id": "com.y.post",
+  "type": "record",
+  "record": {
+    "type": "object",
+    "required": ["note", "createdAt"],
+    "properties": {
+      "note": {
+        "type": "string",
+        "description": "The content of the post"
+      },
+      "tags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "List of tags associated with the post"
+      },
+      "urls": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "format": "uri"
+        },
+        "description": "List of URLs associated with the post"
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "datetime",
+        "description": "Time of post creation"
+      }
+    }
+  }
+}

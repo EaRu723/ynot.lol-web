@@ -34,22 +34,12 @@ class Site(Base):
     tags = relationship("Tag", secondary=site_tag_association, back_populates="sites")
 
 
-class User(Base):
-    __tablename__ = "users"
-    handle = Column(String, primary_key=True, index=True)
-    description = Column(String, nullable=True)
-    disabled = Column(Boolean, nullable=True)
-    hashed_password = Column(String, nullable=False)
-    session = Column(String, nullable=True)
-
-
 class TagBase(BaseModel):
     id: int
     name: str
 
     class Config:
         from_attributes = True
-
 
 class SiteBase(BaseModel):
     id: int
@@ -58,71 +48,33 @@ class SiteBase(BaseModel):
     email: str
     url: str
     site_metadata: Optional[str] = None
-    tags: List[TagBase] = []
+    tags: List[TagBase] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
-
-
-class UserLogin(BaseModel):
-    handle: str
-    password: str
-
-
-class UserBase(BaseModel):
-    handle: str
-    description: str | None = None
-    disabled: bool | None = None
-
-    class Config:
-        from_attributes = True
-
-
-class UserCreate(BaseModel):
-    handle: str
-    password: str
-    description: str | None = None
-    disabled: bool | None = None
-
-
-class UserInDB(UserBase):
-    hashed_password: str
-    session: Optional[str] = None
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    handle: str
-
-
-class RefreshToken(BaseModel):
-    refresh_token: str
-
-
-class TokenData(BaseModel):
-    handle: Optional[str] = None
-
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
 
 
 class FrontendPost(BaseModel):
     note: str
     urls: List[str]
     tags: List[str]
-    collection: Optional[str] = None
-    rkey: Optional[str] = None
+    collection: str = None
+    rkey: str = None
     created_at: datetime = Field(default_factory=datetime.now)
-    time_elapsed: Optional[str] = None
+    time_elapsed: str = None
 
 class RecordPost(BaseModel):
     note: str
     tags: List[str]
     urls: List[str]
-    createdAt: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.now)
+
+class RecordPut(BaseModel):
+    note: str
+    tags: List[str]
+    urls: List[str]
+    rkey: str
+    created_at: datetime = Field(default_factory=datetime.now)
 
 
 class RecordDelete(BaseModel):
