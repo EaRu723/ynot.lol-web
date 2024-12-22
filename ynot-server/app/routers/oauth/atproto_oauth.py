@@ -201,7 +201,7 @@ async def initial_token_request(
 
     # Construct auth token request fields
     client_id = "https://ynot.lol/client-metadata.json"
-    redirect_uri = "http://127.0.0.1:8000/api/oauth/callback"
+    redirect_uri = f"{settings.app_url}/api/oauth/callback"
 
     # Self-signed JWT using the private key declared in client metadata JWKS (confidential client)
     client_assertion = await client_assertion_jwt(
