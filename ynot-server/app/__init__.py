@@ -38,8 +38,8 @@ app.add_middleware(
     secret_key=settings.session_secret,
     session_cookie="cookie",
     same_site="Lax",
-    domain="127.0.0.1",
-    https_only=False, # TODO set True in production for https
+    domain="ynot.lol",
+    https_only=True, # TODO set True in production for https
     max_age=3600 * 24 * 7 # Session expires in 7 days
 )
 
