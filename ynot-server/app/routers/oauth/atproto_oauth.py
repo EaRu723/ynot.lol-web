@@ -343,9 +343,16 @@ async def pds_dpop_jwt(
 
 # Helper to make a request (HTTP GET or POST) to the user's PDS ("Resource Server" in OAuth terminology) using DPoP and access token.
 # This method returns a 'requests' response, without checking status code.
-async def pds_authed_req(method: str, url: str, user: OAuthSession, db: AsyncSession, body=None) -> Any:
-    # dpop_private_jwk = JsonWebKey.import_key(json.loads(user.dpop_private_jwk))
-    dpop_private_jwk = JsonWebKey.import_key(user.dpop_private_jwk)
+async def pds_authed_req(method: str, url: str, user, db: AsyncSession, body=None) -> Any:
+    # Ensure `dpop_private_jwk` is a dictionary
+    if isinstance(user.dpop_private_jwk, str):
+        # Convert JSON string to Python dictionary
+        dpop_private_jwk = json.loads(user.dpop_private_jwk)
+    else:
+        # Use it as-is if already a dictionary
+        dpop_private_jwk = user.dpop_private_jwk
+
+    dpop_private_jwk = JsonWebKey.import_key(dpop_private_jwk)
     dpop_pds_nonce = user.dpop_authserver_nonce
     access_token = user.access_token
 
