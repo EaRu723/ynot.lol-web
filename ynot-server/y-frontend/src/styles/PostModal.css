@@ -70,3 +70,12 @@
   cursor: pointer;
   font-size: 1rem;
 }
+
+.close {
+  position: absolute;
+  top: 10px;
+  left: 10px; /* Align to the left */
+  background: none;
+  border: none;
+  cursor: pointer;
+}
