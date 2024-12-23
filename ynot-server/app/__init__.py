@@ -32,15 +32,26 @@ app.add_middleware(
     LoadUserMiddleware
 )
 
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=settings.session_secret,
-    session_cookie="cookie",
-    same_site="Lax",
-    domain="127.0.0.1",
-    https_only=False, # TODO set True in production for https
-    max_age=3600 * 24 * 7 # Session expires in 7 days
-)
+if settings.app_env == "development":
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.session_secret,
+        session_cookie="session",
+        same_site="Lax",
+        domain="127.0.0.1",
+        https_only=False,
+        max_age=3600 * 24 * 7 # Session expires in 7 days
+    )
+elif settings.app_env == "production":
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.session_secret,
+        session_cookie="session",
+        same_site="Lax",
+        domain="ynot.lol",
+        https_only=True,
+        max_age=3600 * 24 * 7 # Session expires in 7 days
+    )
 
 
 # app.include_router(views.router)
