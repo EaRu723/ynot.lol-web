@@ -36,9 +36,9 @@ APP_PORT=8000
 APP_ENV=development
 
 APP_URL=http://127.0.0.1:8000
-ATPROTOCOL_CLIENT_ID=http://ynot.lol/client-metadata.json
+ATPROTOCOL_CLIENT_ID=https://ynot.lol/client-metadata.json
 ATPROTOCOL_CLIENT_SECRET=your-client-secret
-ATPROTOCOL_REDIRECT_URI=http://ynot.lol/oauth/callback
+ATPROTOCOL_REDIRECT_URI=https://ynot.lol/oauth/callback
 PATH_TO_PRIVATE_KEY=path-to-your-private-key
 
 
