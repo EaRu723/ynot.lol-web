@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete
 
 from app.models import OAuthAuthRequest, OAuthSession
 from app.config import settings
@@ -18,7 +18,6 @@ from app.routers.oauth.atproto_oauth import (fetch_authserver_meta,
                                              send_par_auth_request,
                                              initial_token_request)
 from app.routers.oauth.atproto_security import is_safe_url
-from app.routers.oauth.atproto_oauth import refresh_token_request
 from app.middleware.user_middleware import login_required
 
 router = APIRouter()
@@ -206,26 +205,6 @@ async def oauth_callback(
     print(request.session.get("user_handle"))
 
     return RedirectResponse(url="/")
-
-@router.get("/refresh")
-async def oauth_refresh(request: Request, db = Depends(get_async_session), user = Depends(login_required)):
-    tokens, dpop_authserver_nonce = await refresh_token_request(
-        request.session.get(user), settings.app_url, private_jwk
-    )
-
-    user_did = request.session.pop("user_did", None)
-
-    try:
-        query = update(OAuthSession).where(OAuthSession.did == user_did)
-        await db.execute(query)
-        await db.commit()
-    except SQLAlchemyError:
-        await db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to update session")
-
-    return RedirectResponse("/")
-
-
 
 @router.get("/logout")
 async def oauth_logout(request: Request, db: AsyncSession = Depends(get_async_session), user=Depends(login_required)) -> dict:
