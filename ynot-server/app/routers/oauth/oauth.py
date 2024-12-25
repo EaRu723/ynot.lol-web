@@ -65,7 +65,6 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
 
     scope = "atproto transition:generic"
 
-    # app_url = str(request.base_url).replace("http://", "https://")
     # redirect_uri = f"{app_url}/api/oauth/callback"
     # client_id = f"{app_url}oauth/client-metadata.json"
     redirect_uri = f"{settings.app_url}/api/oauth/callback"

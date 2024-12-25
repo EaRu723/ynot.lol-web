@@ -4,7 +4,8 @@ import UserProfile from "./components/UserProfile";
 import OAuthLogin from "./components/OAuthLogin";
 import "./styles/styles.css";
 import Whoami from "./components/Whoami.jsx";
-import OldHomepage from "./components/OldHomepage.jsx"
+import DiscoverPage from "./components/DiscoverPage.jsx"
+import PostStream from "./components/PostStream.jsx";
 
 
 function App() {
@@ -46,7 +47,7 @@ function App() {
         <Route
             path="/"
             element={
-              <OldHomepage
+              <DiscoverPage
                   API_URL={API_URL}
                   isLoggedIn={isLoggedIn}
                   setIsLoggedIn={setIsLoggedIn}

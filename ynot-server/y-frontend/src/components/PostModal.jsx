@@ -3,11 +3,9 @@ import "../styles/PostModal.css";
 
 function PostModal({ post, onClose = null }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
-  const [urlFieldsCount, setUrlFieldsCount] = useState(post ? post.urls.length : 1);
-  const [urls, setUrls] = useState(post ? post.urls : [""]);
+  const [urls, setUrls] = useState(post ? post.urls : []);
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
-  const [tagInput, setTagInput] = useState("");
 
   useEffect(() => {
     if (post) {
@@ -17,35 +15,28 @@ function PostModal({ post, onClose = null }) {
     }
   }, [post]);
 
-  const handleAddUrlField = () => {
-    if (urlFieldsCount >= 3) return;
-    setUrls([...urls, ""]);
-    setUrlFieldsCount(urlFieldsCount + 1);
+  const extractUrlsAndTags = (text) => {
+    // Extract URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const extractedUrls = [...text.matchAll(urlRegex)].map((match) => match[0]);
+
+    // Extract Tags
+    const tagRegex = /#(\w+)/g;
+    const extractedTags = [...text.matchAll(tagRegex)].map((match) => match[1]);
+
+    return { urls: extractedUrls, tags: extractedTags };
   };
 
-  const handleUrlChange = (index, value) => {
-    const newUrls = [...urls];
-    newUrls[index] = value;
+  const handleNoteChange = (e) => {
+    const newNote = e.target.value;
+    setNote(newNote);
+
+    // Extract URLs and Tags from the note
+    const { urls: newUrls, tags: newTags } = extractUrlsAndTags(newNote);
+
+    // Update URLs and Tags
     setUrls(newUrls);
-  };
-
-  const handleTagChange = (e) => {
-    setTagInput(e.target.value);
-  };
-
-  const handleTagKeyDown = (e) => {
-    if ((e.key === "Enter" || e.key === " ") && tagInput.trim() !== "") {
-      e.preventDefault();
-      const newTag = tagInput.trim().startsWith("#") ? tagInput.trim().slice(1) : tagInput.trim();
-      if (newTag && !tags.includes(newTag)) {
-        setTags([...tags, newTag]);
-      }
-      setTagInput("");
-    } else if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
-      const newTags = [...tags];
-      newTags.pop();
-      setTags(newTags);
-    }
+    setTags(newTags);
   };
 
   const handleRemoveTag = (index) => {
@@ -75,21 +66,31 @@ function PostModal({ post, onClose = null }) {
       payload.rkey = post.rkey;
     }
 
-    const response = await fetch(`${API_URL}/post`, {
-      method: post ? "PUT" : "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload),
-    });
+    const request = async () => {
+      return await fetch(`${API_URL}/post`, {
+        method: post ? "PUT" : "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    };
 
+    const response = await request();
     if (response.ok) {
       alert(`Post ${post ? "updated" : "created"} successfully`);
       e.target.reset();
       onClose();
     } else {
-      alert(`Post ${post ? "update" : "creation"} failed`);
+      const newResp = await request();
+      if (newResp.ok) {
+        alert(`Post ${post ? "updated" : "created"} successfully`);
+        e.target.reset();
+        onClose();
+      } else {
+        alert(`Post ${post ? "update" : "creation"} failed`);
+      }
     }
   };
 
@@ -103,71 +104,58 @@ function PostModal({ post, onClose = null }) {
   };
 
   return (
-    <div className="modal">
-      <div className="modal-content">
-        <div>
-          <span className="close" onClick={onClose} style={{cursor: "pointer"}}>
+      <div className="modal">
+        <div className="modal-content">
+          <div>
+          <span className="close" onClick={onClose} style={{ cursor: "pointer" }}>
             &times;
           </span>
-        </div>
-        <h2>{post ? "Edit" : "Post"}</h2>
-        <form id="post-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="note">Note:</label>
-            <textarea
-              id="note"
-              name="note"
-              rows="4"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            ></textarea>
           </div>
-          <div className="form-group" style={{ gap: "0.5rem" }}>
-            <label htmlFor="urls">Link(s):</label>
-            <div id="url-container">
-              {urls.map((url, index) => (
-                <input
-                  key={index}
-                  type="text"
-                  name="urls"
-                  placeholder="URL://"
-                  value={url}
-                  onChange={(e) => handleUrlChange(index, e.target.value)}
-                />
-              ))}
+          <h2>{post ? "Edit" : "Post"}</h2>
+          <form id="post-form" onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="note">Note:</label>
+              <textarea
+                  id="note"
+                  name="note"
+                  rows="4"
+                  value={note}
+                  onChange={handleNoteChange}
+              ></textarea>
             </div>
-            <button type="button" onClick={handleAddUrlField} id="addUrlFieldButton">
-              +
-            </button>
-          </div>
-          <div className="form-group">
-            <label htmlFor="tags">Tags:</label>
-            <input
-              type="text"
-              id="tags"
-              name="tags"
-              placeholder="#art #tech #blog"
-              value={tagInput}
-              onChange={handleTagChange}
-              onKeyDown={handleTagKeyDown}
-            />
-            <div className="tags-container">
-              {tags.map((tag, index) => (
-                <span key={index} className="tag">
+            <div className="form-group">
+              <label htmlFor="urls">Detected Links:</label>
+              <div id="url-container">
+                {urls.map((url, index) => (
+                    <div key={index} className="url-item">
+                      {url}
+                    </div>
+                ))}
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="tags">Detected Tags:</label>
+              <div className="tags-container">
+                {tags.map((tag, index) => (
+                    <span key={index} className="tag">
                   #{tag}
-                  <button type="button" className="remove-tag" onClick={() => handleRemoveTag(index)}>
+                      <button
+                          type="button"
+                          className="remove-tag"
+                          onClick={() => handleRemoveTag(index)}
+                      >
                     &times;
                   </button>
                 </span>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="form-group">
-            <button type="submit">{post ? "Update" : "Submit"}</button>
-          </div>
-        </form>
+            <div className="form-group">
+              <button type="submit">{post ? "Update" : "Submit"}</button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
   );
 }
 

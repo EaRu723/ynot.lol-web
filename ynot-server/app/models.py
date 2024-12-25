@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -20,6 +20,7 @@ class Tag(Base):
     __tablename__ = "tags"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, unique=True, index=True)
+
     sites = relationship("Site", secondary=site_tag_association, back_populates="tags")
 
 
@@ -56,6 +57,8 @@ class SiteBase(BaseModel):
 
 class FrontendPost(BaseModel):
     note: str
+    did: Optional[str] = None
+    handle: Optional[str] = None
     urls: List[str]
     tags: List[str]
     collection: str = None
@@ -75,7 +78,6 @@ class RecordPut(BaseModel):
     urls: List[str]
     rkey: str
     created_at: datetime = Field(default_factory=datetime.now)
-
 
 class RecordDelete(BaseModel):
     collection: str
@@ -121,3 +123,16 @@ class OAuthSession(Base):
     refresh_token = Column(String)
     dpop_authserver_nonce = Column(String)
     dpop_private_jwk = Column(JSON, nullable=False)
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    did = Column(String, nullable=False)
+    handle = Column(String, nullable=False)
+    rkey = Column(String, unique=True, nullable=False, index=True)
+    note = Column(Text, nullable=False)
+    tags = Column(JSON, nullable=True)
+    urls = Column(JSON, nullable=True)
+    collection = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False)
