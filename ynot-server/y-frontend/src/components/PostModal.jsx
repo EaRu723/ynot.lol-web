@@ -124,17 +124,6 @@ function PostModal({ post, onClose = null }) {
               ></textarea>
             </div>
             <div className="form-group">
-              <label htmlFor="urls">Detected Links:</label>
-              <div id="url-container">
-                {urls.map((url, index) => (
-                    <div key={index} className="url-item">
-                      {url}
-                    </div>
-                ))}
-              </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="tags">Detected Tags:</label>
               <div className="tags-container">
                 {tags.map((tag, index) => (
                     <span key={index} className="tag">

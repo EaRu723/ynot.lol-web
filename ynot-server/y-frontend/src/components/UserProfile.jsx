@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import PostPreview from "./PostPreview";
 import "../styles/UserProfile.css";
 import Header from "./Header.jsx";
+import TimelinePosts from "./TimelinePosts.jsx";
 
 function UserProfile() {
   const { handle } = useParams();
@@ -43,12 +44,11 @@ function UserProfile() {
       </div>
       <div className="posts-header">Posts</div>
       <div className="posts-container">
-        {posts.map((post) => (
-          <PostPreview
-            post={post}
+          <TimelinePosts
+            posts={posts}
             setPosts={setPosts}
+            apiUrl={API_URL}
           />
-        ))}
       </div>
     </div>
   );

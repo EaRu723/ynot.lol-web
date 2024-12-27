@@ -130,7 +130,7 @@ function DiscoverPage({API_URL, isLoggedIn, setIsLoggedIn, userHandle, setUserHa
                     </button>
                 ))}
             </div>
-            <div style={{padding: "10px"}}>
+            <div style={{padding: "10px", marginTop: "15px"}}>
                 <div>
                     <PostStream />
                 </div>

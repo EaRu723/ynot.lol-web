@@ -77,18 +77,47 @@ function PostStream() {
     );
 }
 
-function PostItem({post}) {
+function PostItem({ post }) {
     const [expanded, setExpanded] = useState(false);
     const [isOverflowing, setIsOverflowing] = useState(false);
+    const [contentHeight, setContentHeight] = useState("auto");
     const textRef = useRef(null);
 
-    // Check if content overflows the two-line limit
     useEffect(() => {
         if (textRef.current) {
-            const maxHeight = 48; // Approximate max height for two lines (adjust as needed)
-            setIsOverflowing(textRef.current.scrollHeight > maxHeight);
+            const maxHeight = 72; // Approximate height for three lines
+            if (textRef.current.scrollHeight > maxHeight) {
+                setIsOverflowing(true);
+                setContentHeight(`${maxHeight}px`);
+            } else {
+                setIsOverflowing(false);
+                setContentHeight("auto"); // Fit the content
+            }
         }
     }, [post.note]);
+
+    // Function to parse text and make URLs clickable
+    const renderTextWithLinks = (text) => {
+        const urlRegex = /(https?:\/\/[^\s]+)/g; // Regex to match URLs
+        const parts = text.split(urlRegex);
+
+        return parts.map((part, index) => {
+            if (urlRegex.test(part)) {
+                return (
+                    <a
+                        key={index}
+                        href={part}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#007bff", textDecoration: "underline" }}
+                    >
+                        {part}
+                    </a>
+                );
+            }
+            return part;
+        });
+    };
 
     return (
         <div
@@ -100,7 +129,9 @@ function PostItem({post}) {
                 boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.1)",
             }}
         >
-            <small style={{margin: "0 0 8px 0", display: "block", color: "#555"}}>@{post.handle}</small>
+            <small style={{ margin: "0 0 8px 0", display: "block", color: "#555" }}>
+                @{post.handle}
+            </small>
             <pre
                 ref={textRef}
                 style={{
@@ -108,12 +139,12 @@ function PostItem({post}) {
                     overflow: "hidden",
                     whiteSpace: "pre-wrap",
                     textOverflow: "ellipsis",
-                    height: expanded ? "auto" : "48px", // Adjust height for two lines
+                    height: expanded ? "auto" : contentHeight, // Dynamic height
                     position: "relative",
                     transition: "height 0.3s ease",
                 }}
             >
-                {post.note}
+                {renderTextWithLinks(post.note)}
                 {!expanded && isOverflowing && (
                     <span
                         style={{
@@ -139,10 +170,10 @@ function PostItem({post}) {
                         marginBottom: "5px",
                     }}
                 >
-                    {expanded ? "Close" : "..."}
+                    {expanded ? "Collapse" : "Expand"}
                 </span>
             )}
-            <small style={{color: "#888"}}>
+            <small style={{ color: "#888" }}>
                 {new Date(post.created_at).toLocaleString()}
             </small>
         </div>
