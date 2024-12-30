@@ -4,12 +4,15 @@ from typing import List
 from atproto_identity.resolver import AsyncDidResolver, AsyncHandleResolver
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic.deprecated.tools import parse_obj_as
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models import FrontendPost, OAuthSession, UserPost, User
+from app.models import FrontendPost, OAuthSession, UserPost, User, UserReq
 from app.routers.oauth.atproto_oauth import pds_authed_req
+from app.routers.oauth.oauth import fetch_bsky_profile
 
 router = APIRouter()
 
@@ -51,6 +54,8 @@ async def get_posts(handle: str, collection: str = "com.y.post", user: OAuthSess
         [
             {
                 "note": record["value"]["note"],
+                "did": did,
+                "handle": handle,
                 "urls": record["value"]["urls"],
                 "tags": record["value"]["tags"],
                 "collection": record["uri"].split("/")[-2],
@@ -99,5 +104,14 @@ async def post_profile(form_data: UserPost, user: OAuthSession = Depends(login_r
     return {"status": "Record created successfully", "response": resp.json()}
 
 
-# @router.get("/{handle}/profile", response_model=UserBase)
-# async def get_profile(handle: str)
+@router.get("/{handle}/profile", response_model=UserReq)
+async def get_profile(handle: str, db: AsyncSession = Depends(get_async_session)):
+    result = await db.execute(
+        select(User).where(User.handle == handle)
+    )
+    user = result.scalars().first()
+    if user is None:
+        res = await fetch_bsky_profile(handle)
+        return res
+
+    return user

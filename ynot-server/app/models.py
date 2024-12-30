@@ -59,8 +59,8 @@ class SiteBase(BaseModel):
 
 class FrontendPost(BaseModel):
     note: str
-    did: Optional[str] = None
-    handle: Optional[str] = None
+    did: str = None
+    handle: str = None
     urls: List[str]
     tags: List[str]
     collection: str
@@ -147,6 +147,14 @@ class User(Base):
 
 
 class UserPost(BaseModel):
+    display_name: str
+    bio: Optional[str] = ""
+    avatar: str
+    banner: str
+
+class UserReq(BaseModel):
+    did: str
+    pds_url: str
     display_name: str
     bio: Optional[str] = ""
     avatar: str

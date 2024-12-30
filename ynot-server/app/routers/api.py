@@ -406,5 +406,5 @@ async def get_recent_posts(
 
 
 @router.get("/whoami")
-async def whoami(request: Request, user: OAuthSession = Depends(login_required)):
+async def whoami(user: OAuthSession = Depends(login_required)):
     return {"user": {"handle": user.handle, "did": user.did}}

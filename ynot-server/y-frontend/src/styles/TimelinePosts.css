@@ -2,7 +2,7 @@
 .timeline-container {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    row-gap: 2rem;
     max-width: 600px;
     margin: 0 auto;
     padding: 1rem;
@@ -10,7 +10,7 @@
 
 .timeline-group {
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Default for grouping */
     gap: 1rem;
     position: relative;
 }
@@ -18,15 +18,15 @@
 .timeline-date {
     display: flex;
     align-items: center;
-    margin-bottom: 1rem;
     font-size: 1rem;
     color: #374151;
+    margin-left: 0; /* Ensure no unintended left margin */
 }
 
 .timeline-marker {
     display: flex;
     align-items: center;
-    margin-right: 1rem;
+    margin-right: 0.5rem; /* Reduce marker space */
 }
 
 .timeline-dot {
@@ -34,23 +34,27 @@
     height: 6px;
     background-color: #3b82f6;
     border-radius: 50%;
-    margin-right: 0.25rem;
+    margin-right: 0.25rem; /* Adjust spacing around the dot */
 }
 
-/* Post Styling */
 .posts-group {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    margin-left: 1.5rem; /* Align posts with the timeline marker */
+}
+
+@media (max-width: 600px) {
+    .posts-group {
+        margin-left: 0; /* Remove unnecessary margin on smaller screens */
+    }
 }
 
 .post-card {
     background-color: #fff;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    /*border-radius: 8px;*/
     padding: 1rem;
+    margin: 0.5rem;
     position: relative;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);*/
 }
 
 .menu-container {

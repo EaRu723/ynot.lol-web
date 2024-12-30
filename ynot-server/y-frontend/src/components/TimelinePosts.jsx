@@ -57,7 +57,7 @@ const renderTextWithTagsAndLinks = (text) => {
     });
 };
 
-const PostCard = ({ post, setPosts, apiUrl }) => {
+const PostCard = ({ post, setPosts, apiUrl, isOwner }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const menuRef = useRef(null);
@@ -118,16 +118,20 @@ const PostCard = ({ post, setPosts, apiUrl }) => {
                     {menuOpen && (
                         <div className="menu-dropdown">
                             <button onClick={handleShare}>Share</button>
-                            <button onClick={handleEdit}>Edit</button>
-                            <button onClick={handleDelete} className="delete-button">
-                                Delete
-                            </button>
+                            {isOwner && (
+                                <>
+                                    <button onClick={handleEdit}>Edit</button>
+                                    <button onClick={handleDelete} className="delete-button">
+                                        Delete
+                                    </button>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
 
                 <div className="post-text">
-                    <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
+                <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
                 </div>
 
                 <div className="post-timestamp">{calculateTimeElapsed(post.created_at)}</div>
@@ -143,7 +147,7 @@ const PostCard = ({ post, setPosts, apiUrl }) => {
     );
 };
 
-const TimelinePosts = ({ posts, setPosts, apiUrl }) => {
+const TimelinePosts = ({ posts, setPosts, apiUrl, isLoggedIn, userHandle }) => {
     if (!Array.isArray(posts) || !posts.length) return <div>No posts to display</div>;
 
     const groupedPosts = groupPostsByDate(posts);
@@ -165,6 +169,7 @@ const TimelinePosts = ({ posts, setPosts, apiUrl }) => {
                                 post={post}
                                 setPosts={setPosts}
                                 apiUrl={apiUrl}
+                                isOwner={isLoggedIn && post.handle === userHandle}
                             />
                         ))}
                     </div>

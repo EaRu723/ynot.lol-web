@@ -27,11 +27,11 @@ private_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
 public_jwk = {"crv":"P-256","x":"PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE","y":"gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI","kty":"EC","kid":"demo-1734490496"}
 # assert "d" not in public_jwk, "Public JWK should not contain private key"
 
-async def fetch_bsky_profile(did, handle):
+async def fetch_bsky_profile(handle):
     """Fetch Bluesky profile data for a given DID or handle."""
     try:
         url = f"https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile"
-        params = {"actor": did or handle}
+        params = {"actor": handle}
         resp = requests.get(url, params=params)
 
         if resp.status_code == 200:
@@ -41,13 +41,15 @@ async def fetch_bsky_profile(did, handle):
                 "avatar": data.get("avatar", ""),
                 "banner": data.get("banner", ""),
                 "bio": data.get("description", ""),
+                "did": data.get("did", ""),
+                "pds_url": data.get("pds_url", ""),
             }
         else:
             print(f"Failed to fetch Bluesky profile: {resp.status_code}")
-            return {"display_name": "", "avatar": "", "banner": "", "bio": ""}
+            return {"display_name": "", "avatar": "", "banner": "", "bio": "", "did": "", "pds_url": ""}
     except Exception as e:
         print(f"Error fetching Bluesky profile: {e}")
-        return {"display_name": "", "avatar": "", "banner": "", "bio": ""}
+        return {"display_name": "", "avatar": "", "banner": "", "bio": "", "did": "", "pds_url": ""}
 
 
 @router.post("/login")
@@ -112,7 +114,7 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     # Resolve identity and fetch profile data if Bluesky user
     profile_data = {}
     if did:
-        profile_data = await fetch_bsky_profile(did, identifier)
+        profile_data = await fetch_bsky_profile(identifier)
 
     # Check if user already exists in the database
     user = await db.execute(select(User).where(User.did == did))
@@ -227,7 +229,7 @@ async def oauth_callback(
     existing_user = user.scalar()
 
     if not existing_user:
-        profile_data = await fetch_bsky_profile(did, handle)
+        profile_data = await fetch_bsky_profile(handle)
         new_user = User(
             did=did,
             handle=handle,
