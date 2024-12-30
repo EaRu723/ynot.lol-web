@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import Header from "./Header.jsx";
 import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
+import Linkify from 'react-linkify';
 
 function UserProfile({isLoggedIn, userHandle}) {
 	const { handle } = useParams();
@@ -53,7 +54,9 @@ function UserProfile({isLoggedIn, userHandle}) {
 			<div className="profile-info">
 				<h1>{profile.display_name || handle}</h1>
 				<p className="handle">@{handle}</p>
-				<p className="bio">{profile.bio}</p>
+				<p className="bio">
+					<Linkify>{profile.bio}</Linkify>
+				</p>
 			</div>
 			<div className="posts-header">Posts</div>
 			<div className="posts-container">
