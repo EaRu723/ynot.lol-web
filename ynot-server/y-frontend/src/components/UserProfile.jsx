@@ -4,22 +4,31 @@ import Header from "./Header.jsx";
 import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
 
-function UserProfile() {
+function UserProfile({isLoggedIn, userHandle}) {
 	const { handle } = useParams();
 	const [posts, setPosts] = useState([]);
+	const [profile, setProfile] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 	const API_URL = import.meta.env.VITE_API_BASE_URL;
 
+
 	useEffect(() => {
-		const fetchUserPosts = async () => {
+		const fetchUserData = async () => {
 			try {
-				const response = await fetch(`${API_URL}/user/${handle}/posts`);
-				if (!response.ok) {
+				const profileResponse = await fetch(`${API_URL}/user/${handle}/profile`);
+				if (!profileResponse.ok) {
+					throw new Error("Failed to fetch user profile");
+				}
+				const profileData = await profileResponse.json();
+				setProfile(profileData);
+
+				const postsResponse = await fetch(`${API_URL}/user/${handle}/posts`);
+				if (!postsResponse.ok) {
 					throw new Error("Failed to fetch user posts");
 				}
-				const data = await response.json();
-				setPosts(data);
+				const postsData = await postsResponse.json();
+				setPosts(postsData);
 			} catch (err) {
 				setError(err.message);
 			} finally {
@@ -27,7 +36,7 @@ function UserProfile() {
 			}
 		};
 
-		fetchUserPosts();
+		fetchUserData();
 	}, [handle]);
 
 	if (loading) return <div>Loading...</div>;
@@ -36,13 +45,19 @@ function UserProfile() {
 	return (
 		<div className="main">
 			<Header />
+			<div className="profile-banner" style={{ backgroundImage: `url(${profile.banner})` }}>
+				<div className="profile-avatar">
+					<img src={profile.avatar} alt={`${handle}'s avatar`} />
+				</div>
+			</div>
 			<div className="profile-info">
-				<h1>{handle}'s activity</h1>
+				<h1>{profile.display_name || handle}</h1>
 				<p className="handle">@{handle}</p>
+				<p className="bio">{profile.bio}</p>
 			</div>
 			<div className="posts-header">Posts</div>
 			<div className="posts-container">
-				<TimelinePosts posts={posts} setPosts={setPosts} apiUrl={API_URL} />
+				<TimelinePosts posts={posts} setPosts={setPosts} apiUrl={API_URL} isLoggedIn={isLoggedIn} userHandle={userHandle} />
 			</div>
 		</div>
 	);

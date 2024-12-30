@@ -5,7 +5,6 @@ import OAuthLogin from "./components/OAuthLogin";
 import "./styles/styles.css";
 import Whoami from "./components/Whoami.jsx";
 import DiscoverPage from "./components/DiscoverPage.jsx"
-import PostStream from "./components/PostStream.jsx";
 
 
 function App() {
@@ -56,7 +55,7 @@ function App() {
               />
             }
         />
-        <Route path="/:handle/profile" element={<UserProfile />} />
+        <Route path="/:handle/profile" element={<UserProfile isLoggedIn={isLoggedIn} userHandle={userHandle} />} />
         <Route path="/oauth/login" element={<OAuthLogin />} />
         <Route path="/whoami" element={<Whoami />} />
       </Routes>
