@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import PostModal from "./PostModal";
 import "../styles/PostPreview.css";
+import {calculateTimeElapsed} from "../utils/timeUtils.js";
 
 function PostPreview({ post, setPosts }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -77,7 +78,7 @@ function PostPreview({ post, setPosts }) {
                 style={{ color: "#007bff", textDecoration: "underline" }}
             >
               {part}
-            </a>
+          </a>
         );
       }
       return part;
@@ -106,15 +107,15 @@ function PostPreview({ post, setPosts }) {
           </div>
         </div>
         <pre className="post-description">
-        {renderTextWithLinks(post.note)}
-      </pre>
+          {renderTextWithLinks(post.note)}
+        </pre>
         <div className="post-tags">
           {post.tags.map((tag, index) => (
               <span key={index}>#{tag} </span>
           ))}
         </div>
         <div className="post-timestamp">
-          <small>{post.time_elapsed}</small>
+          <small>{calculateTimeElapsed(post.created_at)}</small>
         </div>
       </div>
   );
