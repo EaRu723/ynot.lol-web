@@ -1,6 +1,7 @@
 import json
 from urllib.parse import urlencode
 
+import requests
 from authlib.jose import JsonWebKey
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -8,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from app.models import OAuthAuthRequest, OAuthSession
+from app.models import OAuthAuthRequest, OAuthSession, User
 from app.config import settings
 from app.db.db import get_async_session
 from app.routers.oauth.atproto_identity import (is_valid_did, is_valid_handle,
@@ -25,6 +26,28 @@ router = APIRouter()
 private_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
 public_jwk = {"crv":"P-256","x":"PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE","y":"gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI","kty":"EC","kid":"demo-1734490496"}
 # assert "d" not in public_jwk, "Public JWK should not contain private key"
+
+async def fetch_bsky_profile(did, handle):
+    """Fetch Bluesky profile data for a given DID or handle."""
+    try:
+        url = f"https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile"
+        params = {"actor": did or handle}
+        resp = requests.get(url, params=params)
+
+        if resp.status_code == 200:
+            data = resp.json()
+            return {
+                "display_name": data.get("displayName", ""),
+                "avatar": data.get("avatar", ""),
+                "banner": data.get("banner", ""),
+                "bio": data.get("description", ""),
+            }
+        else:
+            print(f"Failed to fetch Bluesky profile: {resp.status_code}")
+            return {"display_name": "", "avatar": "", "banner": "", "bio": ""}
+    except Exception as e:
+        print(f"Error fetching Bluesky profile: {e}")
+        return {"display_name": "", "avatar": "", "banner": "", "bio": ""}
 
 
 @router.post("/login")
@@ -85,6 +108,33 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
         print(f"PAR HTTP 400: {resp.json()}")
     resp.raise_for_status()
     par_request_uri = resp.json()["request_uri"]
+
+    # Resolve identity and fetch profile data if Bluesky user
+    profile_data = {}
+    if did:
+        profile_data = await fetch_bsky_profile(did, identifier)
+
+    # Check if user already exists in the database
+    user = await db.execute(select(User).where(User.did == did))
+    existing_user = user.scalar()
+
+    if not existing_user:
+        new_user = User(
+            did=did,
+            handle=identifier,
+            display_name=profile_data.get("display_name", ""),
+            bio=profile_data.get("bio", ""),
+            avatar=profile_data.get("avatar", ""),
+            banner=profile_data.get("banner", ""),
+            pds_url=pds_url,
+        )
+        try:
+            db.add(new_user)
+            await db.commit()
+        except IntegrityError as e:
+            await db.rollback()
+            print(f"Failed to create user in the database: {e}")
+            raise HTTPException(status_code=500, detail="Failed to create user in the database")
 
     print(f"saving oauth_auth_request to DB for state {state}")
     try:
@@ -171,6 +221,30 @@ async def oauth_callback(
     # Verify scopes
     if row.scope != tokens.get("scope", ""):
         raise HTTPException(status_code=400, detail="Scope mismatch")
+
+    # Ensure user exists in the database, created in /oauth/login endpoint
+    user = await db.execute(select(User).where(User.did == did))
+    existing_user = user.scalar()
+
+    if not existing_user:
+        profile_data = await fetch_bsky_profile(did, handle)
+        new_user = User(
+            did=did,
+            handle=handle,
+            display_name=profile_data.get("display_name", ""),
+            bio=profile_data.get("bio", ""),
+            avatar=profile_data.get("avatar", ""),
+            banner=profile_data.get("banner", ""),
+            pds_url=pds_url,
+        )
+        try:
+            db.add(new_user)
+            await db.commit()
+        except IntegrityError as e:
+            await db.rollback()
+            print(f"Failed to create user in the database: {e}")
+            raise HTTPException(status_code=500, detail="Failed to create user in the database")
+
 
     # Save session in the database
     new_session = OAuthSession(

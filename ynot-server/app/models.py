@@ -2,11 +2,12 @@ from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Table, MetaData, JSON, Text, DateTime
+from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer,
+                        MetaData, String, Table, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-Base = declarative_base(metadata = MetaData())
+Base = declarative_base(metadata=MetaData())
 
 site_tag_association = Table(
     "site_tag_association",
@@ -42,6 +43,7 @@ class TagBase(BaseModel):
     class Config:
         from_attributes = True
 
+
 class SiteBase(BaseModel):
     id: int
     name: str
@@ -61,29 +63,33 @@ class FrontendPost(BaseModel):
     handle: Optional[str] = None
     urls: List[str]
     tags: List[str]
-    collection: str = None
-    rkey: str = None
-    created_at: datetime = Field(default_factory=datetime.now)
-    time_elapsed: str = None
+    collection: str
+    rkey: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class RecordPost(BaseModel):
     note: str
     tags: List[str]
     urls: List[str]
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class RecordPut(BaseModel):
     note: str
     tags: List[str]
     urls: List[str]
     rkey: str
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
 
 class RecordDelete(BaseModel):
     collection: str
     rkey: str
+
     class Config:
         from_attributes = True
+
 
 class OAuthAuthRequestBase(BaseModel):
     state: str
@@ -100,6 +106,7 @@ class OAuthAuthRequestBase(BaseModel):
         arbitrary_types_allowed = True
         from_attributes = True
 
+
 class OAuthAuthRequest(Base):
     __tablename__ = "oauth_auth_request"
 
@@ -113,6 +120,7 @@ class OAuthAuthRequest(Base):
     dpop_authserver_nonce = Column(String, nullable=False)
     dpop_private_ec_key = Column(JSON, nullable=False)
 
+
 class OAuthSession(Base):
     __tablename__ = "oauth_session"
     did = Column(String, primary_key=True)
@@ -123,6 +131,27 @@ class OAuthSession(Base):
     refresh_token = Column(String)
     dpop_authserver_nonce = Column(String)
     dpop_private_jwk = Column(JSON, nullable=False)
+
+
+class User(Base):
+    __tablename__ = "users"
+    did = Column(String, primary_key=True)
+    handle = Column(String)
+    display_name = Column(String)
+    bio = Column(String, default="")
+    avatar = Column(String)
+    banner = Column(String)
+    pds_url = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow())
+    updated_at = Column(DateTime, onupdate=datetime.utcnow())
+
+
+class UserPost(BaseModel):
+    display_name: str
+    bio: Optional[str] = ""
+    avatar: str
+    banner: str
+
 
 class Post(Base):
     __tablename__ = "posts"
