@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import {useParams, useSearchParams} from "react-router-dom";
 import Header from "./Header.jsx";
 import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
@@ -7,6 +7,9 @@ import Linkify from 'react-linkify';
 
 function UserProfile({isLoggedIn, userHandle}) {
 	const { handle } = useParams();
+	const [searchParams] = useSearchParams();
+	const rkey = searchParams.get("rkey");
+
 	const [posts, setPosts] = useState([]);
 	const [profile, setProfile] = useState(null);
 	const [loading, setLoading] = useState(true);
@@ -58,9 +61,9 @@ function UserProfile({isLoggedIn, userHandle}) {
 					<Linkify>{profile.bio}</Linkify>
 				</p>
 			</div>
-			<div className="posts-header">Posts</div>
+			<div className="posts-header">Activity</div>
 			<div className="posts-container">
-				<TimelinePosts posts={posts} setPosts={setPosts} apiUrl={API_URL} isLoggedIn={isLoggedIn} userHandle={userHandle} />
+				<TimelinePosts posts={posts} setPosts={setPosts} apiUrl={API_URL} isLoggedIn={isLoggedIn} userHandle={userHandle} rkey={rkey} />
 			</div>
 		</div>
 	);

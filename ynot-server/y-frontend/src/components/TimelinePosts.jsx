@@ -57,7 +57,7 @@ const renderTextWithTagsAndLinks = (text) => {
     });
 };
 
-const PostCard = ({ post, setPosts, apiUrl, isOwner }) => {
+const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
     const [menuOpen, setMenuOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const menuRef = useRef(null);
@@ -110,7 +110,7 @@ const PostCard = ({ post, setPosts, apiUrl, isOwner }) => {
 
     return (
         <>
-            <div className="post-card">
+            <div className="post-card" id={id}>
                 <div className="menu-container" ref={menuRef}>
                     <button onClick={toggleMenu} className="menu-button">
                         ⋮
@@ -147,10 +147,22 @@ const PostCard = ({ post, setPosts, apiUrl, isOwner }) => {
     );
 };
 
-const TimelinePosts = ({ posts, setPosts, apiUrl, isLoggedIn, userHandle }) => {
+const TimelinePosts = ({ posts, setPosts, apiUrl, isLoggedIn, userHandle, rkey }) => {
     if (!Array.isArray(posts) || !posts.length) return <div>No posts to display</div>;
 
     const groupedPosts = groupPostsByDate(posts);
+
+    // Scroll to a specific post identified by rkey in URL params
+    useEffect(() => {
+        if (rkey && posts.length > 0) {
+            console.log(rkey);
+            const targetPost = document.getElementById(rkey);
+            console.log(targetPost);
+            if (targetPost) {
+                targetPost.scrollIntoView({behavior: "smooth", block: "start"})
+            }
+        }
+    }, [posts, rkey]);
 
     return (
         <div className="timeline-container">
@@ -165,7 +177,7 @@ const TimelinePosts = ({ posts, setPosts, apiUrl, isLoggedIn, userHandle }) => {
                     <div className="posts-group">
                         {groupedPosts[date].map((post) => (
                             <PostCard
-                                key={post.rkey}
+                                id={post.rkey}
                                 post={post}
                                 setPosts={setPosts}
                                 apiUrl={apiUrl}

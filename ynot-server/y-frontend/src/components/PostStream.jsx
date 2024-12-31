@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import {useNavigate} from "react-router-dom";
 
 function PostStream() {
 	const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -84,6 +85,7 @@ function PostItem({ post }) {
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const [contentHeight, setContentHeight] = useState("auto");
 	const textRef = useRef(null);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		if (textRef.current) {
@@ -112,6 +114,7 @@ function PostItem({ post }) {
 						target="_blank"
 						rel="noopener noreferrer"
 						style={{ color: "#007bff", textDecoration: "underline" }}
+						onClick={(e) => e.stopPropagation()}
 					>
 						{part}
 					</a>
@@ -121,17 +124,23 @@ function PostItem({ post }) {
 		});
 	};
 
+	const handlePostClick = () => {
+		navigate(`${post.handle}/profile/?rkey=${post.rkey}`)
+	}
+
 	return (
 		<div
+			onClick={handlePostClick}
 			style={{
 				padding: "10px",
 				marginBottom: "8px",
 				borderRadius: "4px",
 				backgroundColor: "#fff",
 				boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.1)",
+				cursor: "pointer",
 			}}
 		>
-			<small style={{ margin: "0 0 8px 0", display: "block", color: "#555" }}>
+			<small onClick={handlePostClick} style={{ margin: "0 0 8px 0", display: "block", color: "#555" }}>
 				@{post.handle}
 			</small>
 			<pre
@@ -163,7 +172,10 @@ function PostItem({ post }) {
 			</pre>
 			{isOverflowing && (
 				<span
-					onClick={() => setExpanded(!expanded)}
+					onClick={(e) => {
+						setExpanded(!expanded);
+						e.stopPropagation();
+					}}
 					style={{
 						color: "#007bff",
 						fontSize: "12px",

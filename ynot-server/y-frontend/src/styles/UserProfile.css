@@ -44,7 +44,7 @@ body {
   padding: 20px;
   border-bottom: 1px solid #ddd;
   text-align: left;
-  margin-top: 60px; /* Adjusted for avatar overlap */
+  margin-top: 40px;
 }
 
 .profile-info h1 {
