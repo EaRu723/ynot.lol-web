@@ -1,27 +1,20 @@
+from datetime import datetime
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic.deprecated.tools import parse_obj_as
-from app.models import FrontendPost, OAuthSession
-from jinja2 import Environment, FileSystemLoader
-from datetime import datetime, timedelta
-from atproto_identity.resolver import AsyncHandleResolver, AsyncDidResolver
 
-from app.middleware.user_middleware import login_required
-from app.routers.oauth.atproto_oauth import pds_authed_req
+from atproto_identity.resolver import AsyncDidResolver, AsyncHandleResolver
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic.deprecated.tools import parse_obj_as
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db.db import get_async_session
+from app.middleware.user_middleware import login_required
+from app.models import FrontendPost, OAuthSession, UserPost, User, UserReq
+from app.routers.oauth.atproto_oauth import pds_authed_req
+from app.routers.oauth.oauth import fetch_bsky_profile
 
 router = APIRouter()
-
-def time_elapsed(created_at: datetime) -> str:
-    now = datetime.now()
-    delta = now - created_at
-    if delta < timedelta(hours=1):
-        return "now"
-    elif delta < timedelta(days=1):
-        return f"{delta.seconds // 3600}h"
-    else:
-        return f"{delta.days}d"
-
 
 async def resolve_handle_to_did(handle: str) -> str:
     resolver = AsyncHandleResolver()
@@ -61,17 +54,64 @@ async def get_posts(handle: str, collection: str = "com.y.post", user: OAuthSess
         [
             {
                 "note": record["value"]["note"],
+                "did": did,
+                "handle": handle,
                 "urls": record["value"]["urls"],
                 "tags": record["value"]["tags"],
                 "collection": record["uri"].split("/")[-2],
                 "rkey": record["uri"].split("/")[-1],
                 "created_at": datetime.fromisoformat(record["value"]["created_at"]),
-                "time_elapsed": time_elapsed(
-                    datetime.fromisoformat(record["value"]["created_at"])
-                ),
             }
             for record in response_body["records"]
         ],
     )
 
     return posts
+
+@router.post("/profile")
+async def post_profile(form_data: UserPost, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)):
+    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.createRecord"
+    profile_data = form_data.model_dump()
+
+    body = {
+        "repo": user.did,
+        "collection": "com.y.profile",
+        "record": profile_data
+    }
+
+    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+    if "uri" not in resp.json():
+        raise HTTPException(status_code=500, detail="Failed to create record")
+
+    user = User(
+        did = user.did,
+        handle = user.handle,
+        display_name = form_data.display_name,
+        bio = form_data.bio,
+        avatar = form_data.avatar,
+        banner = form_data.banner,
+        pds_url = user.pds_url,
+    )
+
+    try:
+        db.add(user)
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Failed to save user profile to DB: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save user profile")
+
+    return {"status": "Record created successfully", "response": resp.json()}
+
+
+@router.get("/{handle}/profile", response_model=UserReq)
+async def get_profile(handle: str, db: AsyncSession = Depends(get_async_session)):
+    result = await db.execute(
+        select(User).where(User.handle == handle)
+    )
+    user = result.scalars().first()
+    if user is None:
+        res = await fetch_bsky_profile(handle)
+        return res
+
+    return user

@@ -2,8 +2,9 @@ import Header from "./Header.jsx";
 import PostModal from "./PostModal.jsx";
 import ShowcaseGrid from "./ShowcaseGrid.jsx";
 import {useEffect, useState} from "react";
+import PostStream from "./PostStream.jsx";
 
-function OldHomepage({API_URL, isLoggedIn, setIsLoggedIn, userHandle, setUserHandle}) {
+function DiscoverPage({API_URL, isLoggedIn, setIsLoggedIn, userHandle, setUserHandle}) {
     const [isPostModalOpen, setPostModalOpen] = useState(false);
     const [sites, setSites] = useState([]);
     const [tags, setTags] = useState([]);
@@ -129,9 +130,14 @@ function OldHomepage({API_URL, isLoggedIn, setIsLoggedIn, userHandle, setUserHan
                     </button>
                 ))}
             </div>
+            <div style={{padding: "10px", marginTop: "15px"}}>
+                <div>
+                    <PostStream />
+                </div>
+            </div>
             <ShowcaseGrid sites={filteredSites}/>
         </div>
     )
 }
 
-export default OldHomepage;
+export default DiscoverPage;

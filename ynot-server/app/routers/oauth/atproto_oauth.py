@@ -281,7 +281,17 @@ async def refresh_token_request(
 
     # Create DPoP header JWT, using the existing DPoP signing key for this account/session
     token_url = authserver_meta["token_endpoint"]
-    dpop_private_jwk = JsonWebKey.import_key(json.loads(user.dpop_private_jwk))
+
+
+    # Ensure `dpop_private_jwk` is a dictionary
+    if isinstance(user.dpop_private_jwk, str):
+        # Convert JSON string to Python dictionary
+        dpop_private_jwk = json.loads(user.dpop_private_jwk)
+    else:
+        # Use it as-is if already a dictionary
+        dpop_private_jwk = user.dpop_private_jwk
+
+    dpop_private_jwk = JsonWebKey.import_key(dpop_private_jwk)
     dpop_authserver_nonce = user.dpop_authserver_nonce
     dpop_proof = await authserver_dpop_jwt(
         "POST", token_url, dpop_authserver_nonce, dpop_private_jwk

@@ -1,23 +1,51 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Request
+
+from fastapi import (APIRouter, Depends, HTTPException, Request, WebSocket,
+                     WebSocketDisconnect)
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-from app.models import (
-    RecordPost,
-    RecordPut,
-    RecordDelete,
-    Site,
-    Tag,
-    SiteBase,
-    TagBase,
-    OAuthSession,
-)
+
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
+from app.models import (FrontendPost, OAuthSession, Post, RecordDelete,
+                        RecordPost, RecordPut, Site, SiteBase, Tag, TagBase)
 from app.routers.oauth.atproto_oauth import pds_authed_req
 
 router = APIRouter()
+
+
+# Store active WebSocket connections
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+
+manager = ConnectionManager()
+
+
+@router.websocket("/ws/feed")
+async def websocket_feed(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            print(f"Received from client: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 
 tags = [
     {"id": 1, "name": "personal"},
@@ -201,12 +229,12 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
 
 @router.post("/post")
 async def post_record(
-    form_data: RecordPost, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
+    form_data: RecordPost,
+    user: OAuthSession = Depends(login_required),
+    db=Depends(get_async_session),
 ):
     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.createRecord"
-
     record_data = form_data.model_dump()
-
     body = {
         "repo": user.did,
         "collection": "com.y.post",
@@ -219,14 +247,48 @@ async def post_record(
     if "uri" not in resp.json():
         raise HTTPException(status_code=500, detail="Failed to create record")
 
-    return {
-        "response": resp.json()
-    }
+    rkey = resp.json().get("uri").split("/")[-1]
+
+    post = Post(
+        did=user.did,
+        handle=user.handle,
+        rkey=rkey,
+        note=form_data.note,
+        tags=form_data.tags,
+        urls=form_data.urls,
+        collection="com.y.post",
+        created_at=form_data.created_at,
+    )
+
+    try:
+        db.add(post)
+        await db.commit()
+
+        await manager.broadcast(
+            {
+                "type": "com.y.post",
+                "data": {
+                    "did": user.did,
+                    "handle": user.handle,
+                    "note": form_data.note,
+                    "tags": form_data.tags,
+                    "urls": form_data.urls,
+                    "created_at": form_data.created_at.isoformat(),
+                },
+            }
+        )
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Post already exists")
+
+    return {"status": "Record created successfully", "response": resp.json()}
 
 
 @router.put("/post")
 async def edit_record(
-    request: RecordPut, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
+    request: RecordPut,
+    user: OAuthSession = Depends(login_required),
+    db=Depends(get_async_session),
 ):
     parsed_req = request.model_dump()
 
@@ -235,7 +297,6 @@ async def edit_record(
     record_body = RecordPost(**parsed_req).model_dump()
 
     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.putRecord"
-
     body = {
         "repo": user.did,
         "collection": "com.y.post",
@@ -244,24 +305,106 @@ async def edit_record(
     }
 
     resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+
+    if "uri" not in resp.json():
+        raise HTTPException(status_code=500, detail="Failed to update record")
+
+    async with db.begin():
+        existing_post = await db.execute(
+            select(Post).where(
+                Post.rkey == parsed_req.get("rkey"), Post.did == user.did
+            )
+        )
+        existing_post = existing_post.scalars().first()
+
+        if not existing_post:
+            raise HTTPException(
+                status_code=404, detail="Record not found in the database"
+            )
+
+        existing_post.note = parsed_req.get("note", existing_post.note)
+        existing_post.tags = parsed_req.get("tags", existing_post.tags)
+        existing_post.urls = parsed_req.get("urls", existing_post.urls)
+        existing_post.created_at = parsed_req.get(
+            "created_at", existing_post.created_at
+        )
+
+        try:
+            db.add(existing_post)
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=400, detail="Failed to update record in the database"
+            )
+
     return {"status": "Record updated successfully", "response": resp.json()}
 
 
 @router.delete("/post")
 async def delete_record(
-    request: RecordDelete, user: OAuthSession = Depends(login_required), db = Depends(get_async_session)
+    request: RecordDelete,
+    user: OAuthSession = Depends(login_required),
+    db: AsyncSession = Depends(get_async_session),
 ):
     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.deleteRecord"
-
-    body = {
-        "repo": user.did,
-        "collection": request.collection,
-        "rkey": request.rkey
-    }
+    body = {"repo": user.did, "collection": request.collection, "rkey": request.rkey}
 
     resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Failed to delete record")
+
+    async with db.begin():
+        existing_post = await db.execute(
+            select(Post).where(Post.rkey == request.rkey, Post.did == user.did)
+        )
+        existing_post = existing_post.scalars().first()
+
+        if not existing_post:
+            raise HTTPException(
+                status_code=404, detail="Record not found in the database"
+            )
+
+        await db.delete(existing_post)
+
+        try:
+            await db.commit()
+        except IntegrityError:
+            await db.rollback()
+            raise HTTPException(
+                status_code=400, detail="Failed to delete record in the database"
+            )
+
     return {"status": "Record deleted successfully", "response": resp.json()}
 
+
+@router.get("/recent-posts", response_model=List[FrontendPost])
+async def get_recent_posts(
+    limit: int = 10, db: AsyncSession = Depends(get_async_session)
+):
+    result = await db.execute(
+        select(Post).order_by(Post.created_at.desc()).limit(limit)
+    )
+    posts = result.scalars().all()
+
+    frontend_posts = [
+        FrontendPost(
+            handle=post.handle,
+            did=post.did,
+            note=post.note,
+            urls=post.urls or [],
+            tags=post.tags or [],
+            collection=post.collection,
+            rkey=post.rkey,
+            created_at=post.created_at,
+        )
+        for post in posts
+    ]
+
+    return frontend_posts
+
+
 @router.get("/whoami")
-async def whoami(request: Request, user: OAuthSession = Depends(login_required)):
+async def whoami(user: OAuthSession = Depends(login_required)):
     return {"user": {"handle": user.handle, "did": user.did}}
