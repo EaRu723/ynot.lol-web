@@ -8,7 +8,7 @@ function PostStream() {
 	const wsRef = useRef(null);
 
 	const connectWebSocket = () => {
-		wsRef.current = new WebSocket("ws://127.0.0.1:8000/api/ws/feed");
+		wsRef.current = new WebSocket("wss://ynot.lol/api/ws/feed");
 
 		wsRef.current.onmessage = (event) => {
 			const post = JSON.parse(event.data);
