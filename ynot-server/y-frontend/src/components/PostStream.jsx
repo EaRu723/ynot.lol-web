@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function PostStream() {
 	const API_URL = import.meta.env.VITE_API_BASE_URL;
+	const WS_URL = import.meta.env.VITE_WEBSOCKET_BASE_URL;
 	const [posts, setPosts] = useState([]);
 	const scrollAreaRef = useRef(null);
 	const wsRef = useRef(null);
 
 	const connectWebSocket = () => {
-		wsRef.current = new WebSocket("wss://ynot.lol/api/ws/feed");
+		wsRef.current = new WebSocket(WS_URL + "/api/ws/feed");
 
 		wsRef.current.onmessage = (event) => {
 			const post = JSON.parse(event.data);
@@ -125,8 +126,8 @@ function PostItem({ post }) {
 	};
 
 	const handlePostClick = () => {
-		navigate(`${post.handle}/profile/?rkey=${post.rkey}`)
-	}
+		navigate(`${post.handle}/profile/?rkey=${post.rkey}`);
+	};
 
 	return (
 		<div
@@ -140,7 +141,10 @@ function PostItem({ post }) {
 				cursor: "pointer",
 			}}
 		>
-			<small onClick={handlePostClick} style={{ margin: "0 0 8px 0", display: "block", color: "#555" }}>
+			<small
+				onClick={handlePostClick}
+				style={{ margin: "0 0 8px 0", display: "block", color: "#555" }}
+			>
 				@{post.handle}
 			</small>
 			<pre
