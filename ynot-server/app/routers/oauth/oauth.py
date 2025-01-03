@@ -5,27 +5,34 @@ import requests
 from authlib.jose import JsonWebKey
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
 
-from app.models import OAuthAuthRequest, OAuthSession, User
 from app.config import settings
 from app.db.db import get_async_session
+from app.middleware.user_middleware import login_required
+from app.models import OAuthAuthRequest, OAuthSession, User
 from app.routers.oauth.atproto_identity import (is_valid_did, is_valid_handle,
                                                 pds_endpoint, resolve_identity)
 from app.routers.oauth.atproto_oauth import (fetch_authserver_meta,
+                                             initial_token_request,
                                              resolve_pds_authserver,
-                                             send_par_auth_request,
-                                             initial_token_request)
+                                             send_par_auth_request)
 from app.routers.oauth.atproto_security import is_safe_url
-from app.middleware.user_middleware import login_required
 
 router = APIRouter()
 
 private_jwk = JsonWebKey.import_key(json.loads(settings.private_jwk))
-public_jwk = {"crv":"P-256","x":"PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE","y":"gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI","kty":"EC","kid":"demo-1734490496"}
+public_jwk = {
+    "crv": "P-256",
+    "x": "PeSen6GnJy0iBAob7DxOqcETvTnAJ8NsweCSbmZetnE",
+    "y": "gkAPsmzPlrmv9eubYaGY9xcoQxquNnRHMpk1feIBrGI",
+    "kty": "EC",
+    "kid": "demo-1734490496",
+}
 # assert "d" not in public_jwk, "Public JWK should not contain private key"
+
 
 async def fetch_bsky_profile(handle):
     """Fetch Bluesky profile data for a given DID or handle."""
@@ -46,14 +53,32 @@ async def fetch_bsky_profile(handle):
             }
         else:
             print(f"Failed to fetch Bluesky profile: {resp.status_code}")
-            return {"display_name": "", "avatar": "", "banner": "", "bio": "", "did": "", "pds_url": ""}
+            return {
+                "display_name": "",
+                "avatar": "",
+                "banner": "",
+                "bio": "",
+                "did": "",
+                "pds_url": "",
+            }
     except Exception as e:
         print(f"Error fetching Bluesky profile: {e}")
-        return {"display_name": "", "avatar": "", "banner": "", "bio": "", "did": "", "pds_url": ""}
+        return {
+            "display_name": "",
+            "avatar": "",
+            "banner": "",
+            "bio": "",
+            "did": "",
+            "pds_url": "",
+        }
 
 
 @router.post("/login")
-async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSession = Depends(get_async_session)):
+async def oauth_login(
+    request: Request,
+    identifier: str = Form(...),
+    db: AsyncSession = Depends(get_async_session),
+):
     # Login can start with a handle, DID, or auth server URL. We can call whatever the user supplied as the "handle".
     if await is_valid_handle(identifier) or is_valid_did(identifier):
         login_hint = identifier
@@ -63,8 +88,8 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
         authserver_url = await resolve_pds_authserver(pds_url)
     elif identifier.startswith("https://") and await is_safe_url(identifier):
         # When starting with an auth server URL, we don't have info about the account yet
-        did, identifier, pds_url = '', '', ''
-        login_hint = None
+        did, identifier, pds_url = "", "", ""
+        login_hint = ""
         # Check if this is a PDS URL, otherwise assume it is an authorization server
         initial_url = identifier
         try:
@@ -72,7 +97,9 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
         except Exception:
             authserver_url = initial_url
     else:
-        return JSONResponse(content = {"error": "Not a valid handle, DID, or auth server URL"})
+        return JSONResponse(
+            content={"error": "Not a valid handle, DID, or auth server URL"}
+        )
 
     # Fetch auth server metadata
     # NOTE auth server URL is untrusted input, SSRF mitigations are needed
@@ -82,8 +109,8 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
         authserver_meta = await fetch_authserver_meta(authserver_url)
     except Exception as e:
         print(f"Failed to fetch auth server metadata: {e}")
-        return JSONResponse(content = {"error": "Failed to fetch auth server metadata"})
-    
+        return JSONResponse(content={"error": "Failed to fetch auth server metadata"})
+
     # Generate DPoP private signing key for this account session
     dpop_private_jwk = JsonWebKey.generate_key("EC", "P-256", is_private=True)
     print(f"JWK {dpop_private_jwk.as_json(is_private=True)}")
@@ -136,7 +163,9 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
         except IntegrityError as e:
             await db.rollback()
             print(f"Failed to create user in the database: {e}")
-            raise HTTPException(status_code=500, detail="Failed to create user in the database")
+            raise HTTPException(
+                status_code=500, detail="Failed to create user in the database"
+            )
 
     print(f"saving oauth_auth_request to DB for state {state}")
     try:
@@ -156,7 +185,9 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Failed to save oauth_auth_request to DB: {e}")
-        raise HTTPException(status_code=500, detail="Failed to save oauth_auth_request to DB")
+        raise HTTPException(
+            status_code=500, detail="Failed to save oauth_auth_request to DB"
+        )
 
     # Redirect the user to the Authorization Server to complete the browser auth flow
     # IMPORTANT: Authorization endpoint URL is untrusted input, security mitigations are needed before redirecting user
@@ -166,15 +197,16 @@ async def oauth_login(request: Request, identifier: str = Form(...), db: AsyncSe
     print(f"redirecting to {auth_url}?{qparam}")
     return JSONResponse(content={"redirect_url": f"{auth_url}?{qparam}"})
 
+
 @router.get("/callback")
 async def oauth_callback(
-        request: Request,
-        response: Response,
-        state: str,
-        iss: str,
-        code: str,
-        db: AsyncSession = Depends(get_async_session),
-) -> dict:
+    request: Request,
+    response: Response,
+    state: str,
+    iss: str,
+    code: str,
+    db: AsyncSession = Depends(get_async_session),
+):
     # Look up auth request by state
     query = select(OAuthAuthRequest).where(OAuthAuthRequest.state == state)
     result = await db.execute(query)
@@ -185,12 +217,16 @@ async def oauth_callback(
 
     # Delete auth request to prevent replay attacks
     try:
-        delete_query = delete(OAuthAuthRequest).where(OAuthAuthRequest.state == row.state)
+        delete_query = delete(OAuthAuthRequest).where(
+            OAuthAuthRequest.state == row.state
+        )
         await db.execute(delete_query)
         await db.commit()
     except SQLAlchemyError as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete OAuth auth request")
+        raise HTTPException(
+            status_code=500, detail="Failed to delete OAuth auth request"
+        )
 
     # Verify iss and state
     if row.authserver_iss != iss or row.state != state:
@@ -245,8 +281,9 @@ async def oauth_callback(
         except IntegrityError as e:
             await db.rollback()
             print(f"Failed to create user in the database: {e}")
-            raise HTTPException(status_code=500, detail="Failed to create user in the database")
-
+            raise HTTPException(
+                status_code=500, detail="Failed to create user in the database"
+            )
 
     # Save session in the database
     new_session = OAuthSession(
@@ -267,7 +304,9 @@ async def oauth_callback(
         await db.rollback()
         if "unique constraint" in str(e.orig):
             print(f"Failed to save oauth_auth_request to DB: {e}")
-            raise HTTPException(status_code=500, detail="A session for this user already exists")
+            raise HTTPException(
+                status_code=500, detail="A session for this user already exists"
+            )
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Failed to save oauth_auth_request to DB: {e}")
@@ -281,8 +320,13 @@ async def oauth_callback(
 
     return RedirectResponse(url="/")
 
+
 @router.get("/logout")
-async def oauth_logout(request: Request, db: AsyncSession = Depends(get_async_session), user=Depends(login_required)) -> dict:
+async def oauth_logout(
+    request: Request,
+    db: AsyncSession = Depends(get_async_session),
+    user=Depends(login_required),
+) -> dict:
     # Clear session data
     user_did = request.session.pop("user_did", None)
     request.session.pop("user_handle", None)

@@ -1,16 +1,17 @@
 import json
 import os
 from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.routers import api, user
-from app.routers.oauth import oauth
 from app.config import settings
 from app.middleware.user_middleware import LoadUserMiddleware
+from app.routers import api, user
+from app.routers.oauth import oauth
 
 app = FastAPI()
 
@@ -27,29 +28,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    LoadUserMiddleware
-)
+app.add_middleware(LoadUserMiddleware)
 
 if settings.app_env == "development":
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.session_secret,
         session_cookie="session",
-        same_site="Lax",
+        same_site="lax",
         domain="127.0.0.1",
         https_only=False,
-        max_age=3600 * 24 * 7 # Session expires in 7 days
+        max_age=3600 * 24 * 7,  # Session expires in 7 days
     )
 elif settings.app_env == "production":
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.session_secret,
         session_cookie="session",
-        same_site="Lax",
+        same_site="lax",
         domain="ynot.lol",
         https_only=True,
-        max_age=3600 * 24 * 7 # Session expires in 7 days
+        max_age=3600 * 24 * 7,  # Session expires in 7 days
     )
 
 
@@ -65,7 +64,8 @@ lexicons = {}
 for lexicon_file in lexicon_dir.glob("*.json"):
     with open(lexicon_file) as f:
         lexicon = json.load(f)
-        lexicons[lexicon['id']] = lexicon
+        lexicons[lexicon["id"]] = lexicon
+
 
 @app.get("/lexicon/{lexicon_id}")
 async def get_lexicon(lexicon_id: str):
@@ -78,6 +78,8 @@ async def get_lexicon(lexicon_id: str):
 
 # Load static React files
 app.mount("/assets", StaticFiles(directory="y-frontend/dist/assets"), name="static")
+
+
 @app.get("/{full_path:path}")
 async def serve_static(full_path: str):
     file_path = os.path.join("y-frontend/dist", full_path)

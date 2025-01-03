@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import List, Optional
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
-from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer,
-                        MetaData, String, Table, Text)
+from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer, MetaData,
+                        String, Table, Text)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -59,8 +60,8 @@ class SiteBase(BaseModel):
 
 class FrontendPost(BaseModel):
     note: str
-    did: str = None
-    handle: str = None
+    did: str = ""
+    handle: str = ""
     urls: List[str]
     tags: List[str]
     collection: str
@@ -123,14 +124,17 @@ class OAuthAuthRequest(Base):
 
 class OAuthSession(Base):
     __tablename__ = "oauth_session"
-    did = Column(String, primary_key=True)
-    handle = Column(String)
+    session_id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    did = Column(String, ForeignKey("users.did"), nullable=False)
+    handle = Column(String, nullable=False)
     pds_url = Column(String)
     authserver_iss = Column(String)
     access_token = Column(String)
     refresh_token = Column(String)
     dpop_authserver_nonce = Column(String)
     dpop_private_jwk = Column(JSON, nullable=False)
+
+    user = relationship("User", back_populates="oauth_sessions")
 
 
 class User(Base):
@@ -145,12 +149,15 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow())
     updated_at = Column(DateTime, onupdate=datetime.utcnow())
 
+    oauth_sessions = relationship("OAuthSession", back_populates="user")
+
 
 class UserPost(BaseModel):
     display_name: str
     bio: Optional[str] = ""
     avatar: str
     banner: str
+
 
 class UserReq(BaseModel):
     did: str
