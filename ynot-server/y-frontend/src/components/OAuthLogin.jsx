@@ -34,9 +34,9 @@ function OAuthLogin() {
           setError("No redirect URL provided by the server.");
         }
       } else {
-        const errorMessage = await response.json();
-        if (errorMessage.error) {
-          setError(errorMessage.error);
+        const data = await response.json();
+        if (data.error) {
+          setError(data.error);
         } else {
           setError("An unexpected server error occurred.");
         }

@@ -1,18 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import "../styles/Header.css";
 
 const Header = React.memo(
-  ({ user, isLoggedIn, onLogin, onLogout, loading }) => {
+  ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
     const toggleDropdown = () => {
       setDropdownOpen((prev) => !prev);
     };
 
+    const handleLogout = async () => {
+      try {
+        await fetch(`${API_URL}/oauth/logout`, {
+          method: "GET",
+          credentials: "include",
+        });
+      } catch (error) {
+        console.error("Error logging out:", error);
+      } finally {
+        setIsLoggedIn(false);
+        setUser({});
+        sessionStorage.clear();
+      }
+    };
+
+    // Close dropdown if clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
+          setDropdownOpen(false);
+        }
+      };
+
+      document.addEventListener("click", handleClickOutside);
+      return () => {
+        document.removeEventListener("click", handleClickOutside);
+      };
+    }, []);
+
     if (loading) {
       return (
-        <div style={styles.header}>
+        <div className="header">
           <h1>
-            <a href="/" style={styles.link}>
+            <a href="/" className="header-link">
               Discover cool <i>people</i>.
             </a>
           </h1>
@@ -21,34 +55,32 @@ const Header = React.memo(
     }
 
     return (
-      <div style={styles.header}>
+      <div className="header">
         <h1>
-          <a href="/" style={styles.link}>
+          <a href="/" className="header-link">
             Discover cool <i>people</i>.
           </a>
         </h1>
         {isLoggedIn ? (
-          <div style={styles.profileContainer}>
+          <div className="profile-container" ref={dropdownRef}>
             <img
               alt="Profile"
               src={user.avatar}
-              style={styles.profileImage}
+              className="profile-image"
               onClick={toggleDropdown}
             />
             {dropdownOpen && (
-              <div style={styles.dropdown}>
-                <a href={`/${user.handle}/profile`} style={styles.dropdownItem}>
+              <div className="dropdown">
+                <a href={`/${user.handle}/profile`} className="dropdown-item">
                   Profile
                 </a>
-                <a href="#" style={styles.dropdownItem}>
+                <a href="#" className="dropdown-item">
                   Settings
                 </a>
                 <button
-                  onClick={onLogout}
-                  style={{
-                    ...styles.dropdownItem,
-                    ...styles.buttonStyle,
-                  }}
+                  onClick={handleLogout}
+                  className="dropdown-item"
+                  style={{ color: "red" }}
                 >
                   Log out
                 </button>
@@ -56,7 +88,7 @@ const Header = React.memo(
             )}
           </div>
         ) : (
-          <button onClick={onLogin} style={styles.loginButton}>
+          <button onClick={onLogin} className="login-button">
             Log in
           </button>
         )}
@@ -66,61 +98,5 @@ const Header = React.memo(
 );
 
 Header.displayName = "Header";
-
-const styles = {
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottom: "1px solid #E9E9ED",
-  },
-  link: {
-    textDecoration: "none",
-    color: "inherit",
-  },
-  profileContainer: {
-    position: "relative",
-  },
-  profileImage: {
-    width: "50px",
-    height: "50px",
-    borderRadius: "50%",
-    objectFit: "cover",
-    cursor: "pointer",
-  },
-  dropdown: {
-    position: "absolute",
-    top: "50px",
-    right: "0",
-    backgroundColor: "#fff",
-    border: "1px solid #ddd",
-    borderRadius: "5px",
-    boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
-    zIndex: 10,
-  },
-  dropdownItem: {
-    display: "block",
-    padding: "10px 15px",
-    color: "#333",
-    textDecoration: "none",
-    fontSize: "14px",
-    textAlign: "left",
-  },
-  buttonStyle: {
-    border: "none",
-    background: "none",
-    cursor: "pointer",
-    width: "100%",
-    textAlign: "left",
-  },
-  loginButton: {
-    cursor: "pointer",
-    padding: "10px 15px",
-    fontSize: "14px",
-    border: "1px solid #ddd",
-    borderRadius: "5px",
-    backgroundColor: "#fff",
-  },
-};
 
 export default Header;

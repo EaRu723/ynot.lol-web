@@ -44,21 +44,6 @@ const App = () => {
     }
   }, [API_URL, isLoggedIn]);
 
-  const handleLogout = async () => {
-    try {
-      await fetch(`${API_URL}/oauth/logout`, {
-        method: "GET",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Error logging out:", error);
-    } finally {
-      setIsLoggedIn(false);
-      setUser(null);
-      sessionStorage.clear();
-    }
-  };
-
   useEffect(() => {
     console.log("API URL: " + API_URL);
     checkAuthentication();
@@ -70,10 +55,12 @@ const App = () => {
     <main>
       {!hideHeader.includes(location.pathname) && (
         <Header
+          API_URL={API_URL}
           user={user}
+          setUser={setUser}
           isLoggedIn={isLoggedIn}
+          setIsLoggedIn={setIsLoggedIn}
           onLogin={() => navigate("/oauth/login")}
-          onLogout={handleLogout}
           loading={loading}
         />
       )}
