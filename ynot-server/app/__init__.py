@@ -48,7 +48,7 @@ elif settings.app_env == "production":
         same_site="lax",
         domain="ynot.lol",
         https_only=True,
-        max_age=3600 * 24 * 7,  # Session expires in 7 days
+        max_age=3600 * 24 * 14,  # Session expires in 14 days
     )
 
 
