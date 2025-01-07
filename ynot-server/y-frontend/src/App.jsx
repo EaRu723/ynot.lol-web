@@ -6,6 +6,7 @@ import "./styles/styles.css";
 import Whoami from "./components/Whoami.jsx";
 import DiscoverPage from "./components/DiscoverPage.jsx";
 import Header from "./components/Header.jsx";
+import EditProfile from "./components/EditProfile.jsx";
 
 const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -28,6 +29,7 @@ const App = () => {
         setIsLoggedIn(true);
         setUser({
           handle: data.user.handle,
+          bio: data.user.bio,
           did: data.user.did,
           displayName: data.user.displayName,
           avatar: data.user.avatar,
@@ -73,6 +75,12 @@ const App = () => {
           path="/:handle/profile"
           element={
             <UserProfile isLoggedIn={isLoggedIn} userHandle={user.handle} />
+          }
+        />
+        <Route
+          path="/:handle/profile/edit"
+          element={
+            <EditProfile API_URL={API_URL} user={user} setUser={setUser} />
           }
         />
         <Route path="/oauth/login" element={<OAuthLogin />} />

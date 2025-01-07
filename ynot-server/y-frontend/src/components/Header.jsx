@@ -74,7 +74,10 @@ const Header = React.memo(
                 <a href={`/${user.handle}/profile`} className="dropdown-item">
                   Profile
                 </a>
-                <a href="#" className="dropdown-item">
+                <a
+                  href={`/${user.handle}/profile/edit`}
+                  className="dropdown-item"
+                >
                   Settings
                 </a>
                 <button
