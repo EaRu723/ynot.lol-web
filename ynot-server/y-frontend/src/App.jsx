@@ -1,24 +1,20 @@
-import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import UserProfile from "./components/UserProfile";
 import OAuthLogin from "./components/OAuthLogin";
 import "./styles/styles.css";
 import Whoami from "./components/Whoami.jsx";
-import DiscoverPage from "./components/DiscoverPage.jsx"
+import DiscoverPage from "./components/DiscoverPage.jsx";
+import Header from "./components/Header.jsx";
 
-
-function App() {
-  console.log("rendered");
+const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
+  const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userHandle, setUserHandle] = useState("");
+  const [user, setUser] = useState({});
+  const navigate = useNavigate();
 
-  useEffect( () => {
-    console.log("API URL: " + API_URL);
-    checkAuthentication();
-  }, []);
-
-  const checkAuthentication = async () => {
+  const checkAuthentication = useCallback(async () => {
     if (isLoggedIn) return;
 
     try {
@@ -30,37 +26,60 @@ function App() {
       if (response.ok) {
         const data = await response.json();
         setIsLoggedIn(true);
-        setUserHandle(data.user.handle);
+        setUser({
+          handle: data.user.handle,
+          did: data.user.did,
+          displayName: data.user.displayName,
+          avatar: data.user.avatar,
+          banner: data.user.banner,
+        });
       } else {
         setIsLoggedIn(false);
       }
     } catch (error) {
       console.error("Error checking authentication:", error);
       setIsLoggedIn(false);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [API_URL, isLoggedIn]);
+
+  useEffect(() => {
+    console.log("API URL: " + API_URL);
+    checkAuthentication();
+  }, [checkAuthentication, API_URL]);
+
+  const hideHeader = ["/oauth/login"];
 
   return (
     <main>
+      {!hideHeader.includes(location.pathname) && (
+        <Header
+          API_URL={API_URL}
+          user={user}
+          setUser={setUser}
+          isLoggedIn={isLoggedIn}
+          setIsLoggedIn={setIsLoggedIn}
+          onLogin={() => navigate("/oauth/login")}
+          loading={loading}
+        />
+      )}
       <Routes>
         <Route
-            path="/"
-            element={
-              <DiscoverPage
-                  API_URL={API_URL}
-                  isLoggedIn={isLoggedIn}
-                  setIsLoggedIn={setIsLoggedIn}
-                  userHandle={userHandle}
-                  setUserHandle={setUserHandle}
-              />
-            }
+          path="/"
+          element={<DiscoverPage API_URL={API_URL} isLoggedIn={isLoggedIn} />}
         />
-        <Route path="/:handle/profile" element={<UserProfile isLoggedIn={isLoggedIn} userHandle={userHandle} />} />
+        <Route
+          path="/:handle/profile"
+          element={
+            <UserProfile isLoggedIn={isLoggedIn} userHandle={user.handle} />
+          }
+        />
         <Route path="/oauth/login" element={<OAuthLogin />} />
         <Route path="/whoami" element={<Whoami />} />
       </Routes>
     </main>
   );
-}
+};
 
 export default App;

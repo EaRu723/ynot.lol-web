@@ -1,116 +1,115 @@
 /* Timeline Layout */
 .timeline-container {
-    display: flex;
-    flex-direction: column;
-    row-gap: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  row-gap: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
 }
 
 .timeline-group {
-    display: flex;
-    flex-direction: column; /* Default for grouping */
-    gap: 1rem;
-    position: relative;
+  display: flex;
+  flex-direction: column; /* Default for grouping */
+  gap: 1rem;
+  position: relative;
 }
 
 .timeline-date {
-    display: flex;
-    align-items: center;
-    font-size: 1rem;
-    color: #374151;
-    margin-left: 0; /* Ensure no unintended left margin */
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  color: #374151;
+  margin-left: 0; /* Ensure no unintended left margin */
 }
 
 .timeline-marker {
-    display: flex;
-    align-items: center;
-    margin-right: 0.5rem; /* Reduce marker space */
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem; /* Reduce marker space */
 }
 
 .timeline-dot {
-    width: 6px;
-    height: 6px;
-    background-color: #3b82f6;
-    border-radius: 50%;
-    margin-right: 0.25rem; /* Adjust spacing around the dot */
+  width: 6px;
+  height: 6px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  margin-right: 0.25rem; /* Adjust spacing around the dot */
 }
 
 .posts-group {
-    margin-left: 1.5rem; /* Align posts with the timeline marker */
+  margin-left: 1.5rem; /* Align posts with the timeline marker */
 }
 
 @media (max-width: 600px) {
-    .posts-group {
-        margin-left: 0; /* Remove unnecessary margin on smaller screens */
-    }
+  .posts-group {
+    margin-left: 0; /* Remove unnecessary margin on smaller screens */
+  }
 }
 
 .post-card {
-    background-color: #fff;
-    border: 1px solid #e5e7eb;
-    /*border-radius: 8px;*/
-    padding: 1rem;
-    margin: 0.5rem;
-    position: relative;
-    /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);*/
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  /*border-radius: 8px;*/
+  padding: 1rem;
+  margin: 0.5rem;
+  position: relative;
+  /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);*/
 }
 
 .menu-container {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
 }
 
 .menu-button {
-    background: none;
-    border: none;
-    font-size: 1.25rem;
-    cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
 }
 
 .menu-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    overflow: hidden;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  overflow: hidden;
 }
 
 .menu-dropdown button {
-    background: none;
-    border: none;
-    padding: 0.5rem 1rem;
-    text-align: left;
-    width: 100%;
-    cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
 }
 
 .menu-dropdown button:hover {
-    background-color: #f9fafb;
+  background-color: #f9fafb;
 }
 
 .delete-button {
-    color: #dc2626;
+  color: #dc2626;
 }
 
 .link {
-    color: #2563eb;
-    text-decoration: underline;
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 /* Styling for hashtags */
 .hashtag {
-    color: #2563eb;
-    cursor: pointer;
+  color: #2563eb;
+  cursor: pointer;
 }
 
 .hashtag:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
-
