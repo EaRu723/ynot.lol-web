@@ -95,17 +95,19 @@ async def post_profile(
     if "uri" not in resp.json():
         raise HTTPException(status_code=500, detail="Failed to create record")
 
+    # Update database with user profile
     try:
-        # Check if the user already exists in database
         result = await db.execute(select(User).where(User.did == user.did))
         existing_user = result.scalar_one_or_none()
 
         if existing_user:
+            # Update existing user
             existing_user.display_name = form_data.display_name
             existing_user.bio = form_data.bio
             existing_user.avatar = form_data.avatar
             existing_user.banner = form_data.banner
         else:
+            # Create new user entry
             user = User(
                 did=user.did,
                 handle=user.handle,

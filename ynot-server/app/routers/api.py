@@ -408,12 +408,12 @@ async def get_recent_posts(
 @router.get("/whoami")
 async def whoami(user: OAuthSession = Depends(login_required)):
     return {
-        "user":
-            {
-                "handle": user.handle,
-                "did": user.did,
-                "displayName": user.user.display_name,
-                "avatar": user.user.avatar,
-                "banner": user.user.banner
-            }
+        "user": {
+            "handle": user.handle,
+            "bio": user.bio,
+            "did": user.did,
+            "displayName": user.user.display_name,
+            "avatar": user.user.avatar,
+            "banner": user.user.banner,
+        }
     }
