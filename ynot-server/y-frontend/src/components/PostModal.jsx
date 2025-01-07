@@ -104,47 +104,51 @@ function PostModal({ post, onClose = null }) {
   };
 
   return (
-      <div className="modal">
-        <div className="modal-content">
-          <div>
-          <span className="close" onClick={onClose} style={{ cursor: "pointer" }}>
+    <div className="modal">
+      <div className="modal-content">
+        <div>
+          <span
+            className="close"
+            onClick={onClose}
+            style={{ cursor: "pointer" }}
+          >
             &times;
           </span>
+        </div>
+        <h2>{post ? "Edit" : "Post"}</h2>
+        <form id="post-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="note">Note:</label>
+            <textarea
+              id="note"
+              name="note"
+              rows="4"
+              value={note}
+              onChange={handleNoteChange}
+            ></textarea>
           </div>
-          <h2>{post ? "Edit" : "Post"}</h2>
-          <form id="post-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="note">Note:</label>
-              <textarea
-                  id="note"
-                  name="note"
-                  rows="4"
-                  value={note}
-                  onChange={handleNoteChange}
-              ></textarea>
-            </div>
-            <div className="form-group">
-              <div className="tags-container">
-                {tags.map((tag, index) => (
-                    <span key={index} className="tag">
+          <div className="form-group">
+            <div className="tags-container">
+              {tags.map((tag, index) => (
+                <span key={index} className="tag">
                   #{tag}
-                      <button
-                          type="button"
-                          className="remove-tag"
-                          onClick={() => handleRemoveTag(index)}
-                      >
+                  <button
+                    type="button"
+                    className="remove-tag"
+                    onClick={() => handleRemoveTag(index)}
+                  >
                     &times;
                   </button>
                 </span>
-                ))}
-              </div>
+              ))}
             </div>
-            <div className="form-group">
-              <button type="submit">{post ? "Update" : "Submit"}</button>
-            </div>
-          </form>
-        </div>
+          </div>
+          <div className="form-group">
+            <button type="submit">{post ? "Update" : "Submit"}</button>
+          </div>
+        </form>
       </div>
+    </div>
   );
 }
 
