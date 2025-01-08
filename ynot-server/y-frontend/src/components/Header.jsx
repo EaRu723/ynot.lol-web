@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/Header.css";
+import { useNavigate } from "react-router-dom";
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
 
     const toggleDropdown = () => {
       setDropdownOpen((prev) => !prev);
@@ -22,6 +24,7 @@ const Header = React.memo(
         setIsLoggedIn(false);
         setUser({});
         sessionStorage.clear();
+        navigate("/");
       }
     };
 

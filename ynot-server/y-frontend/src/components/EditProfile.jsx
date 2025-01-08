@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import "../styles/EditProfile.css";
 
 function EditProfile({ user, setUser }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -92,7 +93,7 @@ function EditProfile({ user, setUser }) {
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
-      <h1>Update Profile</h1>
+      <h1>Settings</h1>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="display_name">Display Name:</label>
@@ -135,7 +136,9 @@ function EditProfile({ user, setUser }) {
           />
         </div>
         <div className="form-group">
-          <button type="submit">Update Profile</button>
+          <button type="submit" className="button">
+            Update Profile
+          </button>
         </div>
       </form>
     </div>
