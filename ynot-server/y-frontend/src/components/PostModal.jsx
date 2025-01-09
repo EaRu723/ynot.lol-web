@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import "../styles/PostModal.css";
 
-function PostModal({ post, onClose = null }) {
+function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [urls, setUrls] = useState(post ? post.urls : []);
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
+  const [submitType, setSubmitType] = useState(null); // null, 'post', or 'website'
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [websiteDescription, setWebsiteDescription] = useState("");
 
   useEffect(() => {
     if (post) {
@@ -81,15 +84,56 @@ function PostModal({ post, onClose = null }) {
     }
   };
 
+  const formatUrl = (url) => {
+    // Remove any whitespace
+    url = url.trim();
+
+    // Check if the URL starts with http:// or https://
+    if (!url.match(/^https?:\/\//i)) {
+      // If not, add https://
+      url = "https://" + url;
+    }
+
+    return url;
+  };
+
+  const handleWebsiteSubmit = async (e) => {
+    e.preventDefault();
+
+    // Format the URL before submission
+    const formattedUrl = formatUrl(websiteUrl);
+
+    // TODO: Implement website submission logic with formatted URL
+    console.log("Submitting website:", {
+      url: formattedUrl,
+      description: websiteDescription,
+    });
+
+    alert("Website submission feature coming soon!");
+    onClose();
+  };
+
+  const handleClickOutside = (e) => {
+    // Check if the click was outside the modal-content
+    if (e.target.className === "modal") {
+      onClose();
+    }
+  };
+
   return (
-    <div className="modal">
+    <div className="modal" onClick={handleClickOutside}>
       <div className="modal-content">
-        <button className="close" onClick={onClose}>
-          &times;
-        </button>
-        <br />
-        <br />
-        <form onSubmit={handleSubmit}>
+        <div>
+          <span
+            className="close"
+            onClick={onClose}
+            style={{ cursor: "pointer" }}
+          >
+            &times;
+          </span>
+        </div>
+        <h2>Share Something Cool</h2>
+        <form id="post-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <textarea
               id="note"
@@ -97,20 +141,12 @@ function PostModal({ post, onClose = null }) {
               rows="15"
               value={note}
               onChange={handleNoteChange}
+              placeholder="Share an article, a video, a website, or whatever's on your mind"
             ></textarea>
           </div>
           <div className="form-group">
-            <div className="tags-container">
-              {tags.map((tag, index) => (
-                <span key={index} className="tag">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="form-group">
-            <button type="submit" className="button">
-              {post ? "Edit" : "Post"}
+            <button type="submit" className="submit-button">
+              Submit
             </button>
           </div>
         </form>

@@ -2,9 +2,8 @@ import ShowcaseGrid from "./ShowcaseGrid.jsx";
 import { useEffect, useState } from "react";
 import PostStream from "./PostStream.jsx";
 import PropTypes from "prop-types";
-import PostButton from "./PostButton.jsx";
 
-function DiscoverPage({ API_URL, isLoggedIn }) {
+function DiscoverPage({ API_URL }) {
   const [sites, setSites] = useState([]);
 
   const fetchSites = async () => {
@@ -23,11 +22,12 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
 
   return (
     <div>
-      <PostStream />
       <ShowcaseGrid sites={sites} />
-      <div>
-        <PostButton isLoggedIn={isLoggedIn} />
-      </div>
+      <ShowcaseGrid sites={sites} />
+      <h2 style={{ marginTop: "40px", textAlign: "left", paddingLeft: "20px" }}>
+        People on Y
+      </h2>
+      <PostStream />
     </div>
   );
 }
