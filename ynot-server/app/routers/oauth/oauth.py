@@ -288,7 +288,8 @@ async def oauth_callback(
     # Save session in the database
     new_session = OAuthSession(
         did=did,
-        handle=handle,
+        handle=existing_user.handle,
+        bio=existing_user.bio,
         pds_url=pds_url,
         authserver_iss=iss,
         access_token=tokens["access_token"],
@@ -313,7 +314,7 @@ async def oauth_callback(
         raise HTTPException(status_code=500, detail="Failed to save OAuth session")
 
     request.session["user_did"] = did
-    request.session["user_handle"] = handle
+    request.session["user_handle"] = existing_user.handle
 
     print(request.session.get("user_did"))
     print(request.session.get("user_handle"))

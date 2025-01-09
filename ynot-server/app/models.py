@@ -127,6 +127,7 @@ class OAuthSession(Base):
     session_id = Column(String, primary_key=True, default=lambda: str(uuid4()))
     did = Column(String, ForeignKey("users.did"), nullable=False)
     handle = Column(String, nullable=False)
+    bio = Column(String)
     pds_url = Column(String)
     authserver_iss = Column(String)
     access_token = Column(String)

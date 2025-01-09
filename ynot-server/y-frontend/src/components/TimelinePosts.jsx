@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import PostModal from "./PostModal.jsx";
 import "../styles/TimelinePosts.css";
 import { calculateTimeElapsed } from "../utils/timeUtils.js";
+import PropTypes from "prop-types";
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -66,9 +67,7 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
   const closeMenu = () => setMenuOpen(false);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/post/${post.rkey}`,
-    );
+    navigator.clipboard.writeText(`${window.location}/post/?rkey=${post.rkey}`);
     alert("Post link copied to clipboard!");
   };
 
@@ -106,7 +105,7 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
   }, []);
 
   const handleEdit = () => {
-    closeMenu(); // Close the menu when the modal opens
+    closeMenu();
     setIsEditModalOpen(true);
   };
 
@@ -148,6 +147,21 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
   );
 };
 
+PostCard.propTypes = {
+  id: PropTypes.string,
+  post: PropTypes.shape({
+    collection: PropTypes.string,
+    rkey: PropTypes.string,
+    note: PropTypes.string,
+    urls: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+    created_at: PropTypes.instanceOf(Date),
+  }),
+  setPosts: PropTypes.func,
+  apiUrl: PropTypes.string,
+  isOwner: PropTypes.bool,
+};
+
 const TimelinePosts = ({
   posts,
   setPosts,
@@ -156,9 +170,6 @@ const TimelinePosts = ({
   userHandle,
   rkey,
 }) => {
-  if (!Array.isArray(posts) || !posts.length)
-    return <div>No posts to display</div>;
-
   const groupedPosts = groupPostsByDate(posts);
 
   // Scroll to a specific post identified by rkey in URL params
@@ -173,6 +184,9 @@ const TimelinePosts = ({
     }
   }, [posts, rkey]);
 
+  if (!Array.isArray(posts) || !posts.length)
+    return <div>No posts to display</div>;
+
   return (
     <div className="timeline-container">
       {Object.keys(groupedPosts).map((date, idx) => (
@@ -186,6 +200,7 @@ const TimelinePosts = ({
           <div className="posts-group">
             {groupedPosts[date].map((post) => (
               <PostCard
+                key={post.rkey}
                 id={post.rkey}
                 post={post}
                 setPosts={setPosts}
@@ -198,6 +213,22 @@ const TimelinePosts = ({
       ))}
     </div>
   );
+};
+
+TimelinePosts.propTypes = {
+  posts: PropTypes.arrayOf(
+    PropTypes.shape({
+      rkey: PropTypes.string,
+      note: PropTypes.string,
+      urls: PropTypes.arrayOf(PropTypes.string),
+      tags: PropTypes.arrayOf(PropTypes.string),
+    }),
+  ),
+  setPosts: PropTypes.func,
+  apiUrl: PropTypes.string,
+  isLoggedIn: PropTypes.string,
+  userHandle: PropTypes.string,
+  rkey: PropTypes.string,
 };
 
 export default TimelinePosts;

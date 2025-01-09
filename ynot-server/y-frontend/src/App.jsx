@@ -6,6 +6,7 @@ import "./styles/styles.css";
 import Whoami from "./components/Whoami.jsx";
 import DiscoverPage from "./components/DiscoverPage.jsx";
 import Header from "./components/Header.jsx";
+import EditProfile from "./components/EditProfile.jsx";
 import FloatingActionButton from "./components/FloatingActionButton";
 import PostModal from "./components/PostModal";
 
@@ -31,6 +32,7 @@ const App = () => {
         setIsLoggedIn(true);
         setUser({
           handle: data.user.handle,
+          bio: data.user.bio,
           did: data.user.did,
           displayName: data.user.displayName,
           avatar: data.user.avatar,
@@ -68,14 +70,17 @@ const App = () => {
         />
       )}
       <Routes>
-        <Route
-          path="/"
-          element={<DiscoverPage API_URL={API_URL} isLoggedIn={isLoggedIn} />}
-        />
+        <Route path="/" element={<DiscoverPage API_URL={API_URL} />} />
         <Route
           path="/:handle/profile"
           element={
             <UserProfile isLoggedIn={isLoggedIn} userHandle={user.handle} />
+          }
+        />
+        <Route
+          path="/:handle/profile/edit"
+          element={
+            <EditProfile API_URL={API_URL} user={user} setUser={setUser} />
           }
         />
         <Route path="/oauth/login" element={<OAuthLogin />} />
@@ -84,10 +89,10 @@ const App = () => {
       <>
         <FloatingActionButton onClick={() => setIsPostModalOpen(true)} />
         {isPostModalOpen && (
-          <PostModal 
-            onClose={() => setIsPostModalOpen(false)} 
+          <PostModal
+            onClose={() => setIsPostModalOpen(false)}
             isLoggedIn={isLoggedIn}
-            onLogin={() => navigate('/oauth/login')}
+            onLogin={() => navigate("/oauth/login")}
           />
         )}
       </>

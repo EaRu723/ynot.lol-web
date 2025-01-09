@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import "../styles/PostModal.css";
 
 function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
@@ -7,8 +8,8 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
   const [submitType, setSubmitType] = useState(null); // null, 'post', or 'website'
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [websiteDescription, setWebsiteDescription] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [websiteDescription, setWebsiteDescription] = useState("");
 
   useEffect(() => {
     if (post) {
@@ -19,11 +20,9 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   }, [post]);
 
   const extractUrlsAndTags = (text) => {
-    // Extract URLs
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const extractedUrls = [...text.matchAll(urlRegex)].map((match) => match[0]);
 
-    // Extract Tags
     const tagRegex = /#(\w+)/g;
     const extractedTags = [...text.matchAll(tagRegex)].map((match) => match[1]);
 
@@ -34,17 +33,8 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     const newNote = e.target.value;
     setNote(newNote);
 
-    // Extract URLs and Tags from the note
     const { urls: newUrls, tags: newTags } = extractUrlsAndTags(newNote);
-
-    // Update URLs and Tags
     setUrls(newUrls);
-    setTags(newTags);
-  };
-
-  const handleRemoveTag = (index) => {
-    const newTags = [...tags];
-    newTags.splice(index, 1);
     setTags(newTags);
   };
 
@@ -69,31 +59,19 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
       payload.rkey = post.rkey;
     }
 
-    const request = async () => {
-      return await fetch(`${API_URL}/post`, {
-        method: post ? "PUT" : "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-    };
+    const response = await fetch(`${API_URL}/post`, {
+      method: post ? "PUT" : "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-    const response = await request();
     if (response.ok) {
       alert(`Post ${post ? "updated" : "created"} successfully`);
       e.target.reset();
       onClose();
     } else {
-      const newResp = await request();
-      if (newResp.ok) {
-        alert(`Post ${post ? "updated" : "created"} successfully`);
-        e.target.reset();
-        onClose();
-      } else {
-        alert(`Post ${post ? "update" : "creation"} failed`);
-      }
+      alert(`Post ${post ? "update" : "creation"} failed`);
     }
   };
 
@@ -109,35 +87,35 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const formatUrl = (url) => {
     // Remove any whitespace
     url = url.trim();
-    
+
     // Check if the URL starts with http:// or https://
     if (!url.match(/^https?:\/\//i)) {
       // If not, add https://
-      url = 'https://' + url;
+      url = "https://" + url;
     }
-    
+
     return url;
   };
 
   const handleWebsiteSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Format the URL before submission
     const formattedUrl = formatUrl(websiteUrl);
-    
+
     // TODO: Implement website submission logic with formatted URL
-    console.log('Submitting website:', {
+    console.log("Submitting website:", {
       url: formattedUrl,
-      description: websiteDescription
+      description: websiteDescription,
     });
-    
-    alert('Website submission feature coming soon!');
+
+    alert("Website submission feature coming soon!");
     onClose();
   };
 
   const handleClickOutside = (e) => {
     // Check if the click was outside the modal-content
-    if (e.target.className === 'modal') {
+    if (e.target.className === "modal") {
       onClose();
     }
   };
@@ -160,19 +138,36 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
             <textarea
               id="note"
               name="note"
-              rows="4"
+              rows="15"
               value={note}
               onChange={handleNoteChange}
               placeholder="Share an article, a video, a website, or whatever's on your mind"
             ></textarea>
           </div>
           <div className="form-group">
-            <button type="submit" className="submit-button">Submit</button>
+            <button type="submit" className="submit-button">
+              Submit
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 }
+
+PostModal.propTypes = {
+  post: PropTypes.shape({
+    rkey: PropTypes.string,
+    note: PropTypes.string,
+    urls: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+  }),
+  onClose: PropTypes.func,
+};
+
+PostModal.DefaultProps = {
+  post: null,
+  onClose: () => {},
+};
 
 export default PostModal;

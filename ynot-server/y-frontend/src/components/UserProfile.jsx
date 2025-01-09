@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import TimelinePosts from "./TimelinePosts.jsx";
+import PostButton from "./PostButton.jsx";
 import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
+import PropTypes from "prop-types";
 
 function UserProfile({ isLoggedIn, userHandle }) {
   const { handle } = useParams();
@@ -43,39 +45,52 @@ function UserProfile({ isLoggedIn, userHandle }) {
     fetchUserData();
   }, [handle, API_URL]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-
   return (
     <div className="main">
-      <div
-        className="profile-banner"
-        style={{ backgroundImage: `url(${profile.banner})` }}
-      >
-        <div className="profile-avatar">
-          <img src={profile.avatar} alt={`${handle}'s avatar`} />
-        </div>
-      </div>
-      <div className="profile-info">
-        <h1>{profile.display_name || handle}</h1>
-        <p className="handle">@{handle}</p>
-        <p className="bio">
-          <Linkify>{profile.bio}</Linkify>
-        </p>
-      </div>
-      <div className="posts-header">Activity</div>
-      <div className="posts-container">
-        <TimelinePosts
-          posts={posts}
-          setPosts={setPosts}
-          apiUrl={API_URL}
-          isLoggedIn={isLoggedIn}
-          userHandle={userHandle}
-          rkey={rkey}
-        />
+      {loading ? (
+        <div>Loading...</div>
+      ) : error ? (
+        <div>Error: {error}</div>
+      ) : (
+        <>
+          <div
+            className="profile-banner"
+            style={{ backgroundImage: `url(${profile.banner})` }}
+          >
+            <div className="profile-avatar">
+              <img src={profile.avatar} alt={`${handle}'s avatar`} />
+            </div>
+          </div>
+          <div className="profile-info">
+            <h1>{profile.display_name || handle}</h1>
+            <p className="handle">@{handle}</p>
+            <p className="bio">
+              <Linkify>{profile.bio}</Linkify>
+            </p>
+          </div>
+          <div className="posts-header">Activity</div>
+          <div className="posts-container">
+            <TimelinePosts
+              posts={posts}
+              setPosts={setPosts}
+              apiUrl={API_URL}
+              isLoggedIn={isLoggedIn}
+              userHandle={userHandle}
+              rkey={rkey}
+            />
+          </div>
+        </>
+      )}
+      <div>
+        <PostButton isLoggedIn={isLoggedIn} />
       </div>
     </div>
   );
 }
+
+UserProfile.propTypes = {
+  isLoggedIn: PropTypes.bool,
+  userHandle: PropTypes.string,
+};
 
 export default UserProfile;
