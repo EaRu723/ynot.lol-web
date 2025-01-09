@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 
 function PostStream() {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -197,5 +198,14 @@ function PostItem({ post }) {
     </div>
   );
 }
+
+PostItem.propTypes = {
+  post: PropTypes.shape({
+    note: PropTypes.string,
+    handle: PropTypes.string,
+    rkey: PropTypes.string,
+    created_at: PropTypes.instanceOf(Date),
+  }),
+};
 
 export default PostStream;
