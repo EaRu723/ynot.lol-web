@@ -1,11 +1,10 @@
-import PostModal from "./PostModal.jsx";
 import ShowcaseGrid from "./ShowcaseGrid.jsx";
 import { useEffect, useState } from "react";
 import PostStream from "./PostStream.jsx";
 import PropTypes from "prop-types";
+import PostButton from "./PostButton.jsx";
 
 function DiscoverPage({ API_URL, isLoggedIn }) {
-  const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
 
   const fetchSites = async () => {
@@ -24,21 +23,11 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
 
   return (
     <div>
-      <div style={{ padding: "10px", marginTop: "15px" }}>
-        {isLoggedIn && (
-          <button
-            onClick={() => setPostModalOpen(true)}
-            style={{ cursor: "pointer" }}
-          >
-            Post
-          </button>
-        )}
-        {isPostModalOpen && (
-          <PostModal onClose={() => setPostModalOpen(false)} />
-        )}
-      </div>
       <PostStream />
       <ShowcaseGrid sites={sites} />
+      <div>
+        <PostButton isLoggedIn={isLoggedIn} />
+      </div>
     </div>
   );
 }

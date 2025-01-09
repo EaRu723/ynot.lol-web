@@ -35,12 +35,6 @@ function PostModal({ post, onClose = null }) {
     setTags(newTags);
   };
 
-  const handleRemoveTag = (index) => {
-    const newTags = [...tags];
-    newTags.splice(index, 1);
-    setTags(newTags);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -94,12 +88,13 @@ function PostModal({ post, onClose = null }) {
           &times;
         </button>
         <br />
+        <br />
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <textarea
               id="note"
               name="note"
-              rows="4"
+              rows="12"
               value={note}
               onChange={handleNoteChange}
             ></textarea>
@@ -109,13 +104,6 @@ function PostModal({ post, onClose = null }) {
               {tags.map((tag, index) => (
                 <span key={index} className="tag">
                   #{tag}
-                  <button
-                    type="button"
-                    className="remove-tag"
-                    onClick={() => handleRemoveTag(index)}
-                  >
-                    &times;
-                  </button>
                 </span>
               ))}
             </div>
