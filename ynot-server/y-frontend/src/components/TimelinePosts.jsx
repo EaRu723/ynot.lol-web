@@ -67,9 +67,7 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
   const closeMenu = () => setMenuOpen(false);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/post/?rkey=${post.rkey}`,
-    );
+    navigator.clipboard.writeText(`${window.location}/post/?rkey=${post.rkey}`);
     alert("Post link copied to clipboard!");
   };
 
@@ -157,7 +155,7 @@ PostCard.propTypes = {
     note: PropTypes.string,
     urls: PropTypes.arrayOf(PropTypes.string),
     tags: PropTypes.arrayOf(PropTypes.string),
-    created_at: PropTypes.object,
+    created_at: PropTypes.instanceOf(Date),
   }),
   setPosts: PropTypes.func,
   apiUrl: PropTypes.string,
