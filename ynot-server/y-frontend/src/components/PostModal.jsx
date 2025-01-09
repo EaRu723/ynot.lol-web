@@ -135,121 +135,41 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     onClose();
   };
 
+  const handleClickOutside = (e) => {
+    // Check if the click was outside the modal-content
+    if (e.target.className === 'modal') {
+      onClose();
+    }
+  };
+
   return (
-    <div className="modal">
+    <div className="modal" onClick={handleClickOutside}>
       <div className="modal-content">
-        {isLoggedIn ? (
-          <>
-            <div>
-              <span
-                className="close"
-                onClick={onClose}
-                style={{ cursor: "pointer" }}
-              >
-                &times;
-              </span>
-            </div>
-            <h2>{post ? "Edit" : "Post"}</h2>
-            <form id="post-form" onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="note">Note:</label>
-                <textarea
-                  id="note"
-                  name="note"
-                  rows="4"
-                  value={note}
-                  onChange={handleNoteChange}
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <div className="tags-container">
-                  {tags.map((tag, index) => (
-                    <span key={index} className="tag">
-                      #{tag}
-                      <button
-                        type="button"
-                        className="remove-tag"
-                        onClick={() => handleRemoveTag(index)}
-                      >
-                        &times;
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="form-group">
-                <button type="submit">{post ? "Update" : "Submit"}</button>
-              </div>
-            </form>
-          </>
-        ) : (
-          <>
-            {!submitType ? (
-              <div className="choice-prompt">
-                <h2>Share Something Cool</h2>
-                <p>Choose what you'd like to do:</p>
-                <div className="choice-buttons">
-                  <button onClick={onLogin} className="choice-button">
-                    Log in to Post
-                  </button>
-                  <button onClick={() => setSubmitType('website')} className="choice-button">
-                    Submit a Website/Project
-                  </button>
-                </div>
-                <button onClick={onClose} className="cancel-button">
-                  Cancel
-                </button>
-              </div>
-            ) : submitType === 'website' && (
-              <div className="website-submission">
-                <h2>Submit a Website or Project</h2>
-                <form onSubmit={handleWebsiteSubmit}>
-                  <div className="form-group">
-                    <label htmlFor="website-url">Website URL:</label>
-                    <input
-                      type="text"
-                      id="website-url"
-                      value={websiteUrl}
-                      onChange={(e) => setWebsiteUrl(e.target.value)}
-                      placeholder="mendel.farm"
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="website-description">Description:</label>
-                    <textarea
-                      id="website-description"
-                      value={websiteDescription}
-                      onChange={(e) => setWebsiteDescription(e.target.value)}
-                      placeholder="Tell us about this website or project..."
-                      rows="4"
-                      required
-                    />
-                  </div>
-                  <div className="form-buttons">
-                    <button type="submit" className="submit-button">
-                      Submit
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={() => setSubmitType(null)} 
-                      className="back-button"
-                    >
-                      Back
-                    </button>
-                    <button 
-                      type="button" 
-                      onClick={onClose} 
-                      className="cancel-button"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </>
-        )}
+        <div>
+          <span
+            className="close"
+            onClick={onClose}
+            style={{ cursor: "pointer" }}
+          >
+            &times;
+          </span>
+        </div>
+        <h2>Share Something Cool</h2>
+        <form id="post-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <textarea
+              id="note"
+              name="note"
+              rows="4"
+              value={note}
+              onChange={handleNoteChange}
+              placeholder="Share an article, a video, a website, or whatever's on your mind"
+            ></textarea>
+          </div>
+          <div className="form-group">
+            <button type="submit" className="submit-button">Submit</button>
+          </div>
+        </form>
       </div>
     </div>
   );
