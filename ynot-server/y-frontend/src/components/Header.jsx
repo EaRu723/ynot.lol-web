@@ -5,7 +5,9 @@ import YFavicon from '/Frame 1.png';
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [navModalOpen, setNavModalOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navModalRef = useRef(null);
 
     const toggleDropdown = () => {
       setDropdownOpen((prev) => !prev);
@@ -32,6 +34,9 @@ const Header = React.memo(
         if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
           setDropdownOpen(false);
         }
+        if (navModalRef.current && !navModalRef.current.contains(event.target)) {
+          setNavModalOpen(false);
+        }
       };
 
       document.addEventListener("click", handleClickOutside);
@@ -40,22 +45,27 @@ const Header = React.memo(
       };
     }, []);
 
-    if (loading) {
-      return (
-        <div className="header">
-          <h1>
-            <a href="/" className="header-link">
-              <img src={YFavicon} alt="Y Logo" className="header-logo" />
-              by people, for people
-            </a>
-          </h1>
-        </div>
-      );
-    }
+    const handleNavClick = (e) => {
+      e.stopPropagation(); // Prevent click from bubbling up
+      setNavModalOpen(!navModalOpen);
+    };
 
-    return (
+    const renderHeader = () => (
       <div className="header">
         <div className="header-left">
+          <button 
+            className="hamburger-menu"
+            onClick={handleNavClick}
+          >
+            ☰
+          </button>
+          {navModalOpen && (
+            <div className="nav-dropdown">
+              <a href="/" className="nav-dropdown-item">Home</a>
+              <a href="/explore" className="nav-dropdown-item">Explore</a>
+              <a href="/about" className="nav-dropdown-item">About</a>
+            </div>
+          )}
           <h1>
             <a href="/" className="header-link">
               <img src={YFavicon} alt="Y Logo" className="header-logo" />
@@ -103,7 +113,40 @@ const Header = React.memo(
             </div>
           )}
         </div>
+
+        {navModalOpen && (
+          <div className="nav-modal" ref={navModalRef}>
+            <div className="nav-modal-content">
+              <button 
+                className="close-modal"
+                onClick={() => setNavModalOpen(false)}
+              >
+                ×
+              </button>
+              <nav>
+                <a href="/">Home</a>
+                <a href="/explore">Explore</a>
+                <a href="/about">About</a>
+                {/* Add more navigation links as needed */}
+              </nav>
+            </div>
+          </div>
+        )}
       </div>
+    );
+
+    return loading ? (
+      <div className="header">
+        <button className="hamburger-menu">☰</button>
+        <h1>
+          <a href="/" className="header-link">
+            <img src={YFavicon} alt="Y Logo" className="header-logo" />
+            by people, for people
+          </a>
+        </h1>
+      </div>
+    ) : (
+      renderHeader()
     );
   },
 );
