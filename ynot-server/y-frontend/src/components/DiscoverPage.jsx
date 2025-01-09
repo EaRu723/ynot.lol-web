@@ -36,8 +36,9 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
           <PostModal onClose={() => setPostModalOpen(false)} />
         )}
       </div>
-      <PostStream />
       <ShowcaseGrid sites={sites} />
+      <h2 style={{ marginTop: "40px", textAlign: "left", paddingLeft: "20px" }}>People on Y</h2>
+      <PostStream />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import "./styles/styles.css";
 import Whoami from "./components/Whoami.jsx";
 import DiscoverPage from "./components/DiscoverPage.jsx";
 import Header from "./components/Header.jsx";
+import FloatingActionButton from "./components/FloatingActionButton";
+import PostModal from "./components/PostModal";
 
 const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -13,6 +15,7 @@ const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState({});
   const navigate = useNavigate();
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   const checkAuthentication = useCallback(async () => {
     if (isLoggedIn) return;
@@ -78,6 +81,16 @@ const App = () => {
         <Route path="/oauth/login" element={<OAuthLogin />} />
         <Route path="/whoami" element={<Whoami />} />
       </Routes>
+      <>
+        <FloatingActionButton onClick={() => setIsPostModalOpen(true)} />
+        {isPostModalOpen && (
+          <PostModal 
+            onClose={() => setIsPostModalOpen(false)} 
+            isLoggedIn={isLoggedIn}
+            onLogin={() => navigate('/oauth/login')}
+          />
+        )}
+      </>
     </main>
   );
 };
