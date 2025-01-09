@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/Header.css";
-import YFavicon from '/Frame 1.png';
+import YFavicon from "/Frame 1.png";
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [navModalOpen, setNavModalOpen] = useState(false);
     const dropdownRef = useRef(null);
-    const navModalRef = useRef(null);
 
     const toggleDropdown = () => {
       setDropdownOpen((prev) => !prev);
@@ -32,18 +31,24 @@ const Header = React.memo(
     useEffect(() => {
       const handleClickOutside = (event) => {
         // Close profile dropdown
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(event.target)
+        ) {
           setDropdownOpen(false);
         }
         // Close nav dropdown
-        if (!event.target.closest('.hamburger-menu') && !event.target.closest('.nav-dropdown')) {
+        if (
+          !event.target.closest(".hamburger-menu") &&
+          !event.target.closest(".nav-dropdown")
+        ) {
           setNavModalOpen(false);
         }
       };
 
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener("mousedown", handleClickOutside);
       };
     }, []);
 
@@ -55,18 +60,23 @@ const Header = React.memo(
     const renderHeader = () => (
       <div className="header">
         <div className="header-left">
-          <button 
-            className="hamburger-menu"
-            onClick={handleNavClick}
-          >
+          <button className="hamburger-menu" onClick={handleNavClick}>
             ☰
           </button>
           {navModalOpen && (
             <div className="nav-dropdown">
-              <a href="/people" className="nav-dropdown-item">People</a>
-              <a href="/projects" className="nav-dropdown-item">Projects</a>
-              <a href="/discover" className="nav-dropdown-item">Discover</a>
-              <a href="/about" className="nav-dropdown-item">About</a>
+              <a href="/people" className="nav-dropdown-item">
+                People
+              </a>
+              <a href="/projects" className="nav-dropdown-item">
+                Projects
+              </a>
+              <a href="/discover" className="nav-dropdown-item">
+                Discover
+              </a>
+              <a href="/about" className="nav-dropdown-item">
+                About
+              </a>
             </div>
           )}
           <h1>
@@ -103,7 +113,7 @@ const Header = React.memo(
               <a href={`/${user.handle}/profile`} className="dropdown-item">
                 Profile
               </a>
-              <a href="#" className="dropdown-item">
+              <a href={`/${user.handle}/settings`} className="dropdown-item">
                 Settings
               </a>
               <button
@@ -116,24 +126,10 @@ const Header = React.memo(
             </div>
           )}
         </div>
-
-
       </div>
     );
 
-    return loading ? (
-      <div className="header">
-        <button className="hamburger-menu">☰</button>
-        <h1>
-          <a href="/" className="header-link">
-            <img src={YFavicon} alt="Y Logo" className="header-logo" />
-            by people, for people
-          </a>
-        </h1>
-      </div>
-    ) : (
-      renderHeader()
-    );
+    return loading ? <div className="header"></div> : renderHeader();
   },
 );
 

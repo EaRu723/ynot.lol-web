@@ -20,7 +20,8 @@
   flex-direction: column;
   border: 1px solid black;
   width: 20%;
-  height: 60vh;
+  min-width: 400px;
+  height: 50vh;
   position: absolute;
   bottom: 100px;
   left: 85%;

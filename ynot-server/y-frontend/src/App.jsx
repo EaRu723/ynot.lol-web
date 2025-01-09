@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import UserProfile from "./components/UserProfile";
 import OAuthLogin from "./components/OAuthLogin";
-import "./styles/styles.css";
-import Whoami from "./components/Whoami.jsx";
 import DiscoverPage from "./components/DiscoverPage.jsx";
 import Header from "./components/Header.jsx";
 import FloatingActionButton from "./components/FloatingActionButton";
 import PostModal from "./components/PostModal";
+import EditProfile from "./components/EditProfile.jsx";
+import "./styles/styles.css";
 
 const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -32,6 +32,7 @@ const App = () => {
         setUser({
           handle: data.user.handle,
           did: data.user.did,
+          bio: data.user.bio,
           displayName: data.user.displayName,
           avatar: data.user.avatar,
           banner: data.user.banner,
@@ -68,26 +69,28 @@ const App = () => {
         />
       )}
       <Routes>
-        <Route
-          path="/"
-          element={<DiscoverPage API_URL={API_URL} isLoggedIn={isLoggedIn} />}
-        />
+        <Route path="/" element={<DiscoverPage API_URL={API_URL} />} />
         <Route
           path="/:handle/profile"
           element={
             <UserProfile isLoggedIn={isLoggedIn} userHandle={user.handle} />
           }
         />
+        <Route
+          path="/:handle/settings"
+          element={
+            <EditProfile API_URL={API_URL} user={user} setUser={setUser} />
+          }
+        />
         <Route path="/oauth/login" element={<OAuthLogin />} />
-        <Route path="/whoami" element={<Whoami />} />
       </Routes>
       <>
         <FloatingActionButton onClick={() => setIsPostModalOpen(true)} />
         {isPostModalOpen && (
-          <PostModal 
-            onClose={() => setIsPostModalOpen(false)} 
+          <PostModal
+            onClose={() => setIsPostModalOpen(false)}
             isLoggedIn={isLoggedIn}
-            onLogin={() => navigate('/oauth/login')}
+            onLogin={() => navigate("/oauth/login")}
           />
         )}
       </>
