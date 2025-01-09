@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 function Whoami() {
   const API_URL = import.meta.env.VITE_API_BASE_URL;

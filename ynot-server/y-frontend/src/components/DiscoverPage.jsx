@@ -2,6 +2,7 @@ import PostModal from "./PostModal.jsx";
 import ShowcaseGrid from "./ShowcaseGrid.jsx";
 import { useEffect, useState } from "react";
 import PostStream from "./PostStream.jsx";
+import PropTypes from "prop-types";
 
 function DiscoverPage({ API_URL, isLoggedIn }) {
   const [isPostModalOpen, setPostModalOpen] = useState(false);
@@ -41,5 +42,10 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
     </div>
   );
 }
+
+DiscoverPage.propTypes = {
+  API_URL: PropTypes.string,
+  isLoggedIn: PropTypes.bool,
+};
 
 export default DiscoverPage;

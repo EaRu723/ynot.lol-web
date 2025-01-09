@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import "../styles/PostModal.css";
 
 function PostModal({ post, onClose = null }) {
@@ -16,11 +17,9 @@ function PostModal({ post, onClose = null }) {
   }, [post]);
 
   const extractUrlsAndTags = (text) => {
-    // Extract URLs
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const extractedUrls = [...text.matchAll(urlRegex)].map((match) => match[0]);
 
-    // Extract Tags
     const tagRegex = /#(\w+)/g;
     const extractedTags = [...text.matchAll(tagRegex)].map((match) => match[1]);
 
@@ -31,10 +30,7 @@ function PostModal({ post, onClose = null }) {
     const newNote = e.target.value;
     setNote(newNote);
 
-    // Extract URLs and Tags from the note
     const { urls: newUrls, tags: newTags } = extractUrlsAndTags(newNote);
-
-    // Update URLs and Tags
     setUrls(newUrls);
     setTags(newTags);
   };
@@ -66,31 +62,19 @@ function PostModal({ post, onClose = null }) {
       payload.rkey = post.rkey;
     }
 
-    const request = async () => {
-      return await fetch(`${API_URL}/post`, {
-        method: post ? "PUT" : "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-    };
+    const response = await fetch(`${API_URL}/post`, {
+      method: post ? "PUT" : "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-    const response = await request();
     if (response.ok) {
       alert(`Post ${post ? "updated" : "created"} successfully`);
       e.target.reset();
       onClose();
     } else {
-      const newResp = await request();
-      if (newResp.ok) {
-        alert(`Post ${post ? "updated" : "created"} successfully`);
-        e.target.reset();
-        onClose();
-      } else {
-        alert(`Post ${post ? "update" : "creation"} failed`);
-      }
+      alert(`Post ${post ? "update" : "creation"} failed`);
     }
   };
 
@@ -106,19 +90,12 @@ function PostModal({ post, onClose = null }) {
   return (
     <div className="modal">
       <div className="modal-content">
-        <div>
-          <span
-            className="close"
-            onClick={onClose}
-            style={{ cursor: "pointer" }}
-          >
-            &times;
-          </span>
-        </div>
-        <h2>{post ? "Edit" : "Post"}</h2>
-        <form id="post-form" onSubmit={handleSubmit}>
+        <button className="close" onClick={onClose}>
+          &times;
+        </button>
+        <br />
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="note">Note:</label>
             <textarea
               id="note"
               name="note"
@@ -144,12 +121,29 @@ function PostModal({ post, onClose = null }) {
             </div>
           </div>
           <div className="form-group">
-            <button type="submit">{post ? "Update" : "Submit"}</button>
+            <button type="submit" className="button">
+              {post ? "Edit" : "Post"}
+            </button>
           </div>
         </form>
       </div>
     </div>
   );
 }
+
+PostModal.propTypes = {
+  post: PropTypes.shape({
+    rkey: PropTypes.string,
+    note: PropTypes.string,
+    urls: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+  }),
+  onClose: PropTypes.func,
+};
+
+PostModal.DefaultProps = {
+  post: null,
+  onClose: () => {},
+};
 
 export default PostModal;
