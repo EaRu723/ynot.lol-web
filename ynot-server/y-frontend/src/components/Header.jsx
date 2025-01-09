@@ -28,20 +28,22 @@ const Header = React.memo(
       }
     };
 
-    // Close dropdown if clicking outside
+    // Close both dropdowns if clicking outside
     useEffect(() => {
       const handleClickOutside = (event) => {
+        // Close profile dropdown
         if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
           setDropdownOpen(false);
         }
-        if (navModalRef.current && !navModalRef.current.contains(event.target)) {
+        // Close nav dropdown
+        if (!event.target.closest('.hamburger-menu') && !event.target.closest('.nav-dropdown')) {
           setNavModalOpen(false);
         }
       };
 
-      document.addEventListener("click", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
       return () => {
-        document.removeEventListener("click", handleClickOutside);
+        document.removeEventListener('mousedown', handleClickOutside);
       };
     }, []);
 
