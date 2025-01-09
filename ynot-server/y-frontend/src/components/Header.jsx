@@ -63,8 +63,9 @@ const Header = React.memo(
           </button>
           {navModalOpen && (
             <div className="nav-dropdown">
-              <a href="/" className="nav-dropdown-item">Home</a>
-              <a href="/explore" className="nav-dropdown-item">Explore</a>
+              <a href="/people" className="nav-dropdown-item">People</a>
+              <a href="/projects" className="nav-dropdown-item">Projects</a>
+              <a href="/discover" className="nav-dropdown-item">Discover</a>
               <a href="/about" className="nav-dropdown-item">About</a>
             </div>
           )}
