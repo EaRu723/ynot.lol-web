@@ -114,24 +114,7 @@ const Header = React.memo(
           )}
         </div>
 
-        {navModalOpen && (
-          <div className="nav-modal" ref={navModalRef}>
-            <div className="nav-modal-content">
-              <button 
-                className="close-modal"
-                onClick={() => setNavModalOpen(false)}
-              >
-                ×
-              </button>
-              <nav>
-                <a href="/">Home</a>
-                <a href="/explore">Explore</a>
-                <a href="/about">About</a>
-                {/* Add more navigation links as needed */}
-              </nav>
-            </div>
-          </div>
-        )}
+
       </div>
     );
 

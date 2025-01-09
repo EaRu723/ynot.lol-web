@@ -112,9 +112,12 @@
   border: none;
   font-size: 24px;
   cursor: pointer;
-  padding: 0 15px;
+  padding: 0;
+  margin-left: -10px;
   color: inherit;
-  margin-left: -30px;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .nav-dropdown {
