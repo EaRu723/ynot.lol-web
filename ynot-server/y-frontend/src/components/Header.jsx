@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/Header.css";
+import YFavicon from '/Y_favicon.png';
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
@@ -47,7 +48,8 @@ const Header = React.memo(
         <div className="header">
           <h1>
             <a href="/" className="header-link">
-              Discover cool <i>people</i>.
+              <img src={YFavicon} alt="Y Logo" className="header-logo" />
+              by people, for people
             </a>
           </h1>
         </div>
@@ -56,42 +58,56 @@ const Header = React.memo(
 
     return (
       <div className="header">
-        <h1>
-          <a href="/" className="header-link">
-            Discover cool <i>people</i>.
-          </a>
-        </h1>
-        {isLoggedIn ? (
-          <div className="profile-container" ref={dropdownRef}>
-            <img
-              alt="Profile"
-              src={user.avatar}
-              className="profile-image"
-              onClick={toggleDropdown}
-            />
-            {dropdownOpen && (
-              <div className="dropdown">
-                <a href={`/${user.handle}/profile`} className="dropdown-item">
-                  Profile
-                </a>
-                <a href="#" className="dropdown-item">
-                  Settings
-                </a>
-                <button
-                  onClick={handleLogout}
-                  className="dropdown-item"
-                  style={{ color: "red" }}
-                >
-                  Log out
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <button onClick={onLogin} className="login-button">
-            Log in
-          </button>
-        )}
+        <div className="header-left">
+          <h1>
+            <a href="/" className="header-link">
+              <img src={YFavicon} alt="Y Logo" className="header-logo" />
+              our web
+            </a>
+          </h1>
+        </div>
+
+        <div className="header-middle">
+          <input
+            type="text"
+            className="search-bar"
+            placeholder="Search cool people/projects..."
+          />
+        </div>
+
+        <div className="header-right">
+          {isLoggedIn ? (
+            <div className="profile-container" ref={dropdownRef}>
+              <img
+                alt="Profile"
+                src={user.avatar}
+                className="profile-image"
+                onClick={toggleDropdown}
+              />
+              {dropdownOpen && (
+                <div className="dropdown">
+                  <a href={`/${user.handle}/profile`} className="dropdown-item">
+                    Profile
+                  </a>
+                  <a href="#" className="dropdown-item">
+                    Settings
+                  </a>
+                  <button
+                    onClick={handleLogout}
+                    className="dropdown-item"
+                    style={{ color: "red" }}
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button onClick={onLogin} className="login-button">
+              Log in
+            </button>
+          )}
+        </div>
       </div>
     );
   },

@@ -2,10 +2,46 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10px 20px;
+  background-color: #fff;
   border-bottom: 1px solid #e9e9ed;
 }
 
+.header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-left h1 {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.header-middle {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.search-bar {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .header-link {
+  display: flex;
+  align-items: center;
   text-decoration: none;
   color: inherit;
 }
@@ -52,10 +88,21 @@
 }
 
 .login-button {
-  cursor: pointer;
-  padding: 10px 15px;
-  font-size: 14px;
-  border: 1px solid #ddd;
+  background-color: #000;
+  color: white;
+  border: none;
+  padding: 8px 12px;
   border-radius: 5px;
-  background-color: #fff;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  background-color: #333;
+}
+
+.header-logo {
+  height: 24px;
+  width: 24px;
+  margin-right: 10px;
+  vertical-align: middle;
 }
