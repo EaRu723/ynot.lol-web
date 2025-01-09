@@ -82,14 +82,14 @@ const App = () => {
         <Route path="/whoami" element={<Whoami />} />
       </Routes>
       <>
-        <FloatingActionButton onClick={() => {
-          if (!isLoggedIn) {
-            navigate('/oauth/login');
-            return;
-          }
-          setIsPostModalOpen(true);
-        }} />
-        {isPostModalOpen && <PostModal onClose={() => setIsPostModalOpen(false)} />}
+        <FloatingActionButton onClick={() => setIsPostModalOpen(true)} />
+        {isPostModalOpen && (
+          <PostModal 
+            onClose={() => setIsPostModalOpen(false)} 
+            isLoggedIn={isLoggedIn}
+            onLogin={() => navigate('/oauth/login')}
+          />
+        )}
       </>
     </main>
   );

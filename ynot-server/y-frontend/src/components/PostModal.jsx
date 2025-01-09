@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import "../styles/PostModal.css";
 
-function PostModal({ post, onClose = null }) {
+function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [urls, setUrls] = useState(post ? post.urls : []);
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
+  const [submitType, setSubmitType] = useState(null); // null, 'post', or 'website'
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [websiteDescription, setWebsiteDescription] = useState('');
 
   useEffect(() => {
     if (post) {
@@ -103,50 +106,150 @@ function PostModal({ post, onClose = null }) {
     }
   };
 
+  const formatUrl = (url) => {
+    // Remove any whitespace
+    url = url.trim();
+    
+    // Check if the URL starts with http:// or https://
+    if (!url.match(/^https?:\/\//i)) {
+      // If not, add https://
+      url = 'https://' + url;
+    }
+    
+    return url;
+  };
+
+  const handleWebsiteSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Format the URL before submission
+    const formattedUrl = formatUrl(websiteUrl);
+    
+    // TODO: Implement website submission logic with formatted URL
+    console.log('Submitting website:', {
+      url: formattedUrl,
+      description: websiteDescription
+    });
+    
+    alert('Website submission feature coming soon!');
+    onClose();
+  };
+
   return (
     <div className="modal">
       <div className="modal-content">
-        <div>
-          <span
-            className="close"
-            onClick={onClose}
-            style={{ cursor: "pointer" }}
-          >
-            &times;
-          </span>
-        </div>
-        <h2>{post ? "Edit" : "Post"}</h2>
-        <form id="post-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="note">Note:</label>
-            <textarea
-              id="note"
-              name="note"
-              rows="4"
-              value={note}
-              onChange={handleNoteChange}
-            ></textarea>
-          </div>
-          <div className="form-group">
-            <div className="tags-container">
-              {tags.map((tag, index) => (
-                <span key={index} className="tag">
-                  #{tag}
-                  <button
-                    type="button"
-                    className="remove-tag"
-                    onClick={() => handleRemoveTag(index)}
-                  >
-                    &times;
-                  </button>
-                </span>
-              ))}
+        {isLoggedIn ? (
+          <>
+            <div>
+              <span
+                className="close"
+                onClick={onClose}
+                style={{ cursor: "pointer" }}
+              >
+                &times;
+              </span>
             </div>
-          </div>
-          <div className="form-group">
-            <button type="submit">{post ? "Update" : "Submit"}</button>
-          </div>
-        </form>
+            <h2>{post ? "Edit" : "Post"}</h2>
+            <form id="post-form" onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="note">Note:</label>
+                <textarea
+                  id="note"
+                  name="note"
+                  rows="4"
+                  value={note}
+                  onChange={handleNoteChange}
+                ></textarea>
+              </div>
+              <div className="form-group">
+                <div className="tags-container">
+                  {tags.map((tag, index) => (
+                    <span key={index} className="tag">
+                      #{tag}
+                      <button
+                        type="button"
+                        className="remove-tag"
+                        onClick={() => handleRemoveTag(index)}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group">
+                <button type="submit">{post ? "Update" : "Submit"}</button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            {!submitType ? (
+              <div className="choice-prompt">
+                <h2>Share Something Cool</h2>
+                <p>Choose what you'd like to do:</p>
+                <div className="choice-buttons">
+                  <button onClick={onLogin} className="choice-button">
+                    Log in to Post
+                  </button>
+                  <button onClick={() => setSubmitType('website')} className="choice-button">
+                    Submit a Website/Project
+                  </button>
+                </div>
+                <button onClick={onClose} className="cancel-button">
+                  Cancel
+                </button>
+              </div>
+            ) : submitType === 'website' && (
+              <div className="website-submission">
+                <h2>Submit a Website or Project</h2>
+                <form onSubmit={handleWebsiteSubmit}>
+                  <div className="form-group">
+                    <label htmlFor="website-url">Website URL:</label>
+                    <input
+                      type="text"
+                      id="website-url"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      placeholder="mendel.farm"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="website-description">Description:</label>
+                    <textarea
+                      id="website-description"
+                      value={websiteDescription}
+                      onChange={(e) => setWebsiteDescription(e.target.value)}
+                      placeholder="Tell us about this website or project..."
+                      rows="4"
+                      required
+                    />
+                  </div>
+                  <div className="form-buttons">
+                    <button type="submit" className="submit-button">
+                      Submit
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setSubmitType(null)} 
+                      className="back-button"
+                    >
+                      Back
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={onClose} 
+                      className="cancel-button"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
