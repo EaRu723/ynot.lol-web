@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/Header.css";
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
@@ -104,5 +105,14 @@ const Header = React.memo(
 );
 
 Header.displayName = "Header";
+Header.propTypes = {
+  API_URL: PropTypes.string,
+  user: PropTypes.string,
+  setUser: PropTypes.func,
+  isLoggedIn: PropTypes.bool,
+  setIsLoggedIn: PropTypes.func,
+  onLogin: PropTypes.func,
+  loading: PropTypes.bool,
+};
 
 export default Header;
