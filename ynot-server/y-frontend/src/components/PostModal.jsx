@@ -94,7 +94,7 @@ function PostModal({ post, onClose = null }) {
             <textarea
               id="note"
               name="note"
-              rows="12"
+              rows="15"
               value={note}
               onChange={handleNoteChange}
             ></textarea>
