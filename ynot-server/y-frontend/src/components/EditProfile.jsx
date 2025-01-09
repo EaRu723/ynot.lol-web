@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/EditProfile.css";
+import PropTypes from "prop-types";
 
 function EditProfile({ user, setUser }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -144,5 +145,15 @@ function EditProfile({ user, setUser }) {
     </div>
   );
 }
+
+EditProfile.propTypes = {
+  user: PropTypes.shape({
+    displayName: PropTypes.string,
+    bio: PropTypes.string,
+    avatar: PropTypes.string,
+    banner: PropTypes.string,
+  }),
+  setUser: PropTypes.func,
+};
 
 export default EditProfile;
