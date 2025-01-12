@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List, Optional
-from uuid import uuid4
 
 from pydantic import BaseModel, Field
 from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer, MetaData,
@@ -92,64 +91,89 @@ class RecordDelete(BaseModel):
         from_attributes = True
 
 
-class OAuthAuthRequestBase(BaseModel):
-    state: str
-    authserver_iss: str
-    did: Optional[str] = None
-    handle: Optional[str] = None
-    pds_url: Optional[str] = None
-    pkce_verifier: str
-    scope: str
-    dpop_authserver_nonce: str
-    dpop_private_ec_key: dict
+# class OAuthAuthRequestBase(BaseModel):
+#     state: str
+#     authserver_iss: str
+#     did: Optional[str] = None
+#     handle: Optional[str] = None
+#     pds_url: Optional[str] = None
+#     pkce_verifier: str
+#     scope: str
+#     dpop_authserver_nonce: str
+#     dpop_private_ec_key: dict
+#
+#     class Config:
+#         arbitrary_types_allowed = True
+#         from_attributes = True
+#
+#
+# class OAuthAuthRequest(Base):
+#     __tablename__ = "oauth_auth_request"
+#
+#     state = Column(String, primary_key=True)
+#     authserver_iss = Column(String, nullable=False)
+#     did = Column(String, nullable=True)
+#     handle = Column(String, nullable=True)
+#     pds_url = Column(String, nullable=True)
+#     pkce_verifier = Column(String, nullable=False)
+#     scope = Column(String, nullable=False)
+#     dpop_authserver_nonce = Column(String, nullable=False)
+#     dpop_private_ec_key = Column(JSON, nullable=False)
+#
+#
+# class OAuthSession(Base):
+#     __tablename__ = "oauth_session"
+#     session_id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+#     did = Column(String, ForeignKey("users.did"), nullable=False)
+#     handle = Column(String, nullable=False)
+#     pds_url = Column(String)
+#     authserver_iss = Column(String)
+#     access_token = Column(String)
+#     refresh_token = Column(String)
+#     dpop_authserver_nonce = Column(String)
+#     dpop_private_jwk = Column(JSON, nullable=False)
+#
+#     user = relationship("User", back_populates="oauth_sessions")
 
-    class Config:
-        arbitrary_types_allowed = True
-        from_attributes = True
+
+# class GoogleOAuthSession(Base):
+#     __tablename__ = "google_oauth_session"
+#     id = Column(Integer, primary_key=True, default=lambda: uuid4())
+#     user_id = Column(
+#         Integer, ForeignKey("users.id"), nullable=False  # Foreign key to users.id
+#     )
+#     session_token = Column(String, nullable=False)
 
 
-class OAuthAuthRequest(Base):
-    __tablename__ = "oauth_auth_request"
+# class User(Base):
+#     __tablename__ = "users"
+#     did = Column(String, primary_key=True)
+#     handle = Column(String)
+#     display_name = Column(String)
+#     bio = Column(String, default="")
+#     avatar = Column(String)
+#     banner = Column(String)
+#     pds_url = Column(String)
+#     created_at = Column(DateTime, default=datetime.utcnow())
+#     updated_at = Column(DateTime, onupdate=datetime.utcnow())
+#
+#     oauth_sessions = relationship("OAuthSession", back_populates="user")
 
-    state = Column(String, primary_key=True)
-    authserver_iss = Column(String, nullable=False)
-    did = Column(String, nullable=True)
-    handle = Column(String, nullable=True)
-    pds_url = Column(String, nullable=True)
-    pkce_verifier = Column(String, nullable=False)
-    scope = Column(String, nullable=False)
-    dpop_authserver_nonce = Column(String, nullable=False)
-    dpop_private_ec_key = Column(JSON, nullable=False)
 
-
-class OAuthSession(Base):
-    __tablename__ = "oauth_session"
-    session_id = Column(String, primary_key=True, default=lambda: str(uuid4()))
-    did = Column(String, ForeignKey("users.did"), nullable=False)
-    handle = Column(String, nullable=False)
-    pds_url = Column(String)
-    authserver_iss = Column(String)
-    access_token = Column(String)
-    refresh_token = Column(String)
-    dpop_authserver_nonce = Column(String)
-    dpop_private_jwk = Column(JSON, nullable=False)
-
-    user = relationship("User", back_populates="oauth_sessions")
+class GoogleAuthRequest(BaseModel):
+    id_token: str
 
 
 class User(Base):
     __tablename__ = "users"
-    did = Column(String, primary_key=True)
-    handle = Column(String)
-    display_name = Column(String)
-    bio = Column(String, default="")
-    avatar = Column(String)
-    banner = Column(String)
-    pds_url = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow())
-    updated_at = Column(DateTime, onupdate=datetime.utcnow())
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    google_id = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    name = Column(String)
+    avatar = Column(String, nullable=True)
 
-    oauth_sessions = relationship("OAuthSession", back_populates="user")
+    def __repr__(self):
+        return f"<User(id={self.id}, google_id={self.google_id}, email={self.email})>"
 
 
 class UserPost(BaseModel):

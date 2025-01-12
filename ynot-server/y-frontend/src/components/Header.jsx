@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../styles/Header.css";
 import YFavicon from "/Frame 1.png";
+import { useNavigate } from "react-router-dom";
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [navModalOpen, setNavModalOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
 
     const toggleDropdown = () => {
       setDropdownOpen((prev) => !prev);
@@ -14,7 +16,7 @@ const Header = React.memo(
 
     const handleLogout = async () => {
       try {
-        await fetch(`${API_URL}/oauth/logout`, {
+        await fetch(`${API_URL}/auth/logout`, {
           method: "GET",
           credentials: "include",
         });
@@ -24,20 +26,20 @@ const Header = React.memo(
         setIsLoggedIn(false);
         setUser({});
         sessionStorage.clear();
+        navigate("/");
+        setDropdownOpen(false);
       }
     };
 
     // Close both dropdowns if clicking outside
     useEffect(() => {
       const handleClickOutside = (event) => {
-        // Close profile dropdown
         if (
           dropdownRef.current &&
           !dropdownRef.current.contains(event.target)
         ) {
           setDropdownOpen(false);
         }
-        // Close nav dropdown
         if (
           !event.target.closest(".hamburger-menu") &&
           !event.target.closest(".nav-dropdown")
@@ -109,7 +111,7 @@ const Header = React.memo(
             </button>
           )}
           {dropdownOpen && (
-            <div className="dropdown">
+            <div className="dropdown" ref={dropdownRef}>
               <a href={`/${user.handle}/profile`} className="dropdown-item">
                 Profile
               </a>

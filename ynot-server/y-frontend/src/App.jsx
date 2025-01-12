@@ -21,7 +21,7 @@ const App = () => {
     if (isLoggedIn) return;
 
     try {
-      const response = await fetch(`${API_URL}/whoami`, {
+      const response = await fetch(`${API_URL}/auth/me`, {
         method: "GET",
         credentials: "include",
       });
@@ -30,12 +30,9 @@ const App = () => {
         const data = await response.json();
         setIsLoggedIn(true);
         setUser({
-          handle: data.user.handle,
-          did: data.user.did,
-          bio: data.user.bio,
-          displayName: data.user.displayName,
-          avatar: data.user.avatar,
-          banner: data.user.banner,
+          avatar: data.avatar,
+          email: data.email,
+          name: data.name,
         });
       } else {
         setIsLoggedIn(false);
@@ -53,7 +50,7 @@ const App = () => {
     checkAuthentication();
   }, [checkAuthentication, API_URL]);
 
-  const hideHeader = ["/oauth/login"];
+  const hideHeader = ["/login"];
 
   return (
     <main>
@@ -64,7 +61,7 @@ const App = () => {
           setUser={setUser}
           isLoggedIn={isLoggedIn}
           setIsLoggedIn={setIsLoggedIn}
-          onLogin={() => navigate("/oauth/login")}
+          onLogin={() => navigate("/login")}
           loading={loading}
         />
       )}
@@ -82,7 +79,7 @@ const App = () => {
             <EditProfile API_URL={API_URL} user={user} setUser={setUser} />
           }
         />
-        <Route path="/oauth/login" element={<OAuthLogin />} />
+        <Route path="/login" element={<OAuthLogin />} />
       </Routes>
       <>
         <FloatingActionButton onClick={() => setIsPostModalOpen(true)} />

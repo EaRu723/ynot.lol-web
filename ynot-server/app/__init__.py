@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.middleware.user_middleware import LoadUserMiddleware
 from app.routers import api, user
-from app.routers.oauth import oauth
+from app.routers.auth import auth, google_oauth
 
 app = FastAPI()
 
@@ -19,7 +19,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://ynot.lol",
-        "http://localhost:5173",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
     ],
@@ -54,30 +53,13 @@ elif settings.app_env == "production":
 
 # app.include_router(views.router)
 app.include_router(api.router, prefix="/api")
-app.include_router(oauth.router, prefix="/api/oauth")
 app.include_router(user.router, prefix="/api/user")
-
-# Load lexicons
-lexicon_dir = Path(__file__).parent / "lexicons"
-lexicons = {}
-
-for lexicon_file in lexicon_dir.glob("*.json"):
-    with open(lexicon_file) as f:
-        lexicon = json.load(f)
-        lexicons[lexicon["id"]] = lexicon
-
-
-@app.get("/lexicon/{lexicon_id}")
-async def get_lexicon(lexicon_id: str):
-    lexicon = lexicons.get(lexicon_id)
-    if lexicon:
-        return lexicon
-    else:
-        raise HTTPException(status_code=404, detail="Lexicon not found")
+app.include_router(auth.router, prefix="/api/auth")
+app.include_router(google_oauth.router, prefix="/api/auth/google")
 
 
 # Load static React files
-app.mount("/assets", StaticFiles(directory="y-frontend/dist/assets"), name="static")
+app.mount("/static", StaticFiles(directory="y-frontend/dist/assets"), name="static")
 
 
 @app.get("/{full_path:path}")
