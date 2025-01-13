@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
+from app.models.models import User
+from app.schemas.schemas import ProfileCompletionRequest
 
 router = APIRouter()
 
@@ -23,6 +25,40 @@ async def resolve_handle_to_did(handle: str) -> str:
         )
 
     return did
+
+
+@router.post("/complete-profile")
+async def complete_profile(
+    request: ProfileCompletionRequest,
+    db: AsyncSession = Depends(get_async_session),
+    user: User = Depends(login_required),
+):
+    existing_user_result = await db.execute(
+        select(User).where(User.username == request.username)
+    )
+    existing_user = existing_user_result.scalar()
+    if existing_user and existing_user.id != user.id:
+        raise HTTPException(status_code=400, detail="Username is already taken")
+
+    username = request.username
+    avatar = request.avatar
+    banner = request.banner
+
+    query = select(User).where(User.id == user.id)
+    result = await db.execute(query)
+    user = result.scalar()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.username = username
+    if request.avatar:
+        user.avatar = request.avatar
+    if request.banner:
+        user.banner = request.banner
+    user.is_profile_complete = True
+
+    await db.commit()
+    return {"message": "Profile completed"}
 
 
 # @router.get("/{handle}/posts", response_model=List[FrontendPost])

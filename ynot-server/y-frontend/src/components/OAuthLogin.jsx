@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-function OAuthLogin() {
+function OAuthLogin({ setUser, setIsLoggedIn }) {
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const GOOGLE_REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI;
   const API_URL = import.meta.env.VITE_API_BASE_URL;
 
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -25,8 +28,8 @@ function OAuthLogin() {
         window.google.accounts.id.renderButton(
           document.getElementById("google-signin-button"),
           {
-            theme: "outline", // Button style
-            size: "large", // Button size
+            theme: "outline",
+            size: "large",
           },
         );
       } else {
@@ -52,7 +55,7 @@ function OAuthLogin() {
 
     try {
       // Send the ID token to your backend for verification
-      const res = await fetch(`${GOOGLE_REDIRECT_URI}`, {
+      const res = await fetch(`${API_URL}/auth/google/callback`, {
         method: "POST",
         credentials: "include", // Include cookies for session management
         headers: {
@@ -63,7 +66,22 @@ function OAuthLogin() {
 
       if (res.ok) {
         console.log("Login successful!");
-        window.location.reload(); // Reload to reflect logged-in state
+        // Make the request to /me endpoint to fetch user data
+        const meResponse = await fetch(`${API_URL}/auth/me`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (meResponse.ok) {
+          const userData = await meResponse.json();
+          console.log("User data:", userData);
+          setUser(userData);
+          setIsLoggedIn(true);
+          navigate("/");
+        } else {
+          console.error("Failed to fetch user data");
+          setError("Failed to fetch user data");
+        }
       } else {
         const data = await res.json();
         setError(data.error || "An error occurred while logging in.");

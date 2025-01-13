@@ -154,9 +154,11 @@
   font-size: 24px;
   cursor: pointer;
   padding: 0;
+  padding-bottom: 13px;
   margin-left: -10px;
   color: inherit;
   display: flex;
+  justify-content: center;
   align-items: center;
   height: 100%;
 }

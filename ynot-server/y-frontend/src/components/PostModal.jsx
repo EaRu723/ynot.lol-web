@@ -7,7 +7,6 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
   const [files, setFiles] = useState([]);
-  const [fileKeys, setFileKeys] = useState([]);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {

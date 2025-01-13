@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer, MetaData,
-                        String, Table, Text, func)
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        MetaData, String, Table, Text, func)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -66,8 +66,10 @@ class User(Base):
     google_id = Column(String, unique=True, index=True)
     email = Column(String, unique=True, index=True)
     name = Column(String)
+    username = Column(String, unique=True)
     avatar = Column(String, nullable=True)
     banner = Column(String, nullable=True)
+    is_profile_complete = Column(Boolean, default=False)
 
     posts = relationship("Post", back_populates="owner")
 

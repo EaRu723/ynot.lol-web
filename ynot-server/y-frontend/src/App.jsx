@@ -8,6 +8,7 @@ import FloatingActionButton from "./components/FloatingActionButton";
 import PostModal from "./components/PostModal";
 import EditProfile from "./components/EditProfile.jsx";
 import "./styles/styles.css";
+import ProfileCompletionModal from "./components/ProfileCompletionModal.jsx";
 
 const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -16,9 +17,10 @@ const App = () => {
   const [user, setUser] = useState({});
   const navigate = useNavigate();
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const checkAuthentication = useCallback(async () => {
-    if (isLoggedIn) return;
+    //if (isLoggedIn) return;
 
     try {
       const response = await fetch(`${API_URL}/auth/me`, {
@@ -33,7 +35,14 @@ const App = () => {
           avatar: data.avatar,
           email: data.email,
           name: data.name,
+          profile_complete: data.profile_complete,
         });
+
+        // Show profile completion modal if the profile is not yet complete
+        if (!data.profile_complete) {
+          console.log("profile incomplete");
+          setShowProfileModal(true);
+        }
       } else {
         setIsLoggedIn(false);
       }
@@ -79,7 +88,12 @@ const App = () => {
             <EditProfile API_URL={API_URL} user={user} setUser={setUser} />
           }
         />
-        <Route path="/login" element={<OAuthLogin />} />
+        <Route
+          path="/login"
+          element={
+            <OAuthLogin setUser={setUser} setIsLoggedIn={setIsLoggedIn} />
+          }
+        />
       </Routes>
       <>
         <FloatingActionButton onClick={() => setIsPostModalOpen(true)} />
@@ -91,6 +105,13 @@ const App = () => {
           />
         )}
       </>
+      {showProfileModal && (
+        <ProfileCompletionModal
+          API_URL={API_URL}
+          user={user}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
     </main>
   );
 };

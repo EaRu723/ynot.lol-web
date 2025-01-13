@@ -313,6 +313,10 @@ async def create_post(
     return PostResponse.from_orm(returned_post)
 
 
+# @router.get("/post")
+# async def get_posts(request: Request)
+
+
 # @router.post("/post")
 # async def create_post(
 #     form_data: CreatePost,

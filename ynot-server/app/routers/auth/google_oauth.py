@@ -55,7 +55,11 @@ async def auth_google(
         await db.commit()
         await db.refresh(user)
 
-    # Step 3: Create a session
     request.session["user_id"] = user.id
 
-    return {"message": "Login successful", "name": name, "email": email}
+    return {
+        "message": "Login successful",
+        "name": name,
+        "email": email,
+        "profile_complete": user.is_profile_complete,
+    }

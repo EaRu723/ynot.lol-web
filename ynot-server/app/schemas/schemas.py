@@ -3,6 +3,21 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class PreSignedUrlRequest(BaseModel):
+    file_name: str
+    file_type: str
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+
+
+class ProfileCompletionRequest(BaseModel):
+    username: str
+    avatar: Optional[str] = None
+    banner: Optional[str] = None
+
+
 class TagBase(BaseModel):
     id: int
     name: str
@@ -22,6 +37,10 @@ class SiteBase(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class GetPosts(BaseModel):
+    username: str
 
 
 class CreatePost(BaseModel):
@@ -77,15 +96,6 @@ class RecordDelete(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class PreSignedUrlRequest(BaseModel):
-    file_name: str
-    file_type: str
-
-
-class GoogleAuthRequest(BaseModel):
-    id_token: str
 
 
 class UserPost(BaseModel):

@@ -30,4 +30,9 @@ async def me(request: Request):
     user = request.state.user
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return {"avatar": user.avatar, "email": user.email, "name": user.name}
+    return {
+        "avatar": user.avatar,
+        "email": user.email,
+        "username": user.username,
+        "profile_complete": user.is_profile_complete,
+    }
