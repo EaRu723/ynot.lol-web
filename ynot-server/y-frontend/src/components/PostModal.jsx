@@ -7,8 +7,8 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
   const [submitType, setSubmitType] = useState(null); // null, 'post', or 'website'
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [websiteDescription, setWebsiteDescription] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [websiteDescription, setWebsiteDescription] = useState("");
 
   useEffect(() => {
     if (post) {
@@ -86,14 +86,9 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
       e.target.reset();
       onClose();
     } else {
-      const newResp = await request();
-      if (newResp.ok) {
-        alert(`Post ${post ? "updated" : "created"} successfully`);
-        e.target.reset();
-        onClose();
-      } else {
-        alert(`Post ${post ? "update" : "creation"} failed`);
-      }
+      alert(
+        `Post ${post ? "update" : "creation"} failed: ${response.statusText}`,
+      );
     }
   };
 
@@ -109,35 +104,35 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const formatUrl = (url) => {
     // Remove any whitespace
     url = url.trim();
-    
+
     // Check if the URL starts with http:// or https://
     if (!url.match(/^https?:\/\//i)) {
       // If not, add https://
-      url = 'https://' + url;
+      url = "https://" + url;
     }
-    
+
     return url;
   };
 
   const handleWebsiteSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Format the URL before submission
     const formattedUrl = formatUrl(websiteUrl);
-    
+
     // TODO: Implement website submission logic with formatted URL
-    console.log('Submitting website:', {
+    console.log("Submitting website:", {
       url: formattedUrl,
-      description: websiteDescription
+      description: websiteDescription,
     });
-    
-    alert('Website submission feature coming soon!');
+
+    alert("Website submission feature coming soon!");
     onClose();
   };
 
   const handleClickOutside = (e) => {
     // Check if the click was outside the modal-content
-    if (e.target.className === 'modal') {
+    if (e.target.className === "modal") {
       onClose();
     }
   };
@@ -160,14 +155,16 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
             <textarea
               id="note"
               name="note"
-              rows="4"
+              rows="14"
               value={note}
               onChange={handleNoteChange}
               placeholder="Share an article, a video, a website, or whatever's on your mind"
             ></textarea>
           </div>
           <div className="form-group">
-            <button type="submit" className="submit-button">Submit</button>
+            <button type="submit" className="submit-button">
+              Submit
+            </button>
           </div>
         </form>
       </div>
