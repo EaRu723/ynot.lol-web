@@ -154,14 +154,14 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
 
   const handleClickOutside = (e) => {
     // Close if clicked outside modal content
-    if (e.target.className === "modal") {
+    if (e.target.className === "modal-container") {
       onClose();
     }
   };
 
   return (
-    <div className="modal" onClick={handleClickOutside}>
-      <div className="modal-content">
+    <div className="modal-container" onClick={handleClickOutside}>
+      <div className="modal-view">
         <div>
           <span
             className="close"
@@ -173,7 +173,7 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
         </div>
         <h2>Share Something Cool</h2>
         <form id="post-form" onSubmit={handleSubmit}>
-          <div className="form-group">
+          <div className="form-area">
             <textarea
               id="note"
               name="note"
@@ -183,7 +183,7 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
               placeholder="Share an article, a video, a website, or whatever's on your mind"
             ></textarea>
           </div>
-          <div className="form-group">
+          <div className="form-area">
             <input
               type="file"
               multiple
@@ -191,7 +191,7 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
               disabled={uploading}
             />
           </div>
-          <div className="form-group">
+          <div className="form-area">
             <button type="submit" className="submit-button">
               Submit
             </button>

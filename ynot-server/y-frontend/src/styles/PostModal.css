@@ -1,4 +1,4 @@
-.modal {
+.modal-container {
   position: fixed;
   display: flex;
   justify-content: center;
@@ -12,16 +12,15 @@
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-.modal-content {
+.modal-view {
   margin: auto;
   background-color: white;
   padding: 25px;
   display: flex;
   flex-direction: column;
-  border: 1px solid black;
+  /*border: 1px solid black;*/
   width: 90%;
   max-width: 500px;
-  height: 50vh;
   position: absolute;
   bottom: 100px;
   right: 10px;
@@ -30,7 +29,7 @@
   box-sizing: border-box;
 }
 
-.form-group {
+.form-area {
   display: flex;
   flex-direction: column;
   margin-bottom: 15px;
@@ -39,16 +38,38 @@
   margin-right: auto;
 }
 
-.form-group label {
+.form-area label {
+  display: block;
   margin-bottom: 5px;
+  font-weight: 500;
 }
 
-.form-group input,
-.form-group textarea {
+.form-area input,
+.form-area textarea {
   width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  resize: none;
+  outline: none;
+  border-style: none;
 }
 
-.form-group button {
+.form-area textarea {
+  resize: none;
+}
+
+.form-area textarea:focus {
+  border-style: none;
+}
+
+.modal-view h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-area button {
   width: 30%;
   cursor: pointer;
   align-self: center;
@@ -200,32 +221,4 @@
   padding: 8px 16px;
   border-radius: 5px;
   cursor: pointer;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.form-group textarea {
-  resize: vertical;
-}
-
-.modal-content h2 {
-  text-align: center;
-  margin-bottom: 20px;
 }
