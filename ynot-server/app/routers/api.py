@@ -1,18 +1,37 @@
+import uuid
+from io import BytesIO
 from typing import List
 
-from fastapi import (APIRouter, Depends, HTTPException, Request, WebSocket,
+import boto3
+from fastapi import (APIRouter, Depends, HTTPException, WebSocket,
                      WebSocketDisconnect)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models import (FrontendPost, Post, RecordDelete, RecordPost,
-                        RecordPut, Site, SiteBase, Tag, TagBase)
+# from app.models import (CreatePost, Post, PreSignedUrlRequest, Site, SiteBase,
+# Tag, TagBase, User)
+from app.models.models import Post, Site, Tag, User
+from app.schemas.schemas import (CreatePost, PostResponse, PreSignedUrlRequest,
+                                 SiteBase, TagBase)
 
 router = APIRouter()
+
+AWS_BUCKET_NAME = "ynot-post-media"
+AWS_REGION = "us-west-1"
+AWS_ACCESS_KEY = settings.aws_access_key
+AWS_SECRET_KEY = settings.aws_secret_key
+
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY,
+    region_name=AWS_REGION,
+)
 
 
 # Store active WebSocket connections
@@ -224,6 +243,139 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
     result = await session.execute(select(Tag))
     tags = result.scalars().all()
     return tags
+
+
+@router.post("/generate-presigned-url")
+async def generate_presigned_url(request: PreSignedUrlRequest):
+    try:
+        unique_filename = f"{uuid.uuid4()}-{request.file_name}"
+        presigned_url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": AWS_BUCKET_NAME,
+                "Key": unique_filename,
+                "ContentType": request.file_type,
+            },
+            ExpiresIn=3600,  # URL valid for 1 hour
+        )
+        return {"url": presigned_url, "key": unique_filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/post")
+async def create_post(
+    request: CreatePost,
+    user: User = Depends(login_required),
+    db: AsyncSession = Depends(get_async_session),
+):
+    # Fetch or create tags
+    tag_objs = []
+    for tag_name in request.tags:
+        try:
+            # Check if the tag exists
+            existing_tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+            existing_tag = existing_tag.scalars().first()
+
+            if existing_tag:
+                tag_objs.append(existing_tag)
+            else:
+                # Create a new tag if it doesn't exist
+                new_tag = Tag(name=tag_name)
+                db.add(new_tag)
+                await db.flush()
+                tag_objs.append(new_tag)
+        except IntegrityError:
+            # Handle race condition where tag was created by another request
+            await db.rollback()
+            existing_tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+            existing_tag = existing_tag.scalars().first()
+            if existing_tag:
+                tag_objs.append(existing_tag)
+
+    post = Post(
+        note=request.note,
+        urls=request.urls,
+        tags=tag_objs,
+        file_keys=request.file_keys,
+        owner_id=user.id,
+    )
+    db.add(post)
+    await db.commit()
+    await db.refresh(post)
+
+    # Fetch post with relationships loaded
+    result = await db.execute(
+        select(Post).options(joinedload(Post.tags)).where(Post.id == post.id)
+    )
+    returned_post = result.unique().scalar_one()
+
+    return PostResponse.from_orm(returned_post)
+
+
+# @router.post("/post")
+# async def create_post(
+#     form_data: CreatePost,
+#     user: User = Depends(login_required),
+#     db: AsyncSession = Depends(get_async_session),
+# ):
+#     file_urls = []
+#     allowed_types = {"image/jpeg", "image/png", "video/mp4"}
+#     max_file_size = 10 * 1024 * 1024  # 10 MB
+#
+#     # Upload files to S3
+#     for file in form_data.files:
+#         # Validate file type
+#         if file.content_type not in allowed_types:
+#             raise HTTPException(status_code=400, detail="Unsupported file type")
+#
+#         # Compute file size
+#         file_content = await file.read()
+#         file_size = len(file_content)
+#
+#         # Validate file size
+#         if file_size > max_file_size:
+#             raise HTTPException(status_code=400, detail="File size exceeds limit")
+#
+#         # Reset file pointer before upload
+#         file.file = BytesIO(file_content)
+#
+#         # Upload to S3
+#         folder = "images" if file.content_type.startswith("image/") else "videos"
+#         unique_filename = f"{folder}/{uuid.uuid4()}-{file.filename}"
+#         s3_client.upload_fileobj(
+#             file.file,
+#             AWS_BUCKET_NAME,
+#             unique_filename,
+#             ExtraArgs={"ContentType": file.content_type},
+#         )
+#         file_url = (
+#             f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_filename}"
+#         )
+#         file_urls.append(file_url)
+#
+#     # Handle tags
+#     tags = []
+#     for tag_name in form_data.tags:
+#         tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+#         tag = tag.scalar_one_or_none()
+#         if not tag:
+#             tag = Tag(name=tag_name)
+#             db.add(tag)
+#         tags.append(tag)
+#
+#     # Create post
+#     new_post = Post(note=form_data.note, urls=file_urls, tags=tags, owner_id=user.id)
+#     db.add(new_post)
+#     await db.commit()
+#     await db.refresh(new_post)
+#
+#     return {
+#         "id": new_post.id,
+#         "note": new_post.note,
+#         "urls": new_post.urls,
+#         "tags": new_post.tags,
+#     }
 
 
 # @router.post("/post")
