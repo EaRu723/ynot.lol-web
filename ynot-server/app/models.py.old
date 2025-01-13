@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
+from fastapi import UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import (JSON, Column, DateTime, ForeignKey, Integer, MetaData,
                         String, Table, Text)
@@ -16,12 +17,33 @@ site_tag_association = Table(
     Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
 )
 
+post_tags = Table(
+    "post_tags",
+    Base.metadata,
+    Column("post_id", Integer, ForeignKey("posts.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
+)
+
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    note = Column(Text, nullable=False)
+    urls = Column(JSON, nullable=True)
+    file_keys = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
+
+    tags = relationship("Tag", secondary=post_tags, back_populates="posts")
+    owner = relationship("User", back_populates="posts")
+
 
 class Tag(Base):
     __tablename__ = "tags"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, unique=True, index=True)
-
+    posts = relationship("Post", secondary=post_tags, back_populates="tags")
     sites = relationship("Site", secondary=site_tag_association, back_populates="tags")
 
 
@@ -57,6 +79,13 @@ class SiteBase(BaseModel):
         from_attributes = True
 
 
+class CreatePost(BaseModel):
+    note: str
+    tags: List[str] = []
+    urls: List[str] = []
+    file_keys: List[str] = []
+
+
 class FrontendPost(BaseModel):
     note: str
     did: str = ""
@@ -65,14 +94,6 @@ class FrontendPost(BaseModel):
     tags: List[str]
     collection: str
     rkey: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class RecordPost(BaseModel):
-    note: str
-    tags: List[str]
-    urls: List[str]
-    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class RecordPut(BaseModel):
@@ -80,7 +101,6 @@ class RecordPut(BaseModel):
     tags: List[str]
     urls: List[str]
     rkey: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class RecordDelete(BaseModel):
@@ -89,6 +109,45 @@ class RecordDelete(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PreSignedUrlRequest(BaseModel):
+    file_name: str
+    file_type: str
+
+
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    google_id = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    name = Column(String)
+    avatar = Column(String, nullable=True)
+    banner = Column(String, nullable=True)
+    posts = relationship("Post", back_populates="owner")
+
+    def __repr__(self):
+        return f"<User(id={self.id}, google_id={self.google_id}, email={self.email})>"
+
+
+class UserPost(BaseModel):
+    display_name: str
+    bio: Optional[str] = ""
+    avatar: str
+    banner: str
+
+
+class UserReq(BaseModel):
+    did: str
+    pds_url: str
+    display_name: str
+    bio: Optional[str] = ""
+    avatar: str
+    banner: str
 
 
 # class OAuthAuthRequestBase(BaseModel):
@@ -158,49 +217,3 @@ class RecordDelete(BaseModel):
 #     updated_at = Column(DateTime, onupdate=datetime.utcnow())
 #
 #     oauth_sessions = relationship("OAuthSession", back_populates="user")
-
-
-class GoogleAuthRequest(BaseModel):
-    id_token: str
-
-
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    google_id = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    name = Column(String)
-    avatar = Column(String, nullable=True)
-
-    def __repr__(self):
-        return f"<User(id={self.id}, google_id={self.google_id}, email={self.email})>"
-
-
-class UserPost(BaseModel):
-    display_name: str
-    bio: Optional[str] = ""
-    avatar: str
-    banner: str
-
-
-class UserReq(BaseModel):
-    did: str
-    pds_url: str
-    display_name: str
-    bio: Optional[str] = ""
-    avatar: str
-    banner: str
-
-
-class Post(Base):
-    __tablename__ = "posts"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    did = Column(String, nullable=False)
-    handle = Column(String, nullable=False)
-    rkey = Column(String, unique=True, nullable=False, index=True)
-    note = Column(Text, nullable=False)
-    tags = Column(JSON, nullable=True)
-    urls = Column(JSON, nullable=True)
-    collection = Column(String, nullable=False)
-    created_at = Column(DateTime, nullable=False)

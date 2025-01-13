@@ -1,6 +1,7 @@
 import asyncio
+
 from app.db.db import engine
-from app.models import Base
+from app.models.models import Base
 
 
 async def init_db():

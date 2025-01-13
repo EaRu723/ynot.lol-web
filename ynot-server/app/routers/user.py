@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models import FrontendPost, User, UserPost, UserReq
 
 router = APIRouter()
 

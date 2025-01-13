@@ -6,7 +6,7 @@ from starlette.middleware.base import (BaseHTTPMiddleware,
 from starlette.responses import Response
 
 from app.db.db import async_session
-from app.models import User
+from app.models.models import User
 
 
 class LoadUserMiddleware(BaseHTTPMiddleware):
@@ -14,7 +14,6 @@ class LoadUserMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         user_id = request.session.get("user_id")
-        print(user_id)
 
         async with async_session() as db:
             if user_id:

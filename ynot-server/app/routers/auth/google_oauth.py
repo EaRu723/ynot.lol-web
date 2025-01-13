@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.db import get_async_session
-from app.models import GoogleAuthRequest, User
+from app.models.models import User
+from app.schemas.schemas import GoogleAuthRequest
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
