@@ -1,6 +1,8 @@
+from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
+from sqlalchemy import DateTime
 
 
 class PreSignedUrlRequest(BaseModel):
@@ -10,6 +12,30 @@ class PreSignedUrlRequest(BaseModel):
 
 class GoogleAuthRequest(BaseModel):
     id_token: str
+
+
+class RegistrationRequest(BaseModel):
+    loginId: str
+    ownIdData: str
+    email: str
+
+
+class LoginRequest(BaseModel):
+    ownIdData: str
+    token: str
+
+
+class SetOwnIdDataRequest(BaseModel):
+    loginId: str
+    ownIdData: str
+
+
+class GetOwnIdDataRequest(BaseModel):
+    loginId: str
+
+
+class GetSessionRequest(BaseModel):
+    loginId: str
 
 
 class ProfileCompletionRequest(BaseModel):
@@ -39,14 +65,10 @@ class SiteBase(BaseModel):
         from_attributes = True
 
 
-class GetPosts(BaseModel):
-    username: str
-
-
 class CreatePost(BaseModel):
     note: str
     tags: List[str] = []
-    urls: List[str] = []
+    urls: List[HttpUrl] = []
     file_keys: List[str] = []  # S3 keys for uploaded files
 
 
@@ -74,13 +96,17 @@ class PostResponse(BaseModel):
 
 
 class FrontendPost(BaseModel):
+    id: int
+    owner_id: int
+    owner: str
     note: str
-    did: str = ""
-    handle: str = ""
-    urls: List[str]
+    urls: Optional[List[HttpUrl]]
     tags: List[str]
-    collection: str
-    rkey: str
+    file_keys: Optional[List[str]]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class RecordPut(BaseModel):
@@ -98,16 +124,15 @@ class RecordDelete(BaseModel):
         from_attributes = True
 
 
-class UserPost(BaseModel):
-    display_name: str
-    bio: Optional[str] = ""
+class GetUserResponse(BaseModel):
+    email: str
+    username: str
+    bio: str
     avatar: str
     banner: str
 
 
-class UserReq(BaseModel):
-    did: str
-    pds_url: str
+class UserPost(BaseModel):
     display_name: str
     bio: Optional[str] = ""
     avatar: str
