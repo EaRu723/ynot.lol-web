@@ -96,7 +96,7 @@ body {
 
 .posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(375px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
 }
 
@@ -106,4 +106,57 @@ body {
   overflow-wrap: break-word;
   white-space: normal;
   overflow: hidden;
+}
+
+/* Add these styles to your existing UserProfile.css */
+
+.view-toggle {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6b7280;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  color: #111827;
+}
+
+.toggle-btn.active {
+  color: #111827;
+  font-weight: 500;
+  text-decoration: underline;
+  background: none;
+}
+
+.posts-by-date {
+  padding: 0 1rem;
+}
+
+.date-group {
+  margin-bottom: 2rem;
+}
+
+.date-header {
+  font-size: 1.25rem;
+  color: #374151;
+  margin: 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.posts-grid {
+  /* The actual grid layout is handled by TimelinePosts component */
+  margin-top: 1rem;
 }

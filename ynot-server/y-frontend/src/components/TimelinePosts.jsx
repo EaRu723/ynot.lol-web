@@ -110,6 +110,15 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
     setIsEditModalOpen(true);
   };
 
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   return (
     <>
       <div className="post-card" id={id}>
@@ -132,12 +141,16 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
           )}
         </div>
 
+        <div className="post-title">
+          {post.title || "title.lol"}
+        </div>
+
         <div className="post-text">
           <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
         </div>
 
         <div className="post-timestamp">
-          {calculateTimeElapsed(post.created_at)}
+          {formatTime(post.created_at)}
         </div>
       </div>
 

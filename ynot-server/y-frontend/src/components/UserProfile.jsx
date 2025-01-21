@@ -9,6 +9,7 @@ function UserProfile({ isLoggedIn, userHandle }) {
   const [searchParams] = useSearchParams();
   const rkey = searchParams.get("rkey");
 
+  const [activeView, setActiveView] = useState('activity');
   const [posts, setPosts] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,8 +44,30 @@ function UserProfile({ isLoggedIn, userHandle }) {
     fetchUserData();
   }, [handle, API_URL]);
 
+  const handleViewChange = (view) => {
+    setActiveView(view);
+  };
+
+  // Add this function to group posts by date
+  const groupPostsByDate = (posts) => {
+    return posts.reduce((groups, post) => {
+      const date = new Date(post.created_at).toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
+      });
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(post);
+      return groups;
+    }, {});
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
+
+  const groupedPosts = groupPostsByDate(posts);
 
   return (
     <div className="main">
@@ -63,15 +86,51 @@ function UserProfile({ isLoggedIn, userHandle }) {
           <Linkify>{profile.bio}</Linkify>
         </p>
       </div>
-      <div className="posts-header">Activity</div>
-      <TimelinePosts
-        posts={posts}
-        setPosts={setPosts}
-        apiUrl={API_URL}
-        isLoggedIn={isLoggedIn}
-        userHandle={userHandle}
-        rkey={rkey}
-      />
+      <div className="view-toggle">
+        <button 
+          className={`toggle-btn ${activeView === 'activity' ? 'active' : ''}`}
+          onClick={() => handleViewChange('activity')}
+        >
+          Activity
+        </button>
+        <button 
+          className={`toggle-btn ${activeView === 'likes' ? 'active' : ''}`}
+          onClick={() => handleViewChange('likes')}
+        >
+          Likes
+        </button>
+        <button 
+          className={`toggle-btn ${activeView === 'favorites' ? 'active' : ''}`}
+          onClick={() => handleViewChange('favorites')}
+        >
+          Favorites
+        </button>
+        {isLoggedIn && userHandle === handle && (
+          <button 
+            className={`toggle-btn ${activeView === 'private' ? 'active' : ''}`}
+            onClick={() => handleViewChange('private')}
+          >
+            Private
+          </button>
+        )}
+      </div>
+      <div className="posts-by-date">
+        {Object.entries(groupedPosts).map(([date, datePosts]) => (
+          <div key={date} className="date-group">
+            <h2 className="date-header">{date}</h2>
+            <div className="posts-grid">
+              <TimelinePosts
+                posts={datePosts}
+                setPosts={setPosts}
+                apiUrl={API_URL}
+                isLoggedIn={isLoggedIn}
+                userHandle={userHandle}
+                rkey={rkey}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

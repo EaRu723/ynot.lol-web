@@ -18,9 +18,19 @@
   flex-direction: column;
 }
 
+.post-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  padding-right: 2rem; /* Make space for menu button */
+}
+
 .post-text {
   flex: 1;
   overflow-y: auto;
+  font-size: 0.95rem; /* Slightly smaller than title */
+  color: #374151;
 }
 
 .post-text pre {
