@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
@@ -8,6 +8,7 @@ function UserProfile({ isLoggedIn, userHandle }) {
   const { handle } = useParams();
   const [searchParams] = useSearchParams();
   const rkey = searchParams.get("rkey");
+  const navigate = useNavigate();
 
   const [activeView, setActiveView] = useState('activity');
   const [posts, setPosts] = useState([]);
@@ -64,6 +65,25 @@ function UserProfile({ isLoggedIn, userHandle }) {
     }, {});
   };
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${API_URL}/oauth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        // Redirect to home page after logout
+        navigate('/');
+        window.location.reload(); // Refresh to update auth state
+      } else {
+        throw new Error('Logout failed');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -85,6 +105,24 @@ function UserProfile({ isLoggedIn, userHandle }) {
         <p className="bio">
           <Linkify>{profile.bio}</Linkify>
         </p>
+        
+        {/* Add profile actions for logged-in user viewing their own profile */}
+        {isLoggedIn && userHandle === handle && (
+          <div className="profile-actions">
+            <button 
+              onClick={() => navigate('/settings')} 
+              className="profile-action-btn"
+            >
+              Settings
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="profile-action-btn logout"
+            >
+              Log out
+            </button>
+          </div>
+        )}
       </div>
       <div className="view-toggle">
         <button 

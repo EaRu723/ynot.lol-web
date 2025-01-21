@@ -4,37 +4,12 @@ import YFavicon from '/Frame 1.png';
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
-    const [dropdownOpen, setDropdownOpen] = useState(false);
     const [navModalOpen, setNavModalOpen] = useState(false);
-    const dropdownRef = useRef(null);
     const navModalRef = useRef(null);
 
-    const toggleDropdown = () => {
-      setDropdownOpen((prev) => !prev);
-    };
-
-    const handleLogout = async () => {
-      try {
-        await fetch(`${API_URL}/oauth/logout`, {
-          method: "GET",
-          credentials: "include",
-        });
-      } catch (error) {
-        console.error("Error logging out:", error);
-      } finally {
-        setIsLoggedIn(false);
-        setUser({});
-        sessionStorage.clear();
-      }
-    };
-
-    // Close both dropdowns if clicking outside
+    // Close nav dropdown if clicking outside
     useEffect(() => {
       const handleClickOutside = (event) => {
-        // Close profile dropdown
-        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-          setDropdownOpen(false);
-        }
         // Close nav dropdown
         if (!event.target.closest('.hamburger-menu') && !event.target.closest('.nav-dropdown')) {
           setNavModalOpen(false);
@@ -48,7 +23,7 @@ const Header = React.memo(
     }, []);
 
     const handleNavClick = (e) => {
-      e.stopPropagation(); // Prevent click from bubbling up
+      e.stopPropagation();
       setNavModalOpen(!navModalOpen);
     };
 
@@ -87,37 +62,19 @@ const Header = React.memo(
 
         <div className="header-right">
           {isLoggedIn ? (
-            <img
-              alt="Profile"
-              src={user.avatar}
-              className="profile-image"
-              onClick={toggleDropdown}
-            />
+            <a href={`/${user.handle}/profile`}>
+              <img
+                alt="Profile"
+                src={user.avatar}
+                className="profile-image"
+              />
+            </a>
           ) : (
             <button onClick={onLogin} className="login-button">
               Log in
             </button>
           )}
-          {dropdownOpen && (
-            <div className="dropdown">
-              <a href={`/${user.handle}/profile`} className="dropdown-item">
-                Profile
-              </a>
-              <a href="#" className="dropdown-item">
-                Settings
-              </a>
-              <button
-                onClick={handleLogout}
-                className="dropdown-item"
-                style={{ color: "red" }}
-              >
-                Log out
-              </button>
-            </div>
-          )}
         </div>
-
-
       </div>
     );
 

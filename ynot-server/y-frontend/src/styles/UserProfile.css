@@ -170,3 +170,32 @@ body {
   z-index: 1000; /* Ensures header stays above other content */
   /* Your other header styles */
 }
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.profile-action-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-action-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.profile-action-btn.logout {
+  color: #ff4444;
+  border-color: #ff4444;
+}
+
+.profile-action-btn.logout:hover {
+  background-color: #fff0f0;
+}
