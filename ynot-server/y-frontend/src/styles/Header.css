@@ -27,12 +27,14 @@
   justify-content: center;
   padding: 0 20px;
   max-width: 800px;
+  margin: 0 auto;
 }
 
 .search-container {
   position: relative;
   width: 100%;
-  max-width: 60%;
+  max-width: 40%;
+  margin: 0 auto;
 }
 
 .search-bar {
@@ -43,6 +45,8 @@
   border-radius: 20px;
   background-color: #f8f8f8;
   transition: all 0.2s ease;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .search-bar::placeholder {
