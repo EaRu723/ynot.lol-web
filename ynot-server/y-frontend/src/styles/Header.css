@@ -9,11 +9,11 @@
 }
 
 .header-left {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-left: 20px;
 }
 
 .header-left h1 {
@@ -33,7 +33,8 @@
 .search-container {
   position: relative;
   width: 100%;
-  max-width: 60%;
+  max-width: 40%;
+  margin: 0 auto;
 }
 
 .search-bar {
@@ -44,6 +45,8 @@
   border-radius: 20px;
   background-color: #f8f8f8;
   transition: all 0.2s ease;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .search-bar::placeholder {
@@ -77,10 +80,11 @@
 }
 
 .header-right {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  margin-left: auto;
+  margin-right: 40px;
 }
 
 .header-link {

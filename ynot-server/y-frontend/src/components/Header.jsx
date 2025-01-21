@@ -1,20 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/Header.css";
 import YFavicon from "/Frame 1.png";
 
 const Header = React.memo(
   ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
-    const [dropdownOpen, setDropdownOpen] = useState(false);
     const [navModalOpen, setNavModalOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
-
-    const toggleDropdown = () => {
-      setDropdownOpen((prev) => !prev);
-    };
+    const navigate = useNavigate();
 
     const handleLogout = async () => {
       try {
-        await fetch(`${API_URL}/oauth/logout`, {
+        await fetch(`${API_URL}/auth/logout`, {
           method: "GET",
           credentials: "include",
         });
@@ -24,10 +22,12 @@ const Header = React.memo(
         setIsLoggedIn(false);
         setUser({});
         sessionStorage.clear();
+        navigate("/");
+        setDropdownOpen(false);
       }
     };
 
-    // Close both dropdowns if clicking outside
+    // Close nav dropdown if clicking outside
     useEffect(() => {
       const handleClickOutside = (event) => {
         // Close profile dropdown
@@ -53,7 +53,7 @@ const Header = React.memo(
     }, []);
 
     const handleNavClick = (e) => {
-      e.stopPropagation(); // Prevent click from bubbling up
+      e.stopPropagation();
       setNavModalOpen(!navModalOpen);
     };
 
@@ -97,12 +97,9 @@ const Header = React.memo(
 
         <div className="header-right">
           {isLoggedIn ? (
-            <img
-              alt="Profile"
-              src={user.avatar}
-              className="profile-image"
-              onClick={toggleDropdown}
-            />
+            <a href={`/${user.handle}/profile`}>
+              <img alt="Profile" src={user.avatar} className="profile-image" />
+            </a>
           ) : (
             <button onClick={onLogin} className="login-button">
               Log in

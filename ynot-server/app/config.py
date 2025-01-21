@@ -1,7 +1,7 @@
 import os
+
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
-
 
 load_dotenv()
 
@@ -17,13 +17,20 @@ class Settings(BaseSettings):
     app_port: int
     app_env: str
     app_url: str
-    atprotocol_client_id: str
-    atprotocol_client_secret: str
-    atprotocol_redirect_uri: str
-    path_to_private_key: str
+    # atprotocol_client_id: str
+    # atprotocol_client_secret: str
+    # atprotocol_redirect_uri: str
+    # path_to_private_key: str
     jwt_secret: str
     private_jwk: str
     session_secret: str
+    google_client_id: str
+    google_client_secret: str
+    google_redirect_uri: str
+    aws_access_key: str
+    aws_secret_key: str
+    aws_bucket_name: str
+    ownid_shared_secret: str
 
     class Config:
         env_file = ".env"

@@ -2,7 +2,7 @@ import ShowcaseGrid from "./ShowcaseGrid.jsx";
 import { useEffect, useState } from "react";
 import PostStream from "./PostStream.jsx";
 
-function DiscoverPage({ API_URL }) {
+function DiscoverPage({ API_URL, isLoggedIn }) {
   const [sites, setSites] = useState([]);
 
   const fetchSites = async () => {
@@ -21,6 +21,15 @@ function DiscoverPage({ API_URL }) {
 
   return (
     <div>
+      <h1 style={{
+        fontSize: "2rem",
+        fontWeight: "bold",
+        textAlign: "left",
+        padding: "40px 20px 20px 20px",
+        borderBottom: "1px solid #E9E9ED"
+      }}>
+        Discover cool <i>people.</i>
+      </h1>
       <ShowcaseGrid sites={sites} />
       <h2 style={{ marginTop: "40px", textAlign: "left", paddingLeft: "20px" }}>
         People on Y

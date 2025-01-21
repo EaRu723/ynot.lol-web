@@ -1,60 +1,46 @@
 /* Timeline Layout */
 .timeline-container {
-  display: flex;
-  flex-direction: column;
-  row-gap: 2rem;
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-.timeline-group {
-  display: flex;
-  flex-direction: column; /* Default for grouping */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
-  position: relative;
-}
-
-.timeline-date {
-  display: flex;
-  align-items: center;
-  font-size: 1rem;
-  color: #374151;
-  margin-left: 0; /* Ensure no unintended left margin */
-}
-
-.timeline-marker {
-  display: flex;
-  align-items: center;
-  margin-right: 0.5rem; /* Reduce marker space */
-}
-
-.timeline-dot {
-  width: 6px;
-  height: 6px;
-  background-color: #3b82f6;
-  border-radius: 50%;
-  margin-right: 0.25rem; /* Adjust spacing around the dot */
-}
-
-.posts-group {
-  margin-left: 1.5rem; /* Align posts with the timeline marker */
-}
-
-@media (max-width: 600px) {
-  .posts-group {
-    margin-left: 0; /* Remove unnecessary margin on smaller screens */
-  }
+  padding: 1rem;
+  width: 100%;
 }
 
 .post-card {
   background-color: #fff;
   border: 1px solid #e5e7eb;
-  /*border-radius: 8px;*/
+  border-radius: 12px;
   padding: 1rem;
-  margin: 0.5rem;
   position: relative;
-  /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);*/
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.post-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  padding-right: 2rem; /* Make space for menu button */
+}
+
+.post-text {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 0.95rem; /* Slightly smaller than title */
+  color: #374151;
+}
+
+.post-text pre {
+  white-space: pre-wrap;       /* Since CSS 2.1 */
+  white-space: -moz-pre-wrap;  /* Mozilla */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+  font-family: inherit;
+  margin: 0;
 }
 
 .menu-container {
@@ -99,9 +85,17 @@
   color: #dc2626;
 }
 
+.post-timestamp {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
 .link {
   color: #2563eb;
   text-decoration: underline;
+  word-break: break-all;
 }
 
 /* Styling for hashtags */

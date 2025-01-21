@@ -5,6 +5,7 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  padding-top: [header-height]px; /* Replace with your header's height */
 }
 
 .main {
@@ -78,9 +79,163 @@ body {
   border-bottom: 1px solid #ddd;
 }
 
-.posts-container {
+.posts-timeline {
+  padding: 20px;
+}
+
+.day-group {
+  margin-bottom: 30px;
+}
+
+.date-header {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Add styles for post content wrapping */
+.post-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  overflow: hidden;
+}
+
+/* Add these styles to your existing UserProfile.css */
+
+.view-toggle {
+  display: flex;
   gap: 1rem;
-  padding: 10px 20px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6b7280;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  color: #111827;
+}
+
+.toggle-btn.active {
+  color: #111827;
+  font-weight: 500;
+  text-decoration: underline;
+  background: none;
+}
+
+.posts-by-date {
+  padding: 0 1rem;
+}
+
+.date-group {
+  margin-bottom: 2rem;
+}
+
+.date-header {
+  font-size: 1.25rem;
+  color: #374151;
+  margin: 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.posts-grid {
+  /* The actual grid layout is handled by TimelinePosts component */
+  margin-top: 1rem;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000; /* Ensures header stays above other content */
+  /* Your other header styles */
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.profile-text {
+  flex: 1;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: 20px;
+}
+
+.profile-action-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #e0e0e0;
+  background-color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-action-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.profile-action-btn.logout {
+  color: #ff4444;
+  border-color: #ff4444;
+}
+
+.profile-action-btn.logout:hover {
+  background-color: #fff0f0;
+}
+
+.social-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.social-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  background-color: white;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.social-button:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.social-button i {
+  font-size: 16px;
 }
