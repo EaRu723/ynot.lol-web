@@ -5,6 +5,7 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  padding-top: [header-height]px; /* Replace with your header's height */
 }
 
 .main {
@@ -159,4 +160,13 @@ body {
 .posts-grid {
   /* The actual grid layout is handled by TimelinePosts component */
   margin-top: 1rem;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000; /* Ensures header stays above other content */
+  /* Your other header styles */
 }
