@@ -135,6 +135,7 @@
   padding: 8px 12px;
   border-radius: 5px;
   cursor: pointer;
+  margin-left: 10px;
 }
 
 .login-button:hover {

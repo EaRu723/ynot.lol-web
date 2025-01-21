@@ -4,7 +4,7 @@ import YFavicon from "/Frame 1.png";
 import { useNavigate } from "react-router-dom";
 
 const Header = React.memo(
-  ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
+  ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, loading }) => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [navModalOpen, setNavModalOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -100,22 +100,51 @@ const Header = React.memo(
         <div className="header-right">
           {isLoggedIn ? (
             <img
-              alt="Profile"
+              alt=""
               src={user.avatar}
               className="profile-image"
               onClick={toggleDropdown}
             />
           ) : (
-            <button onClick={onLogin} className="login-button">
-              Log in
-            </button>
+            <div>
+              {location.pathname === "/register" ? (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="login-button"
+                >
+                  Log in
+                </button>
+              ) : location.pathname === "/login" ? (
+                <button
+                  onClick={() => navigate("/register")}
+                  className="login-button"
+                >
+                  Register
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/register")}
+                    className="login-button"
+                  >
+                    Register
+                  </button>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="login-button"
+                  >
+                    Log in
+                  </button>
+                </>
+              )}
+            </div>
           )}
           {dropdownOpen && (
             <div className="dropdown" ref={dropdownRef}>
-              <a href={`/${user.handle}/profile`} className="dropdown-item">
+              <a href={`/${user.username}/profile`} className="dropdown-item">
                 Profile
               </a>
-              <a href={`/${user.handle}/settings`} className="dropdown-item">
+              <a href={`/${user.username}/settings`} className="dropdown-item">
                 Settings
               </a>
               <button
