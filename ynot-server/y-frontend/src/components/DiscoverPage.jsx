@@ -1,4 +1,3 @@
-import PostModal from "./PostModal.jsx";
 import ShowcaseGrid from "./ShowcaseGrid.jsx";
 import { useEffect, useState } from "react";
 import PostStream from "./PostStream.jsx";
@@ -32,7 +31,9 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
         Discover cool <i>people.</i>
       </h1>
       <ShowcaseGrid sites={sites} />
-      <h2 style={{ marginTop: "40px", textAlign: "left", paddingLeft: "20px" }}>People on Y</h2>
+      <h2 style={{ marginTop: "40px", textAlign: "left", paddingLeft: "20px" }}>
+        People on Y
+      </h2>
       <PostStream />
     </div>
   );
