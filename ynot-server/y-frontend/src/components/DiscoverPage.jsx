@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import PostStream from "./PostStream.jsx";
 
 function DiscoverPage({ API_URL, isLoggedIn }) {
-  const [isPostModalOpen, setPostModalOpen] = useState(false);
   const [sites, setSites] = useState([]);
 
   const fetchSites = async () => {
@@ -23,19 +22,15 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
 
   return (
     <div>
-      <div style={{ padding: "10px", marginTop: "15px" }}>
-        {isLoggedIn && (
-          <button
-            onClick={() => setPostModalOpen(true)}
-            style={{ cursor: "pointer" }}
-          >
-            Post
-          </button>
-        )}
-        {isPostModalOpen && (
-          <PostModal onClose={() => setPostModalOpen(false)} />
-        )}
-      </div>
+      <h1 style={{
+        fontSize: "2rem",
+        fontWeight: "bold",
+        textAlign: "left",
+        padding: "40px 20px 20px 20px",
+        borderBottom: "1px solid #E9E9ED"
+      }}>
+        Discover cool <i>people.</i>
+      </h1>
       <ShowcaseGrid sites={sites} />
       <h2 style={{ marginTop: "40px", textAlign: "left", paddingLeft: "20px" }}>People on Y</h2>
       <PostStream />
