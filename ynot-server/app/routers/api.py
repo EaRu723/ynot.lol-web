@@ -1,10 +1,9 @@
 import uuid
-from io import BytesIO
 from typing import List
 
 import boto3
-from fastapi import (APIRouter, Depends, HTTPException, WebSocket,
-                     WebSocketDisconnect)
+from fastapi import (APIRouter, Depends, File, HTTPException, Request,
+                     UploadFile, WebSocket, WebSocketDisconnect)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,15 +12,14 @@ from sqlalchemy.orm import joinedload
 from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-# from app.models import (CreatePost, Post, PreSignedUrlRequest, Site, SiteBase,
-# Tag, TagBase, User)
-from app.models.models import Post, Site, Tag, User
+from app.models.models import Post, Site, Tag, User, UserSession
 from app.schemas.schemas import (CreatePost, PostResponse, PreSignedUrlRequest,
                                  SiteBase, TagBase)
 
 router = APIRouter()
 
-AWS_BUCKET_NAME = "ynot-post-media"
+AWS_BUCKET_NAME = settings.aws_bucket_name
+AWS_BUCKET_NAME = "ynot-media"
 AWS_REGION = "us-west-1"
 AWS_ACCESS_KEY = settings.aws_access_key
 AWS_SECRET_KEY = settings.aws_secret_key
@@ -247,6 +245,9 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
 
 @router.post("/generate-presigned-url")
 async def generate_presigned_url(request: PreSignedUrlRequest):
+    """
+    Endpoint to generate a presigned url for a file to be uploaded to S3.
+    """
     try:
         unique_filename = f"{uuid.uuid4()}-{request.file_name}"
         presigned_url = s3_client.generate_presigned_url(
@@ -261,6 +262,56 @@ async def generate_presigned_url(request: PreSignedUrlRequest):
         return {"url": presigned_url, "key": unique_filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/batch-upload-s3")
+async def batch_upload(
+    request: Request,
+    files: List[UploadFile] = File(...),
+    session: UserSession = Depends(login_required),
+) -> dict:
+    """
+    Endpoint to upload multiple media files to S3. Validates files to ensure allowed filetype and under maximum size.
+    """
+    urls = []
+    max_file_size = 5 * 1024 * 1024  # 5 MB
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "video/mp4"]
+
+    try:
+        for file in files:
+            # Validate file size
+            file_content = await file.read()
+            if len(file_content) > max_file_size:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File {file.filename} exceeds size limit of 5 MB",
+                )
+
+            # Validate file type
+            if file.content_type not in allowed_types:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File {file.filename} has unsupported type {file.content_type}",
+                )
+
+            # Generate a unique filename
+            unique_filename = f"{uuid.uuid4()}-{file.filename}"
+            public_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_filename}"
+
+            # Upload file to S3
+            s3_client.put_object(
+                Bucket=AWS_BUCKET_NAME,
+                Key=unique_filename,
+                ContentType=file.content_type,
+                Body=file_content,
+            )
+
+            urls.append(public_url)
+
+        return {"file_urls": urls}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
 
 
 @router.post("/post")
@@ -311,10 +362,6 @@ async def create_post(
     returned_post = result.unique().scalar_one()
 
     return PostResponse.from_orm(returned_post)
-
-
-# @router.get("/post")
-# async def get_posts(request: Request)
 
 
 # @router.post("/post")
@@ -369,7 +416,7 @@ async def create_post(
 #         tags.append(tag)
 #
 #     # Create post
-#     new_post = Post(note=form_data.note, urls=file_urls, tags=tags, owner_id=user.id)
+#     new_post = Post(note=form_data.note, urls=form_data.urls, file_keys=file_urls tags=tags, owner_id=user.id)
 #     db.add(new_post)
 #     await db.commit()
 #     await db.refresh(new_post)
