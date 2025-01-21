@@ -28,43 +28,30 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
     }
   };
 
-  const uploadFileToS3 = async (file) => {
-    if (!file) return null;
+  const uploadFilesToS3 = async (files) => {
+    if (!files || files.length === 0) return [];
 
-    // Get a pre-signed URL from the backend
-    const response = await fetch(`${API_URL}/generate-presigned-url`, {
+    const formData = new FormData();
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
+
+    // Upload files
+    const response = await fetch(`${API_URL}/batch-upload-s3`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        file_name: file.name,
-        file_type: file.type,
-      }),
+      body: formData,
     });
 
     if (!response.ok) {
-      alert(`Failed to get pre-signed URL for file: ${file.name}`);
-      return null;
+      alert("Failed to upload files.");
+      const res = await response.json();
+      console.log(res);
+      return [];
     }
 
-    const { url, key } = await response.json();
-
-    // Upload file to S3
-    const uploadResponse = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type,
-      },
-      body: file,
-    });
-
-    if (!uploadResponse.ok) {
-      alert(`Failed to upload file: ${file.name}`);
-      return null;
-    }
-
-    return key;
+    const urls = await response.json();
+    console.log(urls);
+    return urls;
   };
 
   const handleSubmit = async (e) => {
@@ -78,15 +65,30 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
     }
 
     try {
-      // Upload avatar and banner if they exist
-      const avatarKey = avatar ? await uploadFileToS3(avatar) : null;
-      const bannerKey = banner ? await uploadFileToS3(banner) : null;
+      // Collect files to upload
+      const filesToUpload = [];
+      if (avatar) filesToUpload.push(avatar);
+      if (banner) filesToUpload.push(banner);
 
-      // Send the profile completion data to the backend
+      let avatarUrl = null;
+      let bannerUrl = null;
+
+      // Upload files and map their URLs
+      if (filesToUpload.length > 0) {
+        const uploadedResponse = await uploadFilesToS3(filesToUpload);
+        const uploadedUrls = uploadedResponse.file_urls;
+
+        // Map URLs to avatar and banner
+        if (uploadedUrls && uploadedUrls.length > 0) {
+          if (avatar) avatarUrl = uploadedUrls[0] || null;
+          if (banner) bannerUrl = uploadedUrls[1] || null;
+        }
+      }
+
       const payload = {
-        username,
-        avatar: avatarKey,
-        banner: bannerKey,
+        username: username.trim(),
+        avatar: avatarUrl,
+        banner: bannerUrl,
       };
 
       const response = await fetch(`${API_URL}/user/complete-profile`, {
@@ -101,6 +103,7 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
       if (response.ok) {
         alert("Welcome to Y!");
         onClose();
+        window.location.href = "/";
       } else {
         alert(`Profile completion failed: ${response.statusText}`);
       }
