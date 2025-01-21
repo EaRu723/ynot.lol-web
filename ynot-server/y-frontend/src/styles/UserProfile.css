@@ -78,9 +78,32 @@ body {
   border-bottom: 1px solid #ddd;
 }
 
-.posts-container {
+.posts-timeline {
+  padding: 20px;
+}
+
+.day-group {
+  margin-bottom: 30px;
+}
+
+.date-header {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.posts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-  padding: 10px 20px;
+  grid-template-columns: repeat(auto-fill, minmax(375px, 1fr));
+  gap: 20px;
+}
+
+/* Add styles for post content wrapping */
+.post-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  overflow: hidden;
 }

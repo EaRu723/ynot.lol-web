@@ -64,16 +64,14 @@ function UserProfile({ isLoggedIn, userHandle }) {
         </p>
       </div>
       <div className="posts-header">Activity</div>
-      <div className="posts-container">
-        <TimelinePosts
-          posts={posts}
-          setPosts={setPosts}
-          apiUrl={API_URL}
-          isLoggedIn={isLoggedIn}
-          userHandle={userHandle}
-          rkey={rkey}
-        />
-      </div>
+      <TimelinePosts
+        posts={posts}
+        setPosts={setPosts}
+        apiUrl={API_URL}
+        isLoggedIn={isLoggedIn}
+        userHandle={userHandle}
+        rkey={rkey}
+      />
     </div>
   );
 }

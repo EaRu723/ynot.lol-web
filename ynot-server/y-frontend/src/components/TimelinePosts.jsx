@@ -159,42 +159,18 @@ const TimelinePosts = ({
   if (!Array.isArray(posts) || !posts.length)
     return <div>No posts to display</div>;
 
-  const groupedPosts = groupPostsByDate(posts);
-
-  // Scroll to a specific post identified by rkey in URL params
-  useEffect(() => {
-    if (rkey && posts.length > 0) {
-      console.log(rkey);
-      const targetPost = document.getElementById(rkey);
-      console.log(targetPost);
-      if (targetPost) {
-        targetPost.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  }, [posts, rkey]);
-
+  // Remove date grouping, render posts directly
   return (
     <div className="timeline-container">
-      {Object.keys(groupedPosts).map((date, idx) => (
-        <div key={idx} className="timeline-group">
-          <div className="timeline-date">
-            <div className="timeline-marker">
-              <div className="timeline-dot" />
-            </div>
-            {formatDate(date)}
-          </div>
-          <div className="posts-group">
-            {groupedPosts[date].map((post) => (
-              <PostCard
-                id={post.rkey}
-                post={post}
-                setPosts={setPosts}
-                apiUrl={apiUrl}
-                isOwner={isLoggedIn && post.handle === userHandle}
-              />
-            ))}
-          </div>
-        </div>
+      {posts.map((post) => (
+        <PostCard
+          key={post.rkey}
+          id={post.rkey}
+          post={post}
+          setPosts={setPosts}
+          apiUrl={apiUrl}
+          isOwner={isLoggedIn && post.handle === userHandle}
+        />
       ))}
     </div>
   );
