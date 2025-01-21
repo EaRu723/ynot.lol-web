@@ -100,29 +100,50 @@ function UserProfile({ isLoggedIn, userHandle }) {
         </div>
       </div>
       <div className="profile-info">
-        <h1>{profile.display_name || handle}</h1>
-        <p className="handle">@{handle}</p>
-        <p className="bio">
-          <Linkify>{profile.bio}</Linkify>
-        </p>
-        
-        {/* Add profile actions for logged-in user viewing their own profile */}
-        {isLoggedIn && userHandle === handle && (
-          <div className="profile-actions">
-            <button 
-              onClick={() => navigate('/settings')} 
-              className="profile-action-btn"
-            >
-              Settings
-            </button>
-            <button 
-              onClick={handleLogout}
-              className="profile-action-btn logout"
-            >
-              Log out
-            </button>
+        <div className="profile-header">
+          <div className="profile-text">
+            <h1>{profile.display_name || handle}</h1>
+            <p className="handle">@{handle}</p>
+            <p className="bio">
+              <Linkify>{profile.bio}</Linkify>
+            </p>
+            <div className="social-links">
+              <button className="social-button">
+                <i className="fab fa-twitter"></i>
+                Twitter
+              </button>
+              <button className="social-button">
+                <i className="fab fa-youtube"></i>
+                YouTube
+              </button>
+              <button className="social-button">
+                <i className="fab fa-instagram"></i>
+                Instagram
+              </button>
+              <button className="social-button">
+                <i className="fab fa-github"></i>
+                GitHub
+              </button>
+            </div>
           </div>
-        )}
+          
+          {isLoggedIn && userHandle === handle && (
+            <div className="profile-actions">
+              <button 
+                onClick={() => navigate('/settings')} 
+                className="profile-action-btn"
+              >
+                Settings
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="profile-action-btn logout"
+              >
+                Log out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="view-toggle">
         <button 
