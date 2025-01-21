@@ -4,11 +4,15 @@ import "../styles/Header.css";
 import YFavicon from "/Frame 1.png";
 
 const Header = React.memo(
-  ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, onLogin, loading }) => {
+  ({ API_URL, user, setUser, isLoggedIn, setIsLoggedIn, loading }) => {
     const [navModalOpen, setNavModalOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+
+    const toggleDropdown = () => {
+      setDropdownOpen((prev) => !prev);
+    };
 
     const handleLogout = async () => {
       try {
@@ -30,14 +34,12 @@ const Header = React.memo(
     // Close nav dropdown if clicking outside
     useEffect(() => {
       const handleClickOutside = (event) => {
-        // Close profile dropdown
         if (
           dropdownRef.current &&
           !dropdownRef.current.contains(event.target)
         ) {
           setDropdownOpen(false);
         }
-        // Close nav dropdown
         if (
           !event.target.closest(".hamburger-menu") &&
           !event.target.closest(".nav-dropdown")
@@ -97,20 +99,52 @@ const Header = React.memo(
 
         <div className="header-right">
           {isLoggedIn ? (
-            <a href={`/${user.handle}/profile`}>
-              <img alt="Profile" src={user.avatar} className="profile-image" />
-            </a>
+            <img
+              alt=""
+              src={user.avatar}
+              className="profile-image"
+              onClick={toggleDropdown}
+            />
           ) : (
-            <button onClick={onLogin} className="login-button">
-              Log in
-            </button>
+            <div>
+              {location.pathname === "/register" ? (
+                <button
+                  onClick={() => navigate("/login")}
+                  className="login-button"
+                >
+                  Log in
+                </button>
+              ) : location.pathname === "/login" ? (
+                <button
+                  onClick={() => navigate("/register")}
+                  className="login-button"
+                >
+                  Register
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => navigate("/register")}
+                    className="login-button"
+                  >
+                    Register
+                  </button>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="login-button"
+                  >
+                    Log in
+                  </button>
+                </>
+              )}
+            </div>
           )}
           {dropdownOpen && (
-            <div className="dropdown">
-              <a href={`/${user.handle}/profile`} className="dropdown-item">
+            <div className="dropdown" ref={dropdownRef}>
+              <a href={`/${user.username}/profile`} className="dropdown-item">
                 Profile
               </a>
-              <a href={`/${user.handle}/settings`} className="dropdown-item">
+              <a href={`/${user.username}/settings`} className="dropdown-item">
                 Settings
               </a>
               <button

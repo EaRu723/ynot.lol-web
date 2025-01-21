@@ -57,7 +57,7 @@
   outline: none;
   border-color: #999;
   background-color: #fff;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .search-button {
@@ -105,8 +105,8 @@
 
 .dropdown {
   position: absolute;
-  top: 50px;
-  right: 0;
+  top: 70px;
+  right: 20px;
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 5px;
@@ -139,6 +139,7 @@
   padding: 8px 12px;
   border-radius: 5px;
   cursor: pointer;
+  margin-left: 10px;
 }
 
 .login-button:hover {
@@ -158,16 +159,18 @@
   font-size: 24px;
   cursor: pointer;
   padding: 0;
+  padding-bottom: 13px;
   margin-left: -10px;
   color: inherit;
   display: flex;
+  justify-content: center;
   align-items: center;
   height: 100%;
 }
 
 .nav-dropdown {
   position: absolute;
-  top: 50px;
+  top: 65px;
   left: 20px;
   background-color: white;
   border: 1px solid #ddd;

@@ -1,19 +1,35 @@
+import uuid
 from typing import List
 
-from fastapi import (APIRouter, Depends, HTTPException, Request, WebSocket,
-                     WebSocketDisconnect)
+import boto3
+from fastapi import (APIRouter, Depends, File, HTTPException, Request,
+                     UploadFile, WebSocket, WebSocketDisconnect)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models import (FrontendPost, OAuthSession, Post, RecordDelete,
-                        RecordPost, RecordPut, Site, SiteBase, Tag, TagBase)
-from app.routers.oauth.atproto_oauth import pds_authed_req
+from app.models.models import Post, Site, Tag, User, UserSession
+from app.schemas.schemas import (CreatePost, PostResponse, PreSignedUrlRequest,
+                                 SiteBase, TagBase)
 
 router = APIRouter()
+
+AWS_BUCKET_NAME = settings.aws_bucket_name
+AWS_BUCKET_NAME = "ynot-media"
+AWS_REGION = "us-west-1"
+AWS_ACCESS_KEY = settings.aws_access_key
+AWS_SECRET_KEY = settings.aws_secret_key
+
+s3_client = boto3.client(
+    "s3",
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY,
+    region_name=AWS_REGION,
+)
 
 
 # Store active WebSocket connections
@@ -227,193 +243,379 @@ async def get_tags(session: AsyncSession = Depends(get_async_session)):
     return tags
 
 
-@router.post("/post")
-async def post_record(
-    form_data: RecordPost,
-    user: OAuthSession = Depends(login_required),
-    db=Depends(get_async_session),
-):
-    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.createRecord"
-    record_data = form_data.model_dump()
-    body = {
-        "repo": user.did,
-        "collection": "com.y.post",
-        # "validate": "true",
-        "record": record_data,
-    }
+@router.post("/generate-presigned-url")
+async def generate_presigned_url(request: PreSignedUrlRequest):
+    """
+    Endpoint to generate a presigned url for a file to be uploaded to S3.
+    """
+    try:
+        unique_filename = f"{uuid.uuid4()}-{request.file_name}"
+        presigned_url = s3_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": AWS_BUCKET_NAME,
+                "Key": unique_filename,
+                "ContentType": request.file_type,
+            },
+            ExpiresIn=3600,  # URL valid for 1 hour
+        )
+        return {"url": presigned_url, "key": unique_filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
 
-    if "uri" not in resp.json():
-        raise HTTPException(status_code=500, detail="Failed to create record")
-
-    rkey = resp.json().get("uri").split("/")[-1]
-
-    post = Post(
-        did=user.did,
-        handle=user.handle,
-        rkey=rkey,
-        note=form_data.note,
-        tags=form_data.tags,
-        urls=form_data.urls,
-        collection="com.y.post",
-        created_at=form_data.created_at,
-    )
+@router.post("/batch-upload-s3")
+async def batch_upload(
+    request: Request,
+    files: List[UploadFile] = File(...),
+    session: UserSession = Depends(login_required),
+) -> dict:
+    """
+    Endpoint to upload multiple media files to S3. Validates files to ensure allowed filetype and under maximum size.
+    """
+    urls = []
+    max_file_size = 5 * 1024 * 1024  # 5 MB
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "video/mp4"]
 
     try:
-        db.add(post)
-        await db.commit()
+        for file in files:
+            # Validate file size
+            file_content = await file.read()
+            if len(file_content) > max_file_size:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File {file.filename} exceeds size limit of 5 MB",
+                )
 
-        await manager.broadcast(
-            {
-                "type": "com.y.post",
-                "data": {
-                    "did": user.did,
-                    "handle": user.handle,
-                    "note": form_data.note,
-                    "tags": form_data.tags,
-                    "urls": form_data.urls,
-                    "created_at": form_data.created_at.isoformat(),
-                },
-            }
-        )
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=400, detail="Post already exists")
+            # Validate file type
+            if file.content_type not in allowed_types:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File {file.filename} has unsupported type {file.content_type}",
+                )
 
-    return {"status": "Record created successfully", "response": resp.json()}
+            # Generate a unique filename
+            unique_filename = f"{uuid.uuid4()}-{file.filename}"
+            public_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_filename}"
 
-
-@router.put("/post")
-async def edit_record(
-    request: RecordPut,
-    user: OAuthSession = Depends(login_required),
-    db=Depends(get_async_session),
-):
-    parsed_req = request.model_dump()
-
-    # Convert to type RecordPost to comply with the lexicon. This effectively drops the rkey field
-    # which we do not want in the record body but still want to include in the PDS request.
-    record_body = RecordPost(**parsed_req).model_dump()
-
-    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.putRecord"
-    body = {
-        "repo": user.did,
-        "collection": "com.y.post",
-        "rkey": parsed_req.get("rkey"),
-        "record": record_body,
-    }
-
-    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
-
-    if "uri" not in resp.json():
-        raise HTTPException(status_code=500, detail="Failed to update record")
-
-    async with db.begin():
-        existing_post = await db.execute(
-            select(Post).where(
-                Post.rkey == parsed_req.get("rkey"), Post.did == user.did
-            )
-        )
-        existing_post = existing_post.scalars().first()
-
-        if not existing_post:
-            raise HTTPException(
-                status_code=404, detail="Record not found in the database"
+            # Upload file to S3
+            s3_client.put_object(
+                Bucket=AWS_BUCKET_NAME,
+                Key=unique_filename,
+                ContentType=file.content_type,
+                Body=file_content,
             )
 
-        existing_post.note = parsed_req.get("note", existing_post.note)
-        existing_post.tags = parsed_req.get("tags", existing_post.tags)
-        existing_post.urls = parsed_req.get("urls", existing_post.urls)
-        existing_post.created_at = parsed_req.get(
-            "created_at", existing_post.created_at
-        )
+            urls.append(public_url)
 
-        try:
-            db.add(existing_post)
-            await db.commit()
-        except IntegrityError:
-            await db.rollback()
-            raise HTTPException(
-                status_code=400, detail="Failed to update record in the database"
-            )
+        return {"file_urls": urls}
 
-    return {"status": "Record updated successfully", "response": resp.json()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
 
 
-@router.delete("/post")
-async def delete_record(
-    request: RecordDelete,
-    user: OAuthSession = Depends(login_required),
+@router.post("/post")
+async def create_post(
+    request: CreatePost,
+    user: User = Depends(login_required),
     db: AsyncSession = Depends(get_async_session),
 ):
-    req_url = f"{user.pds_url}/xrpc/com.atproto.repo.deleteRecord"
-    body = {"repo": user.did, "collection": request.collection, "rkey": request.rkey}
-
-    resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
-
-    if resp.status_code != 200:
-        raise HTTPException(status_code=500, detail="Failed to delete record")
-
-    async with db.begin():
-        existing_post = await db.execute(
-            select(Post).where(Post.rkey == request.rkey, Post.did == user.did)
-        )
-        existing_post = existing_post.scalars().first()
-
-        if not existing_post:
-            raise HTTPException(
-                status_code=404, detail="Record not found in the database"
-            )
-
-        await db.delete(existing_post)
-
+    # Fetch or create tags
+    tag_objs = []
+    for tag_name in request.tags:
         try:
-            await db.commit()
+            # Check if the tag exists
+            existing_tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+            existing_tag = existing_tag.scalars().first()
+
+            if existing_tag:
+                tag_objs.append(existing_tag)
+            else:
+                # Create a new tag if it doesn't exist
+                new_tag = Tag(name=tag_name)
+                db.add(new_tag)
+                await db.flush()
+                tag_objs.append(new_tag)
         except IntegrityError:
+            # Handle race condition where tag was created by another request
             await db.rollback()
-            raise HTTPException(
-                status_code=400, detail="Failed to delete record in the database"
-            )
+            existing_tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+            existing_tag = existing_tag.scalars().first()
+            if existing_tag:
+                tag_objs.append(existing_tag)
 
-    return {"status": "Record deleted successfully", "response": resp.json()}
-
-
-@router.get("/recent-posts", response_model=List[FrontendPost])
-async def get_recent_posts(
-    limit: int = 10, db: AsyncSession = Depends(get_async_session)
-):
-    result = await db.execute(
-        select(Post).order_by(Post.created_at.desc()).limit(limit)
+    post = Post(
+        note=request.note,
+        urls=request.urls,
+        tags=tag_objs,
+        file_keys=request.file_keys,
+        owner_id=user.id,
     )
-    posts = result.scalars().all()
+    db.add(post)
+    await db.commit()
+    await db.refresh(post)
 
-    frontend_posts = [
-        FrontendPost(
-            handle=post.handle,
-            did=post.did,
-            note=post.note,
-            urls=post.urls or [],
-            tags=post.tags or [],
-            collection=post.collection,
-            rkey=post.rkey,
-            created_at=post.created_at,
-        )
-        for post in posts
-    ]
+    # Fetch post with relationships loaded
+    result = await db.execute(
+        select(Post).options(joinedload(Post.tags)).where(Post.id == post.id)
+    )
+    returned_post = result.unique().scalar_one()
 
-    return frontend_posts
+    return PostResponse.from_orm(returned_post)
 
 
-@router.get("/whoami")
-async def whoami(user: OAuthSession = Depends(login_required)):
-    return {
-        "user": {
-            "handle": user.handle,
-            "did": user.did,
-            "bio": user.user.bio,
-            "displayName": user.user.display_name,
-            "avatar": user.user.avatar,
-            "banner": user.user.banner,
-        }
-    }
+# @router.post("/post")
+# async def create_post(
+#     form_data: CreatePost,
+#     user: User = Depends(login_required),
+#     db: AsyncSession = Depends(get_async_session),
+# ):
+#     file_urls = []
+#     allowed_types = {"image/jpeg", "image/png", "video/mp4"}
+#     max_file_size = 10 * 1024 * 1024  # 10 MB
+#
+#     # Upload files to S3
+#     for file in form_data.files:
+#         # Validate file type
+#         if file.content_type not in allowed_types:
+#             raise HTTPException(status_code=400, detail="Unsupported file type")
+#
+#         # Compute file size
+#         file_content = await file.read()
+#         file_size = len(file_content)
+#
+#         # Validate file size
+#         if file_size > max_file_size:
+#             raise HTTPException(status_code=400, detail="File size exceeds limit")
+#
+#         # Reset file pointer before upload
+#         file.file = BytesIO(file_content)
+#
+#         # Upload to S3
+#         folder = "images" if file.content_type.startswith("image/") else "videos"
+#         unique_filename = f"{folder}/{uuid.uuid4()}-{file.filename}"
+#         s3_client.upload_fileobj(
+#             file.file,
+#             AWS_BUCKET_NAME,
+#             unique_filename,
+#             ExtraArgs={"ContentType": file.content_type},
+#         )
+#         file_url = (
+#             f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_filename}"
+#         )
+#         file_urls.append(file_url)
+#
+#     # Handle tags
+#     tags = []
+#     for tag_name in form_data.tags:
+#         tag = await db.execute(select(Tag).where(Tag.name == tag_name))
+#         tag = tag.scalar_one_or_none()
+#         if not tag:
+#             tag = Tag(name=tag_name)
+#             db.add(tag)
+#         tags.append(tag)
+#
+#     # Create post
+#     new_post = Post(note=form_data.note, urls=form_data.urls, file_keys=file_urls tags=tags, owner_id=user.id)
+#     db.add(new_post)
+#     await db.commit()
+#     await db.refresh(new_post)
+#
+#     return {
+#         "id": new_post.id,
+#         "note": new_post.note,
+#         "urls": new_post.urls,
+#         "tags": new_post.tags,
+#     }
+
+
+# @router.post("/post")
+# async def post_record(
+#     form_data: RecordPost,
+#     user: OAuthSession = Depends(login_required),
+#     db=Depends(get_async_session),
+# ):
+#     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.createRecord"
+#     record_data = form_data.model_dump()
+#     body = {
+#         "repo": user.did,
+#         "collection": "com.y.post",
+#         # "validate": "true",
+#         "record": record_data,
+#     }
+#
+#     resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+#
+#     if "uri" not in resp.json():
+#         raise HTTPException(status_code=500, detail="Failed to create record")
+#
+#     rkey = resp.json().get("uri").split("/")[-1]
+#
+#     post = Post(
+#         did=user.did,
+#         handle=user.handle,
+#         rkey=rkey,
+#         note=form_data.note,
+#         tags=form_data.tags,
+#         urls=form_data.urls,
+#         collection="com.y.post",
+#         created_at=form_data.created_at,
+#     )
+#
+#     try:
+#         db.add(post)
+#         await db.commit()
+#
+#         await manager.broadcast(
+#             {
+#                 "type": "com.y.post",
+#                 "data": {
+#                     "did": user.did,
+#                     "handle": user.handle,
+#                     "note": form_data.note,
+#                     "tags": form_data.tags,
+#                     "urls": form_data.urls,
+#                     "created_at": form_data.created_at.isoformat(),
+#                 },
+#             }
+#         )
+#     except IntegrityError:
+#         await db.rollback()
+#         raise HTTPException(status_code=400, detail="Post already exists")
+#
+#     return {"status": "Record created successfully", "response": resp.json()}
+#
+#
+# @router.put("/post")
+# async def edit_record(
+#     request: RecordPut,
+#     user: OAuthSession = Depends(login_required),
+#     db=Depends(get_async_session),
+# ):
+#     parsed_req = request.model_dump()
+#
+#     # Convert to type RecordPost to comply with the lexicon. This effectively drops the rkey field
+#     # which we do not want in the record body but still want to include in the PDS request.
+#     record_body = RecordPost(**parsed_req).model_dump()
+#
+#     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.putRecord"
+#     body = {
+#         "repo": user.did,
+#         "collection": "com.y.post",
+#         "rkey": parsed_req.get("rkey"),
+#         "record": record_body,
+#     }
+#
+#     resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+#
+#     if "uri" not in resp.json():
+#         raise HTTPException(status_code=500, detail="Failed to update record")
+#
+#     async with db.begin():
+#         existing_post = await db.execute(
+#             select(Post).where(
+#                 Post.rkey == parsed_req.get("rkey"), Post.did == user.did
+#             )
+#         )
+#         existing_post = existing_post.scalars().first()
+#
+#         if not existing_post:
+#             raise HTTPException(
+#                 status_code=404, detail="Record not found in the database"
+#             )
+#
+#         existing_post.note = parsed_req.get("note", existing_post.note)
+#         existing_post.tags = parsed_req.get("tags", existing_post.tags)
+#         existing_post.urls = parsed_req.get("urls", existing_post.urls)
+#         existing_post.created_at = parsed_req.get(
+#             "created_at", existing_post.created_at
+#         )
+#
+#         try:
+#             db.add(existing_post)
+#             await db.commit()
+#         except IntegrityError:
+#             await db.rollback()
+#             raise HTTPException(
+#                 status_code=400, detail="Failed to update record in the database"
+#             )
+#
+#     return {"status": "Record updated successfully", "response": resp.json()}
+#
+#
+# @router.delete("/post")
+# async def delete_record(
+#     request: RecordDelete,
+#     user: OAuthSession = Depends(login_required),
+#     db: AsyncSession = Depends(get_async_session),
+# ):
+#     req_url = f"{user.pds_url}/xrpc/com.atproto.repo.deleteRecord"
+#     body = {"repo": user.did, "collection": request.collection, "rkey": request.rkey}
+#
+#     resp = await pds_authed_req("POST", req_url, body=body, user=user, db=db)
+#
+#     if resp.status_code != 200:
+#         raise HTTPException(status_code=500, detail="Failed to delete record")
+#
+#     async with db.begin():
+#         existing_post = await db.execute(
+#             select(Post).where(Post.rkey == request.rkey, Post.did == user.did)
+#         )
+#         existing_post = existing_post.scalars().first()
+#
+#         if not existing_post:
+#             raise HTTPException(
+#                 status_code=404, detail="Record not found in the database"
+#             )
+#
+#         await db.delete(existing_post)
+#
+#         try:
+#             await db.commit()
+#         except IntegrityError:
+#             await db.rollback()
+#             raise HTTPException(
+#                 status_code=400, detail="Failed to delete record in the database"
+#             )
+#
+#     return {"status": "Record deleted successfully", "response": resp.json()}
+#
+#
+# @router.get("/recent-posts", response_model=List[FrontendPost])
+# async def get_recent_posts(
+#     limit: int = 10, db: AsyncSession = Depends(get_async_session)
+# ):
+#     result = await db.execute(
+#         select(Post).order_by(Post.created_at.desc()).limit(limit)
+#     )
+#     posts = result.scalars().all()
+#
+#     frontend_posts = [
+#         FrontendPost(
+#             handle=post.handle,
+#             did=post.did,
+#             note=post.note,
+#             urls=post.urls or [],
+#             tags=post.tags or [],
+#             collection=post.collection,
+#             rkey=post.rkey,
+#             created_at=post.created_at,
+#         )
+#         for post in posts
+#     ]
+#
+#     return frontend_posts
+
+
+# @router.get("/whoami")
+# async def whoami(user: OAuthSession = Depends(login_required)):
+#     return {
+#         "user": {
+#             "handle": user.handle,
+#             "did": user.did,
+#             "bio": user.user.bio,
+#             "displayName": user.user.display_name,
+#             "avatar": user.user.avatar,
+#             "banner": user.user.banner,
+#         }
+#     }

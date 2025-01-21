@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "../styles/PostModal.css";
 
 function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
@@ -6,9 +6,8 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const [urls, setUrls] = useState(post ? post.urls : []);
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
-  const [submitType, setSubmitType] = useState(null); // null, 'post', or 'website'
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [websiteDescription, setWebsiteDescription] = useState('');
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (post) {
@@ -22,12 +21,14 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     // Extract URLs
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const extractedUrls = [...text.matchAll(urlRegex)].map((match) => match[0]);
+    const uniqueUrls = [...new Set(extractedUrls)];
 
     // Extract Tags
     const tagRegex = /#(\w+)/g;
     const extractedTags = [...text.matchAll(tagRegex)].map((match) => match[1]);
+    const uniqueTags = [...new Set(extractedTags)];
 
-    return { urls: extractedUrls, tags: extractedTags };
+    return { urls: uniqueUrls, tags: uniqueTags };
   };
 
   const handleNoteChange = (e) => {
@@ -42,14 +43,60 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     setTags(newTags);
   };
 
-  const handleRemoveTag = (index) => {
-    const newTags = [...tags];
-    newTags.splice(index, 1);
-    setTags(newTags);
+  const uploadFilesToS3 = async () => {
+    setUploading(true);
+    const uploadedKeys = [];
+
+    for (const file of files) {
+      // Get a pre-signed URL from the backend
+      const response = await fetch(`${API_URL}/generate-presigned-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          file_name: file.name,
+          file_type: file.type,
+        }),
+      });
+
+      if (!response.ok) {
+        alert(`Failed to get pre-signed URL for file: ${file.name}`);
+        setUploading(false);
+        return;
+      }
+
+      const { url, key } = await response.json();
+
+      // Upload file to S3
+      const uploadResponse = await fetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        alert(`Failed to upload file: ${file.name}`);
+        setUploading(false);
+        return;
+      }
+
+      uploadedKeys.push(key);
+    }
+
+    return uploadedKeys;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isLoggedIn) {
+      onClose();
+      onLogin();
+    }
+
+    setUploading(true);
 
     const validUrls = urls.filter((url) => url.trim() !== "");
     for (const url of validUrls) {
@@ -59,18 +106,17 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
       }
     }
 
-    const payload = {
-      note,
-      urls: validUrls,
-      tags,
-    };
+    try {
+      const fileKeys = files.length > 0 ? await uploadFilesToS3(files) : [];
 
-    if (post && post.rkey) {
-      payload.rkey = post.rkey;
-    }
+      const payload = {
+        note,
+        urls: validUrls,
+        tags,
+        file_keys: fileKeys,
+      };
 
-    const request = async () => {
-      return await fetch(`${API_URL}/post`, {
+      const response = await fetch(`${API_URL}/post`, {
         method: post ? "PUT" : "POST",
         credentials: "include",
         headers: {
@@ -78,22 +124,21 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
         },
         body: JSON.stringify(payload),
       });
-    };
 
-    const response = await request();
-    if (response.ok) {
-      alert(`Post ${post ? "updated" : "created"} successfully`);
-      e.target.reset();
-      onClose();
-    } else {
-      const newResp = await request();
-      if (newResp.ok) {
+      if (response.ok) {
         alert(`Post ${post ? "updated" : "created"} successfully`);
         e.target.reset();
         onClose();
       } else {
-        alert(`Post ${post ? "update" : "creation"} failed`);
+        alert(
+          `Post ${post ? "update" : "creation"} failed: ${response.statusText}`,
+        );
       }
+    } catch (error) {
+      console.error(error);
+      alert(`An error occurred: ${error.message}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -102,49 +147,21 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
       new URL(url);
       return true;
     } catch (error) {
+      console.error(error);
       return false;
     }
   };
 
-  const formatUrl = (url) => {
-    // Remove any whitespace
-    url = url.trim();
-    
-    // Check if the URL starts with http:// or https://
-    if (!url.match(/^https?:\/\//i)) {
-      // If not, add https://
-      url = 'https://' + url;
-    }
-    
-    return url;
-  };
-
-  const handleWebsiteSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Format the URL before submission
-    const formattedUrl = formatUrl(websiteUrl);
-    
-    // TODO: Implement website submission logic with formatted URL
-    console.log('Submitting website:', {
-      url: formattedUrl,
-      description: websiteDescription
-    });
-    
-    alert('Website submission feature coming soon!');
-    onClose();
-  };
-
   const handleClickOutside = (e) => {
-    // Check if the click was outside the modal-content
-    if (e.target.className === 'modal') {
+    // Close if clicked outside modal content
+    if (e.target.className === "modal-container") {
       onClose();
     }
   };
 
   return (
-    <div className="modal" onClick={handleClickOutside}>
-      <div className="modal-content">
+    <div className="modal-container" onClick={handleClickOutside}>
+      <div className="modal-view">
         <div>
           <span
             className="close"
@@ -156,18 +173,28 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
         </div>
         <h2>Share Something Cool</h2>
         <form id="post-form" onSubmit={handleSubmit}>
-          <div className="form-group">
+          <div className="form-area">
             <textarea
               id="note"
               name="note"
-              rows="4"
+              rows="14"
               value={note}
               onChange={handleNoteChange}
               placeholder="Share an article, a video, a website, or whatever's on your mind"
             ></textarea>
           </div>
-          <div className="form-group">
-            <button type="submit" className="submit-button">Submit</button>
+          <div className="form-area">
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setFiles(e.target.files)}
+              disabled={uploading}
+            />
+          </div>
+          <div className="form-area">
+            <button type="submit" className="submit-button">
+              Submit
+            </button>
           </div>
         </form>
       </div>
