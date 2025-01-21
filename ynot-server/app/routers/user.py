@@ -1,58 +1,63 @@
 from datetime import datetime
 from typing import List
 
-from atproto_identity.resolver import AsyncDidResolver, AsyncHandleResolver
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic.deprecated.tools import parse_obj_as
 from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models.models import User
-from app.schemas.schemas import ProfileCompletionRequest
+from app.models.models import Post, User, UserSession
+from app.schemas.schemas import (FrontendPost, GetUserResponse,
+                                 ProfileCompletionRequest)
 
 router = APIRouter()
 
+BUCKET_NAME = "ynot-media"
 
-async def resolve_handle_to_did(handle: str) -> str:
-    resolver = AsyncHandleResolver()
-    did = await resolver.resolve(handle)
-    if not did:
-        raise HTTPException(
-            status_code=404, detail=f"Unable to resolve handle: {handle}"
-        )
 
-    return did
+# async def resolve_handle_to_did(handle: str) -> str:
+#     resolver = AsyncHandleResolver()
+#     did = await resolver.resolve(handle)
+#     if not did:
+#         raise HTTPException(
+#             status_code=404, detail=f"Unable to resolve handle: {handle}"
+#         )
+#
+#     return did
 
 
 @router.post("/complete-profile")
 async def complete_profile(
     request: ProfileCompletionRequest,
     db: AsyncSession = Depends(get_async_session),
-    user: User = Depends(login_required),
+    session: UserSession = Depends(login_required),
 ):
+    """
+    Completes a user's profile data after registration. Updates username, avatar,
+    and banner. Also flips the is_profile_complete flag.
+    """
     existing_user_result = await db.execute(
         select(User).where(User.username == request.username)
     )
     existing_user = existing_user_result.scalar()
-    if existing_user and existing_user.id != user.id:
+    if existing_user and existing_user.id != session.user.id:
         raise HTTPException(status_code=400, detail="Username is already taken")
 
-    username = request.username
-    avatar = request.avatar
-    banner = request.banner
-
-    query = select(User).where(User.id == user.id)
+    query = select(User).where(User.id == session.user.id)
     result = await db.execute(query)
     user = result.scalar()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user.username = username
+    user.username = request.username
     if request.avatar:
         user.avatar = request.avatar
+    else:
+        user.avatar = (
+            "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
+        )
     if request.banner:
         user.banner = request.banner
     user.is_profile_complete = True
@@ -61,56 +66,81 @@ async def complete_profile(
     return {"message": "Profile completed"}
 
 
-# @router.get("/{handle}/posts", response_model=List[FrontendPost])
-# async def get_posts(
-#     handle: str,
-#     collection: str = "com.y.post",
-#     user: OAuthSession = Depends(login_required),
-#     db=Depends(get_async_session),
-# ) -> List[FrontendPost]:
-#     did = await resolve_handle_to_did(handle)
+@router.get("/{username}/posts")
+async def get_posts(
+    username: str,
+    db: AsyncSession = Depends(get_async_session),
+) -> List[FrontendPost]:
+    """
+    Return a list of all posts by username.
+    """
+    user_query = select(User).where(User.username == username)
+    result = await db.execute(user_query)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    posts_query = (
+        select(Post)
+        .options(joinedload(Post.tags))
+        .where(Post.owner_id == user.id)
+        .order_by(Post.created_at.desc())
+    )
+    posts_result = await db.execute(posts_query)
+    posts = posts_result.scalars().all()
+
+    frontend_posts = [
+        FrontendPost(
+            id=post.id.value,
+            owner_id=post.owner_id.value,
+            owner=user.username.value,
+            note=post.note.value,
+            urls=post.urls.value,
+            file_keys=post.file_keys.value,
+            created_at=post.created_at.value,
+            tags=[tag.name for tag in post.tags],
+        )
+        for post in posts
+    ]
+
+    return frontend_posts
+
+
+@router.get("{username}/profile")
+async def get_user_profile(
+    username: str, db: AsyncSession = Depends(get_async_session)
+) -> GetUserResponse:
+    """
+    Returns data for displaying a user's profile page
+    """
+    query = select(User).where(User.username == username)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return GetUserResponse(
+        email=user.email.value,
+        username=user.username.value,
+        bio=user.bio.value,
+        avatar=user.avatar.value,
+        banner=user.banner.value,
+    )
+
+
 #
-#     did_resolver = AsyncDidResolver()
-#     atproto_data = await did_resolver.resolve_atproto_data(did=did)
+# @router.get("/{handle}/profile", response_model=UserReq)
+# async def get_profile(handle: str, db: AsyncSession = Depends(get_async_session)):
+#     result = await db.execute(select(Users).where(Users.handle == handle))
+#     user = result.scalars().first()
+#     if user is None:
+#         res = await fetch_bsky_profile(handle)
+#         return res
 #
-#     pds_url = atproto_data.pds
-#
-#     if not pds_url:
-#         raise HTTPException(
-#             status_code=404, detail=f"PDS endpoint for {handle} not found"
-#         )
-#
-#     req_url = f"{pds_url}/xrpc/com.atproto.repo.listRecords"
-#
-#     params = {
-#         "repo": did,
-#         "collection": collection,
-#     }
-#
-#     response = await pds_authed_req("GET", req_url, user=user, db=db, body=params)
-#     response_body = response.json()
-#
-#     if "records" not in response_body:
-#         raise HTTPException(status_code=500, detail="Invalid response from PDS")
-#
-#     posts = parse_obj_as(
-#         List[FrontendPost],
-#         [
-#             {
-#                 "note": record["value"]["note"],
-#                 "did": did,
-#                 "handle": handle,
-#                 "urls": record["value"]["urls"],
-#                 "tags": record["value"]["tags"],
-#                 "collection": record["uri"].split("/")[-2],
-#                 "rkey": record["uri"].split("/")[-1],
-#                 "created_at": datetime.fromisoformat(record["value"]["created_at"]),
-#             }
-#             for record in response_body["records"]
-#         ],
-#     )
-#
-#     return posts
+#     return user
+
+
 #
 #
 # @router.post("/profile")
@@ -158,13 +188,3 @@ async def complete_profile(
 #
 #     return {"status": "Record created successfully", "response": resp.json()}
 #
-#
-# @router.get("/{handle}/profile", response_model=UserReq)
-# async def get_profile(handle: str, db: AsyncSession = Depends(get_async_session)):
-#     result = await db.execute(select(Users).where(Users.handle == handle))
-#     user = result.scalars().first()
-#     if user is None:
-#         res = await fetch_bsky_profile(handle)
-#         return res
-#
-#     return user
