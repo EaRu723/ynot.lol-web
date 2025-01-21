@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     google_redirect_uri: str
     aws_access_key: str
     aws_secret_key: str
+    aws_bucket_name: str
+    ownid_shared_secret: str
 
     class Config:
         env_file = ".env"
