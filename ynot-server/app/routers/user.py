@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -36,7 +35,8 @@ async def complete_profile(
 ):
     """
     Completes a user's profile data after registration. Updates username, avatar,
-    and banner. Also flips the is_profile_complete flag.
+    and banner. Also toggles the is_profile_complete flag to indicate the profile
+    completion modal is not needed in the frontend.
     """
     existing_user_result = await db.execute(
         select(User).where(User.username == request.username)
@@ -51,13 +51,11 @@ async def complete_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    print(request)
+
     user.username = request.username
     if request.avatar:
         user.avatar = request.avatar
-    else:
-        user.avatar = (
-            "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
-        )
     if request.banner:
         user.banner = request.banner
     user.is_profile_complete = True
@@ -87,17 +85,17 @@ async def get_posts(
         .order_by(Post.created_at.desc())
     )
     posts_result = await db.execute(posts_query)
-    posts = posts_result.scalars().all()
+    posts = posts_result.unique().scalars().all()
 
     frontend_posts = [
         FrontendPost(
-            id=post.id.value,
-            owner_id=post.owner_id.value,
-            owner=user.username.value,
-            note=post.note.value,
-            urls=post.urls.value,
-            file_keys=post.file_keys.value,
-            created_at=post.created_at.value,
+            id=post.id,
+            owner_id=post.owner_id,
+            owner=user.username,
+            note=post.note,
+            urls=post.urls,
+            file_keys=post.file_keys,
+            created_at=post.created_at,
             tags=[tag.name for tag in post.tags],
         )
         for post in posts
@@ -106,12 +104,13 @@ async def get_posts(
     return frontend_posts
 
 
-@router.get("{username}/profile")
+@router.get("/{username}/profile")
 async def get_user_profile(
-    username: str, db: AsyncSession = Depends(get_async_session)
+    username: str,
+    db: AsyncSession = Depends(get_async_session),
 ) -> GetUserResponse:
     """
-    Returns data for displaying a user's profile page
+    Returns data for displaying a user's profile page.
     """
     query = select(User).where(User.username == username)
     result = await db.execute(query)
@@ -121,11 +120,11 @@ async def get_user_profile(
         raise HTTPException(status_code=404, detail="User not found")
 
     return GetUserResponse(
-        email=user.email.value,
-        username=user.username.value,
-        bio=user.bio.value,
-        avatar=user.avatar.value,
-        banner=user.banner.value,
+        email=user.email,
+        username=user.username,
+        bio=user.bio,
+        avatar=user.avatar,
+        banner=user.banner,
     )
 
 

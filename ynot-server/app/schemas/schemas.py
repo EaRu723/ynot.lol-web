@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import AnyHttpUrl, BaseModel, Field, HttpUrl
 from sqlalchemy import DateTime
 
 
@@ -65,11 +65,11 @@ class SiteBase(BaseModel):
         from_attributes = True
 
 
-class CreatePost(BaseModel):
+class CreatePostRequest(BaseModel):
     note: str
     tags: List[str] = []
     urls: List[HttpUrl] = []
-    file_keys: List[str] = []  # S3 keys for uploaded files
+    file_keys: List[AnyHttpUrl] = []  # S3 URLs for uploaded files
 
 
 class PostResponse(BaseModel):
@@ -127,7 +127,7 @@ class RecordDelete(BaseModel):
 class GetUserResponse(BaseModel):
     email: str
     username: str
-    bio: str
+    bio: Optional[str] = ""
     avatar: str
     banner: str
 

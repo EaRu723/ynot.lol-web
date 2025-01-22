@@ -5,16 +5,16 @@ import boto3
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile, WebSocket, WebSocketDisconnect)
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
 from app.models.models import Post, Site, Tag, User, UserSession
-from app.schemas.schemas import (CreatePost, PostResponse, PreSignedUrlRequest,
-                                 SiteBase, TagBase)
+from app.schemas.schemas import (CreatePostRequest, FrontendPost, PostResponse,
+                                 PreSignedUrlRequest, SiteBase, TagBase)
 
 router = APIRouter()
 
@@ -316,8 +316,8 @@ async def batch_upload(
 
 @router.post("/post")
 async def create_post(
-    request: CreatePost,
-    user: User = Depends(login_required),
+    request: CreatePostRequest,
+    session: UserSession = Depends(login_required),
     db: AsyncSession = Depends(get_async_session),
 ):
     # Fetch or create tags
@@ -345,15 +345,19 @@ async def create_post(
                 tag_objs.append(existing_tag)
 
     post = Post(
+        owner_id=session.user.id,
         note=request.note,
         urls=request.urls,
         tags=tag_objs,
         file_keys=request.file_keys,
-        owner_id=user.id,
     )
-    db.add(post)
-    await db.commit()
-    await db.refresh(post)
+    try:
+        db.add(post)
+        await db.commit()
+        await db.refresh(post)
+    except SQLAlchemyError as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to create post") from e
 
     # Fetch post with relationships loaded
     result = await db.execute(
@@ -580,42 +584,32 @@ async def create_post(
 #
 #     return {"status": "Record deleted successfully", "response": resp.json()}
 #
-#
-# @router.get("/recent-posts", response_model=List[FrontendPost])
-# async def get_recent_posts(
-#     limit: int = 10, db: AsyncSession = Depends(get_async_session)
-# ):
-#     result = await db.execute(
-#         select(Post).order_by(Post.created_at.desc()).limit(limit)
-#     )
-#     posts = result.scalars().all()
-#
-#     frontend_posts = [
-#         FrontendPost(
-#             handle=post.handle,
-#             did=post.did,
-#             note=post.note,
-#             urls=post.urls or [],
-#             tags=post.tags or [],
-#             collection=post.collection,
-#             rkey=post.rkey,
-#             created_at=post.created_at,
-#         )
-#         for post in posts
-#     ]
-#
-#     return frontend_posts
 
 
-# @router.get("/whoami")
-# async def whoami(user: OAuthSession = Depends(login_required)):
-#     return {
-#         "user": {
-#             "handle": user.handle,
-#             "did": user.did,
-#             "bio": user.user.bio,
-#             "displayName": user.user.display_name,
-#             "avatar": user.user.avatar,
-#             "banner": user.user.banner,
-#         }
-#     }
+@router.get("/recent-posts", response_model=List[FrontendPost])
+async def get_recent_posts(
+    limit: int = 10, db: AsyncSession = Depends(get_async_session)
+):
+    result = await db.execute(
+        select(Post)
+        .options(selectinload(Post.owner))
+        .order_by(Post.created_at.desc())
+        .limit(limit)
+    )
+    posts = result.scalars().all()
+
+    frontend_posts = [
+        FrontendPost(
+            id=post.id,
+            owner_id=post.owner_id,
+            owner=post.owner,
+            note=post.note,
+            urls=post.urls or [],
+            tags=post.tags or [],
+            file_keys=post.file_keys or [],
+            created_at=post.created_at,
+        )
+        for post in posts
+    ]
+
+    return frontend_posts
