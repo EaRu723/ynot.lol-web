@@ -5,7 +5,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -93,6 +93,7 @@ async def register(
         login_id=request.loginId,
         email=request.email,
         ownid_data=request.ownIdData,
+        avatar="https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg",
     )
 
     try:
@@ -144,7 +145,25 @@ async def login(
 
 
 @router.get("/logout")
-async def logout(request: Request, response: Response):
+async def logout(
+    request: Request, response: Response, db: AsyncSession = Depends(get_async_session)
+):
+    session_token = request.session.get("session_token")
+    if not session_token:
+        raise HTTPException(status_code=400, detail="No session token found")
+
+    # Invalidate session in database
+    result = await db.execute(
+        update(UserSession)
+        .where(UserSession.session_token == session_token)
+        .values(is_active=False, expires_at=datetime.now(timezone.utc))
+    )
+    if result.rowcount == 0:
+        # No session matched the given token
+        raise HTTPException(status_code=400, detail="Invalid session token")
+
+    await db.commit()
+
     if settings.app_env == "development":
         response.delete_cookie(
             key="session",

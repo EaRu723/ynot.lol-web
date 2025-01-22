@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from sqlalchemy import (JSON, Boolean, CheckConstraint, Column, DateTime,
                         ForeignKey, Integer, MetaData, String, Table, Text,
                         func)
@@ -30,7 +28,7 @@ class Post(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     note = Column(Text, nullable=False)
     urls = Column(JSON, nullable=True)  # Parsed urls from post note
-    file_keys = Column(JSON, nullable=True)  # S3 keys for uploaded files
+    file_keys = Column(JSON, nullable=True)  # S3 urls for uploaded files
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     tags = relationship("Tag", secondary=post_tags, back_populates="posts")
@@ -102,5 +100,6 @@ class UserSession(Base):
     user_agent = Column(
         String, nullable=True
     )  # Optional: Store the user's user agent string
+    is_active = Column(Boolean, nullable=False, default=True)
 
     user = relationship("User", back_populates="sessions")
