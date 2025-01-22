@@ -45,7 +45,7 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
     if (!response.ok) {
       alert("Failed to upload files.");
       const res = await response.json();
-      console.log(res);
+      console.error(res);
       return [];
     }
 

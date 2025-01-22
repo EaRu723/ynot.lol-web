@@ -5,12 +5,12 @@ import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
 
 function UserProfile({ isLoggedIn, userHandle }) {
-  const { handle } = useParams();
+  const { username } = useParams();
   const [searchParams] = useSearchParams();
   const rkey = searchParams.get("rkey");
   const navigate = useNavigate();
 
-  const [activeView, setActiveView] = useState('activity');
+  const [activeView, setActiveView] = useState("activity");
   const [posts, setPosts] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,15 +21,18 @@ function UserProfile({ isLoggedIn, userHandle }) {
     const fetchUserData = async () => {
       try {
         const profileResponse = await fetch(
-          `${API_URL}/user/${handle}/profile`,
+          `${API_URL}/user/${username}/profile`,
         );
         if (!profileResponse.ok) {
           throw new Error("Failed to fetch user profile");
         }
         const profileData = await profileResponse.json();
+        console.log(profileData);
         setProfile(profileData);
 
-        const postsResponse = await fetch(`${API_URL}/user/${handle}/posts`);
+        console.log(profile);
+
+        const postsResponse = await fetch(`${API_URL}/user/${username}/posts`);
         if (!postsResponse.ok) {
           throw new Error("Failed to fetch user posts");
         }
@@ -43,7 +46,7 @@ function UserProfile({ isLoggedIn, userHandle }) {
     };
 
     fetchUserData();
-  }, [handle, API_URL]);
+  }, [username, API_URL]);
 
   const handleViewChange = (view) => {
     setActiveView(view);
@@ -52,10 +55,10 @@ function UserProfile({ isLoggedIn, userHandle }) {
   // Add this function to group posts by date
   const groupPostsByDate = (posts) => {
     return posts.reduce((groups, post) => {
-      const date = new Date(post.created_at).toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
+      const date = new Date(post.created_at).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
       });
       if (!groups[date]) {
         groups[date] = [];
@@ -68,19 +71,19 @@ function UserProfile({ isLoggedIn, userHandle }) {
   const handleLogout = async () => {
     try {
       const response = await fetch(`${API_URL}/oauth/logout`, {
-        method: 'POST',
-        credentials: 'include'
+        method: "POST",
+        credentials: "include",
       });
-      
+
       if (response.ok) {
         // Redirect to home page after logout
-        navigate('/');
+        navigate("/");
         window.location.reload(); // Refresh to update auth state
       } else {
-        throw new Error('Logout failed');
+        throw new Error("Logout failed");
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -96,14 +99,14 @@ function UserProfile({ isLoggedIn, userHandle }) {
         style={{ backgroundImage: `url(${profile.banner})` }}
       >
         <div className="profile-avatar">
-          <img src={profile.avatar} alt={`${handle}'s avatar`} />
+          <img src={profile.avatar} alt={`${username}'s avatar`} />
         </div>
       </div>
       <div className="profile-info">
         <div className="profile-header">
           <div className="profile-text">
-            <h1>{profile.display_name || handle}</h1>
-            <p className="handle">@{handle}</p>
+            <h1>{profile.display_name || username}</h1>
+            <p className="handle">@{username}</p>
             <p className="bio">
               <Linkify>{profile.bio}</Linkify>
             </p>
@@ -126,16 +129,17 @@ function UserProfile({ isLoggedIn, userHandle }) {
               </button>
             </div>
           </div>
-          
-          {isLoggedIn && userHandle === handle && (
+
+          {isLoggedIn && userHandle === username && (
             <div className="profile-actions">
-              <button 
-                onClick={() => navigate('/settings')} 
+              <button
+                onClick={() => navigate("/settings")}
                 className="profile-action-btn"
+                style={{ color: "grey" }}
               >
                 Settings
               </button>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="profile-action-btn logout"
               >
@@ -146,28 +150,28 @@ function UserProfile({ isLoggedIn, userHandle }) {
         </div>
       </div>
       <div className="view-toggle">
-        <button 
-          className={`toggle-btn ${activeView === 'activity' ? 'active' : ''}`}
-          onClick={() => handleViewChange('activity')}
+        <button
+          className={`toggle-btn ${activeView === "activity" ? "active" : ""}`}
+          onClick={() => handleViewChange("activity")}
         >
           Activity
         </button>
-        <button 
-          className={`toggle-btn ${activeView === 'likes' ? 'active' : ''}`}
-          onClick={() => handleViewChange('likes')}
+        <button
+          className={`toggle-btn ${activeView === "likes" ? "active" : ""}`}
+          onClick={() => handleViewChange("likes")}
         >
           Likes
         </button>
-        <button 
-          className={`toggle-btn ${activeView === 'favorites' ? 'active' : ''}`}
-          onClick={() => handleViewChange('favorites')}
+        <button
+          className={`toggle-btn ${activeView === "favorites" ? "active" : ""}`}
+          onClick={() => handleViewChange("favorites")}
         >
           Favorites
         </button>
-        {isLoggedIn && userHandle === handle && (
-          <button 
-            className={`toggle-btn ${activeView === 'private' ? 'active' : ''}`}
-            onClick={() => handleViewChange('private')}
+        {isLoggedIn && userHandle === username && (
+          <button
+            className={`toggle-btn ${activeView === "private" ? "active" : ""}`}
+            onClick={() => handleViewChange("private")}
           >
             Private
           </button>
@@ -180,11 +184,9 @@ function UserProfile({ isLoggedIn, userHandle }) {
             <div className="posts-grid">
               <TimelinePosts
                 posts={datePosts}
-                setPosts={setPosts}
                 apiUrl={API_URL}
                 isLoggedIn={isLoggedIn}
                 userHandle={userHandle}
-                rkey={rkey}
               />
             </div>
           </div>

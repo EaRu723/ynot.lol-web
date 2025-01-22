@@ -21,13 +21,15 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
 
   return (
     <div>
-      <h1 style={{
-        fontSize: "2rem",
-        fontWeight: "bold",
-        textAlign: "left",
-        padding: "40px 20px 20px 20px",
-        borderBottom: "1px solid #E9E9ED"
-      }}>
+      <h1
+        style={{
+          fontSize: "2rem",
+          fontWeight: "bold",
+          textAlign: "left",
+          padding: "50px 20px 20px 20px",
+          borderBottom: "1px solid #E9E9ED",
+        }}
+      >
         Discover cool <i>people.</i>
       </h1>
       <ShowcaseGrid sites={sites} />

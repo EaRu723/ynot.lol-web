@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import PostModal from "./PostModal.jsx";
+import PropTypes from "prop-types";
 import "../styles/TimelinePosts.css";
 import { calculateTimeElapsed } from "../utils/timeUtils.js";
 
@@ -57,7 +58,7 @@ const renderTextWithTagsAndLinks = (text) => {
   });
 };
 
-const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
+const PostCard = ({ post, apiUrl, isOwner }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const menuRef = useRef(null);
@@ -66,9 +67,7 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
   const closeMenu = () => setMenuOpen(false);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(
-      `${window.location.origin}/post/${post.rkey}`,
-    );
+    navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
     alert("Post link copied to clipboard!");
   };
 
@@ -83,12 +82,12 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
         method: "DELETE",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ collection: post.collection, rkey: post.rkey }),
+        body: JSON.stringify({ id: post.id }),
       });
 
       if (response.ok) {
         alert("Post deleted successfully.");
-        setPosts((prevPosts) => prevPosts.filter((p) => p.rkey !== post.rkey));
+        window.location.reload();
       }
     } catch (error) {
       console.error("Delete Post Error:", error);
@@ -112,16 +111,16 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
 
   const formatTime = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
   return (
     <>
-      <div className="post-card" id={id}>
+      <div className="post-card" id={post.id}>
         <div className="menu-container" ref={menuRef}>
           <button onClick={toggleMenu} className="menu-button">
             ⋮
@@ -132,7 +131,11 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
               {isOwner && (
                 <>
                   <button onClick={handleEdit}>Edit</button>
-                  <button onClick={handleDelete} className="delete-button">
+                  <button
+                    onClick={handleDelete}
+                    className="delete-button"
+                    style={{ color: "#dc2626" }}
+                  >
                     Delete
                   </button>
                 </>
@@ -141,17 +144,13 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
           )}
         </div>
 
-        <div className="post-title">
-          {post.title || "title.lol"}
-        </div>
+        <div className="post-title">{post.title || "title.lol"}</div>
 
         <div className="post-text">
           <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
         </div>
 
-        <div className="post-timestamp">
-          {formatTime(post.created_at)}
-        </div>
+        <div className="post-timestamp">{formatTime(post.created_at)}</div>
       </div>
 
       {isEditModalOpen && (
@@ -161,14 +160,21 @@ const PostCard = ({ id, post, setPosts, apiUrl, isOwner }) => {
   );
 };
 
-const TimelinePosts = ({
-  posts,
-  setPosts,
-  apiUrl,
-  isLoggedIn,
-  userHandle,
-  rkey,
-}) => {
+PostCard.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.number,
+    title: PropTypes.string,
+    note: PropTypes.string,
+    created_at: PropTypes.string,
+    urls: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+    file_keys: PropTypes.arrayOf(PropTypes.string),
+  }).isRequired,
+  apiUrl: PropTypes.string,
+  isOwner: PropTypes.bool,
+};
+
+const TimelinePosts = ({ posts, apiUrl, isLoggedIn, userHandle }) => {
   if (!Array.isArray(posts) || !posts.length)
     return <div>No posts to display</div>;
 
@@ -177,16 +183,27 @@ const TimelinePosts = ({
     <div className="timeline-container">
       {posts.map((post) => (
         <PostCard
-          key={post.rkey}
-          id={post.rkey}
+          key={post.id}
           post={post}
-          setPosts={setPosts}
           apiUrl={apiUrl}
-          isOwner={isLoggedIn && post.handle === userHandle}
+          isOwner={isLoggedIn && post.owner === userHandle}
         />
       ))}
     </div>
   );
+};
+
+TimelinePosts.propTypes = {
+  posts: PropTypes.arrayOf(
+    PropTypes.shape({
+      title: PropTypes.string,
+      note: PropTypes.string,
+    }),
+  ),
+  setPosts: PropTypes.func,
+  apiUrl: PropTypes.string,
+  isLoggedIn: PropTypes.bool,
+  userHandle: PropTypes.string,
 };
 
 export default TimelinePosts;

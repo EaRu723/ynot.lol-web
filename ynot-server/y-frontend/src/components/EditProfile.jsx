@@ -93,7 +93,14 @@ function EditProfile({ user, setUser }) {
   };
 
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "20px" }}>
+    <div
+      style={{
+        maxWidth: "600px",
+        margin: "0 auto",
+        padding: "20px",
+        paddingTop: "70px",
+      }}
+    >
       <h1>Settings</h1>
       <form onSubmit={handleSubmit}>
         <div className="form-group">

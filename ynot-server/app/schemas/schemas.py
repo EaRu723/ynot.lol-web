@@ -72,6 +72,10 @@ class CreatePostRequest(BaseModel):
     file_keys: List[AnyHttpUrl] = []  # S3 URLs for uploaded files
 
 
+class DeletePostRequest(BaseModel):
+    id: int
+
+
 class PostResponse(BaseModel):
     id: int
     note: str

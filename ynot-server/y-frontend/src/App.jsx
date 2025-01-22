@@ -76,14 +76,14 @@ const App = () => {
         <Route path="/" element={<DiscoverPage API_URL={API_URL} />} />
 
         <Route
-          path="/:username/profile"
+          path="/user/:username"
           element={
-            <UserProfile isLoggedIn={isLoggedIn} userHandle={user.handle} />
+            <UserProfile isLoggedIn={isLoggedIn} userHandle={user.username} />
           }
         />
 
         <Route
-          path="/:username/settings"
+          path="/settings"
           element={
             <EditProfile API_URL={API_URL} user={user} setUser={setUser} />
           }
@@ -97,7 +97,6 @@ const App = () => {
         <Route
           path="/login"
           element={
-            //<OAuthLogin setUser={setUser} setIsLoggedIn={setIsLoggedIn} />
             <PasswordlessLogin
               API_URL={API_URL}
               setIsLoggedIn={setIsLoggedIn}

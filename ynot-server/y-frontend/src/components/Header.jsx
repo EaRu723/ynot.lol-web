@@ -11,7 +11,7 @@ const Header = React.memo(
     const navigate = useNavigate();
 
     const toggleDropdown = () => {
-      setDropdownOpen((prev) => !prev);
+      setDropdownOpen(!dropdownOpen);
     };
 
     const handleLogout = async () => {
@@ -141,10 +141,10 @@ const Header = React.memo(
           )}
           {dropdownOpen && (
             <div className="dropdown" ref={dropdownRef}>
-              <a href={`/${user.username}/profile`} className="dropdown-item">
+              <a href={`/user/${user.username}`} className="dropdown-item">
                 Profile
               </a>
-              <a href={`/${user.username}/settings`} className="dropdown-item">
+              <a href={`/settings`} className="dropdown-item">
                 Settings
               </a>
               <button

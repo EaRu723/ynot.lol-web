@@ -4,7 +4,7 @@ from typing import List
 import boto3
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile, WebSocket, WebSocketDisconnect)
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -13,7 +13,8 @@ from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
 from app.models.models import Post, Site, Tag, User, UserSession
-from app.schemas.schemas import (CreatePostRequest, FrontendPost, PostResponse,
+from app.schemas.schemas import (CreatePostRequest, DeletePostRequest,
+                                 FrontendPost, PostResponse,
                                  PreSignedUrlRequest, SiteBase, TagBase)
 
 router = APIRouter()
@@ -366,6 +367,33 @@ async def create_post(
     returned_post = result.unique().scalar_one()
 
     return PostResponse.from_orm(returned_post)
+
+
+@router.delete("/post")
+async def delete_post(
+    request: DeletePostRequest,
+    session: UserSession = Depends(login_required),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
+    query = delete(Post).where(Post.id == request.id, Post.owner_id == session.user.id)
+    try:
+        result = await db.execute(query)
+        await db.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(
+                status_code=404, detail="Post not found or unauthorized"
+            )
+
+        return {"message": "Post deleted successfully"}
+
+    except SQLAlchemyError as e:
+        print(f"Database error while deleting post with id {request.id}: {e}")
+        raise HTTPException(status_code=500, detail="Database error on delete post")
+
+    except Exception as e:
+        print(f"Unexpected error while deleting post with id {request.id}: {e}")
+        raise HTTPException(status_code=500, detail="Unexpected error on delete post")
 
 
 # @router.post("/post")

@@ -34,11 +34,11 @@
 }
 
 .post-text pre {
-  white-space: pre-wrap;       /* Since CSS 2.1 */
-  white-space: -moz-pre-wrap;  /* Mozilla */
-  white-space: -pre-wrap;      /* Opera 4-6 */
-  white-space: -o-pre-wrap;    /* Opera 7 */
-  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+  white-space: pre-wrap; /* Since CSS 2.1 */
+  white-space: -moz-pre-wrap; /* Mozilla */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  word-wrap: break-word; /* Internet Explorer 5.5+ */
   font-family: inherit;
   margin: 0;
 }
@@ -54,6 +54,7 @@
   border: none;
   font-size: 1.25rem;
   cursor: pointer;
+  color: black;
 }
 
 .menu-dropdown {
@@ -75,6 +76,7 @@
   text-align: left;
   width: 100%;
   cursor: pointer;
+  color: black;
 }
 
 .menu-dropdown button:hover {
