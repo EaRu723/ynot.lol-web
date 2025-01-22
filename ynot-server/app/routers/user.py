@@ -92,6 +92,7 @@ async def get_posts(
             id=post.id,
             owner_id=post.owner_id,
             owner=user.username,
+            title=post.title,
             note=post.note,
             urls=post.urls,
             file_keys=post.file_keys,

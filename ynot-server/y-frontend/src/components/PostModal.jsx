@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import "../styles/PostModal.css";
 
 function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const [urls, setUrls] = useState(post ? post.urls : []);
+  const [title, setTitle] = useState(post ? post.title : "");
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
   const [files, setFiles] = useState([]);
@@ -110,6 +112,7 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
       const fileKeys = files.length > 0 ? await uploadFilesToS3(files) : [];
 
       const payload = {
+        title,
         note,
         urls: validUrls,
         tags,
@@ -175,6 +178,16 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
         <form id="post-form" onSubmit={handleSubmit}>
           <div className="form-area">
             <textarea
+              name="title"
+              id="title"
+              rows="1"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Title (optional)"
+            ></textarea>
+          </div>
+          <div className="form-area">
+            <textarea
               id="note"
               name="note"
               rows="14"
@@ -201,5 +214,20 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     </div>
   );
 }
+
+PostModal.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.number,
+    title: PropTypes.string,
+    note: PropTypes.string,
+    created_at: PropTypes.string,
+    urls: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+    file_keys: PropTypes.arrayOf(PropTypes.string),
+  }),
+  onClose: PropTypes.func,
+  isLoggedIn: PropTypes.bool,
+  onLogin: PropTypes.func,
+};
 
 export default PostModal;

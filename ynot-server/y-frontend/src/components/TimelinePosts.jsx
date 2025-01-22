@@ -196,8 +196,13 @@ const TimelinePosts = ({ posts, apiUrl, isLoggedIn, userHandle }) => {
 TimelinePosts.propTypes = {
   posts: PropTypes.arrayOf(
     PropTypes.shape({
+      id: PropTypes.number,
       title: PropTypes.string,
       note: PropTypes.string,
+      created_at: PropTypes.string,
+      urls: PropTypes.arrayOf(PropTypes.string),
+      tags: PropTypes.arrayOf(PropTypes.string),
+      file_keys: PropTypes.arrayOf(PropTypes.string),
     }),
   ),
   setPosts: PropTypes.func,

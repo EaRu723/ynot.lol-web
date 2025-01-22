@@ -26,6 +26,7 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=True)
     note = Column(Text, nullable=False)
     urls = Column(JSON, nullable=True)  # Parsed urls from post note
     file_keys = Column(JSON, nullable=True)  # S3 urls for uploaded files

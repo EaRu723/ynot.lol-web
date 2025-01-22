@@ -66,6 +66,7 @@ class SiteBase(BaseModel):
 
 
 class CreatePostRequest(BaseModel):
+    title: str = ""
     note: str
     tags: List[str] = []
     urls: List[HttpUrl] = []
@@ -78,6 +79,7 @@ class DeletePostRequest(BaseModel):
 
 class PostResponse(BaseModel):
     id: int
+    title: Optional[str]
     note: str
     tags: List[TagBase]
     urls: List[str]
@@ -91,6 +93,7 @@ class PostResponse(BaseModel):
     def from_orm(cls, obj):
         return cls(
             id=obj.id,
+            title=obj.title,
             note=obj.note,
             tags=[TagBase.model_validate(tag) for tag in obj.tags],
             urls=obj.urls or [],
@@ -103,6 +106,7 @@ class FrontendPost(BaseModel):
     id: int
     owner_id: int
     owner: str
+    title: Optional[str]
     note: str
     urls: Optional[List[HttpUrl]]
     tags: List[str]

@@ -347,6 +347,7 @@ async def create_post(
 
     post = Post(
         owner_id=session.user.id,
+        title=request.title,
         note=request.note,
         urls=request.urls,
         tags=tag_objs,
@@ -631,6 +632,7 @@ async def get_recent_posts(
             id=post.id,
             owner_id=post.owner_id,
             owner=post.owner,
+            title=post.title,
             note=post.note,
             urls=post.urls or [],
             tags=post.tags or [],
