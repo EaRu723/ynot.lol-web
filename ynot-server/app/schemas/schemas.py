@@ -47,6 +47,7 @@ class GetSessionRequest(BaseModel):
 
 class ProfileCompletionRequest(BaseModel):
     username: str
+    displayName: str
     avatar: Optional[str] = None
     banner: Optional[str] = None
 
@@ -126,7 +127,7 @@ class FrontendPost(BaseModel):
 
 class GetUserResponse(BaseModel):
     email: str
-    display_name: str
+    display_name: Optional[str]
     username: str
     bio: Optional[str] = ""
     avatar: str
