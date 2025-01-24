@@ -4,6 +4,7 @@ import "../styles/ProfileCompletionModal.css";
 
 const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(user.avatar);
@@ -12,6 +13,10 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
 
   const handleUsernameChange = (e) => {
     setUsername(e.target.value);
+  };
+
+  const handleDisplayNameChange = (e) => {
+    setDisplayName(e.target.value);
   };
 
   const handleFileChange = (e, setFile, setPreview) => {
@@ -87,6 +92,7 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
 
       const payload = {
         username: username.trim(),
+        displayName: displayName.trim(),
         avatar: avatarUrl,
         banner: bannerUrl,
       };
@@ -129,6 +135,16 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
                 value={username}
                 rows={1}
                 onChange={handleUsernameChange}
+              ></textarea>
+            </div>
+            <div className="form-group">
+              <textarea
+                name="displayname"
+                id="displayname"
+                placeholder="Display Name"
+                value={displayName}
+                rows={1}
+                onChange={handleDisplayNameChange}
               ></textarea>
             </div>
             <div className="form-group">

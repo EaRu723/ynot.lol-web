@@ -56,6 +56,7 @@ async def complete_profile(
     print(request)
 
     user.username = request.username
+    user.name = request.displayName
     if request.avatar:
         user.avatar = request.avatar
     if request.banner:
