@@ -19,6 +19,11 @@
   flex-direction: column;
 }
 
+.post-card:hover {
+  transform: scale(1.02);
+  transition: transform 0.1s ease-in-out;
+}
+
 .post-title {
   font-weight: 600;
   font-size: 1.1rem;

@@ -26,8 +26,10 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
           fontSize: "2rem",
           fontWeight: "bold",
           textAlign: "left",
-          padding: "50px 20px 20px 20px",
-          borderBottom: "1px solid #E9E9ED",
+          padding: "0 20 0 20",
+          paddingTop: "4rem",
+          margin: "16px",
+          marginLeft: "8px",
         }}
       >
         Discover cool <i>people.</i>

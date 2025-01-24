@@ -1,5 +1,3 @@
-import React from "react";
-
 function ShowcaseGrid({ sites }) {
   return (
     <div className="showcaseGrid">

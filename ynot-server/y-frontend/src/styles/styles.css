@@ -83,8 +83,8 @@ main {
 }
 
 .iframeWrapper:hover {
-  transform: scale(1.05);
-  transition: transform 0.3s ease-in-out;
+  transform: scale(1.02);
+  transition: transform 0.1s ease-in-out;
 }
 
 .loggedInMenu {

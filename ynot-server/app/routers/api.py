@@ -618,10 +618,10 @@ async def delete_post(
 @router.get("/recent-posts", response_model=List[FrontendPost])
 async def get_recent_posts(
     limit: int = 10, db: AsyncSession = Depends(get_async_session)
-):
+) -> List[FrontendPost]:
     result = await db.execute(
         select(Post)
-        .options(selectinload(Post.owner))
+        .options(selectinload(Post.owner), selectinload(Post.tags))
         .order_by(Post.created_at.desc())
         .limit(limit)
     )
@@ -631,11 +631,11 @@ async def get_recent_posts(
         FrontendPost(
             id=post.id,
             owner_id=post.owner_id,
-            owner=post.owner,
+            owner=post.owner.username,
             title=post.title,
             note=post.note,
             urls=post.urls or [],
-            tags=post.tags or [],
+            tags=[tag.name for tag in post.tags],
             file_keys=post.file_keys or [],
             created_at=post.created_at,
         )
