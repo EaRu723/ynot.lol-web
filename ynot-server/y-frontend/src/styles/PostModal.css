@@ -32,7 +32,7 @@
 .form-area {
   display: flex;
   flex-direction: column;
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
   width: 90%;
   margin-left: auto;
   margin-right: auto;
@@ -62,6 +62,15 @@
 
 .form-area textarea:focus {
   border-style: none;
+}
+
+#title {
+  font-size: 1.2rem;
+  font-weight: 600px;
+  border-radius: 0px;
+  border-bottom: 1px solid #ddd;
+  transition: height 0.2s ease-in-out;
+  margin-top: 1rem;
 }
 
 .modal-view h2 {

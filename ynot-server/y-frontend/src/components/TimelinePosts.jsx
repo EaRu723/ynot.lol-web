@@ -3,6 +3,7 @@ import PostModal from "./PostModal.jsx";
 import PropTypes from "prop-types";
 import "../styles/TimelinePosts.css";
 import { calculateTimeElapsed } from "../utils/timeUtils.js";
+import { useSearchParams } from "react-router-dom";
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -67,7 +68,9 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
   const closeMenu = () => setMenuOpen(false);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+    navigator.clipboard.writeText(
+      `${window.location.origin}/user/${post.owner}?post=${post.id}`,
+    );
     alert("Post link copied to clipboard!");
   };
 
@@ -130,7 +133,6 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
               <button onClick={handleShare}>Share</button>
               {isOwner && (
                 <>
-                  <button onClick={handleEdit}>Edit</button>
                   <button
                     onClick={handleDelete}
                     className="delete-button"
@@ -144,7 +146,7 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
           )}
         </div>
 
-        <div className="post-title">{post.title || "title.lol"}</div>
+        <div className="post-title">{post.title || " "}</div>
 
         <div className="post-text">
           <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
@@ -163,6 +165,7 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
 PostCard.propTypes = {
   post: PropTypes.shape({
     id: PropTypes.number,
+    owner: PropTypes.string,
     title: PropTypes.string,
     note: PropTypes.string,
     created_at: PropTypes.string,
@@ -175,6 +178,23 @@ PostCard.propTypes = {
 };
 
 const TimelinePosts = ({ posts, apiUrl, isLoggedIn, userHandle }) => {
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const postId = searchParams.get("post");
+    if (postId) {
+      const postElement = document.getElementById(postId);
+      if (postElement) {
+        postElement.classList.add("highlighted-post");
+        postElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        setTimeout(() => {
+          postElement.classList.remove("highlighted-post");
+        }, 1500);
+      }
+    }
+  });
+
   if (!Array.isArray(posts) || !posts.length)
     return <div>No posts to display</div>;
 
@@ -197,6 +217,7 @@ TimelinePosts.propTypes = {
   posts: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.number,
+      owner: PropTypes.string,
       title: PropTypes.string,
       note: PropTypes.string,
       created_at: PropTypes.string,

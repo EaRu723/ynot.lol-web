@@ -4,6 +4,7 @@
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1rem;
   padding: 1rem;
+  padding-top: 0px;
   width: 100%;
 }
 
@@ -19,7 +20,7 @@
 }
 
 .post-title {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 1.1rem;
   color: #111827;
   margin-bottom: 0.75rem;
@@ -41,6 +42,13 @@
   word-wrap: break-word; /* Internet Explorer 5.5+ */
   font-family: inherit;
   margin: 0;
+}
+
+.highlighted-post {
+  border: 1px solid grey;
+  transform: scale(1.05);
+  transition: border 0.3s ease-out;
+  transform: 0.3s ease-out;
 }
 
 .menu-container {

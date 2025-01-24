@@ -119,7 +119,7 @@
   padding: 10px 15px;
   color: #333;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 14px;
   text-align: left;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -184,6 +184,7 @@
   display: block;
   padding: 12px 15px;
   text-decoration: none;
+  font-size: 14px;
   color: #333;
   transition: background-color 0.2s ease;
 }

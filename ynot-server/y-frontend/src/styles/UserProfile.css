@@ -44,7 +44,6 @@ body {
 /* Profile Information */
 .profile-info {
   padding: 20px;
-  border-bottom: 1px solid #ddd;
   text-align: left;
   margin-top: 40px;
 }
@@ -73,26 +72,11 @@ body {
 }
 
 /* Posts Section */
-.posts-header {
-  font-size: 1.2rem;
-  font-weight: bold;
-  padding: 10px 20px;
-  border-bottom: 1px solid #ddd;
-}
-
-.posts-timeline {
-  padding: 20px;
-}
-
-.day-group {
-  margin-bottom: 30px;
-}
-
 .date-header {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #666;
   margin-bottom: 15px;
-  padding-bottom: 5px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
 
@@ -110,14 +94,12 @@ body {
   overflow: hidden;
 }
 
-/* Add these styles to your existing UserProfile.css */
-
 .view-toggle {
   display: flex;
   gap: 1rem;
-  padding: 1rem;
   margin-bottom: 1rem;
   justify-content: center;
+  border-bottom: 1px solid #ddd;
 }
 
 .toggle-btn {
@@ -126,8 +108,8 @@ body {
   background: none;
   cursor: pointer;
   font-size: 1rem;
-  color: #6b7280;
-  border-radius: 9999px;
+  color: #b7bec9;
+  /*border-radius: 9999px;*/
   transition: all 0.2s ease;
 }
 
@@ -138,7 +120,6 @@ body {
 .toggle-btn.active {
   color: #111827;
   font-weight: 500;
-  text-decoration: underline;
   background: none;
 }
 
@@ -151,16 +132,14 @@ body {
 }
 
 .date-header {
-  font-size: 1.25rem;
   color: #374151;
-  margin: 1rem 0;
-  padding-bottom: 0.5rem;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .posts-grid {
   /* The actual grid layout is handled by TimelinePosts component */
-  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {

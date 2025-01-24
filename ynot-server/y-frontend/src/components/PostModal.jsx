@@ -174,15 +174,18 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
             &times;
           </span>
         </div>
-        <h2>Share Something Cool</h2>
         <form id="post-form" onSubmit={handleSubmit}>
           <div className="form-area">
             <textarea
-              name="title"
               id="title"
+              name="title"
               rows="1"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onInput={(e) => {
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight - 15}px`;
+              }}
               placeholder="Title (optional)"
             ></textarea>
           </div>

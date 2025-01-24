@@ -70,8 +70,8 @@ function UserProfile({ isLoggedIn, userHandle }) {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${API_URL}/oauth/logout`, {
-        method: "POST",
+      const response = await fetch(`${API_URL}/auth/logout`, {
+        method: "GET",
         credentials: "include",
       });
 
