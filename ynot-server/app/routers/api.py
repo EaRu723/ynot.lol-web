@@ -359,6 +359,7 @@ async def create_post(
         await db.refresh(post)
     except SQLAlchemyError as e:
         await db.rollback()
+        print(f"Error creating post: {e}")
         raise HTTPException(status_code=500, detail="Failed to create post") from e
 
     # Fetch post with relationships loaded

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import AnyHttpUrl, BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 
 class PreSignedUrlRequest(BaseModel):
@@ -77,8 +77,8 @@ class CreatePostRequest(BaseModel):
     title: str = ""
     note: str
     tags: List[str] = []
-    urls: List[HttpUrl] = []
-    file_keys: List[AnyHttpUrl] = []  # S3 URLs for uploaded files
+    urls: List[str] = []
+    file_keys: List[str] = []  # S3 URLs for uploaded files
 
 
 class DeletePostRequest(BaseModel):
@@ -116,7 +116,7 @@ class FrontendPost(BaseModel):
     owner: str
     title: Optional[str]
     note: str
-    urls: Optional[List[HttpUrl]]
+    urls: Optional[List[str]]
     tags: List[str]
     file_keys: Optional[List[str]]
     created_at: datetime
