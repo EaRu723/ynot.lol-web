@@ -35,9 +35,12 @@ const App = () => {
         const data = await response.json();
         setIsLoggedIn(true);
         setUser({
-          avatar: data.avatar,
           email: data.email,
           username: data.username,
+          displayName: data.display_name,
+          bio: data.bio,
+          avatar: data.avatar,
+          banner: data.banner,
           profile_complete: data.profile_complete,
         });
 

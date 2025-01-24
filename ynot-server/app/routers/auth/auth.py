@@ -131,6 +131,8 @@ async def login(
 
     request.session["session_token"] = session.session_token
 
+    session.user.user_agent = login_request.userAgent
+
     return {
         "message": "Login successful",
         "user": {
@@ -185,9 +187,12 @@ async def logout(
 @router.get("/me")
 async def me(session=Depends(login_required)):
     return {
-        "avatar": session.user.avatar,
         "email": session.user.email,
         "username": session.user.username,
+        "display_name": session.user.name,
+        "bio": session.user.bio,
+        "avatar": session.user.avatar,
+        "banner": session.user.banner,
         "profile_complete": session.user.is_profile_complete,
     }
 

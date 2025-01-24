@@ -17,6 +17,7 @@ const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
       body: JSON.stringify({
         ownIdData: data.ownid_data,
         token: data.token,
+        userAgent: navigator.userAgent,
       }),
     });
 

@@ -7,8 +7,8 @@ function EditProfile({ user, setUser }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
 
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
+  const [bio, setBio] = useState(user?.bio || "");
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "");
@@ -186,7 +186,7 @@ function EditProfile({ user, setUser }) {
         </div>
         <div className="form-group">
           <button type="submit" className="button" disabled={uploading}>
-            {uploading ? "Updating..." : "Update Profile"}
+            {uploading ? "Saving..." : "Save"}
           </button>
         </div>
       </form>
