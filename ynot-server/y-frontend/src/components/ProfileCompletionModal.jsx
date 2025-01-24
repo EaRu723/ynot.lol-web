@@ -92,6 +92,7 @@ const ProfileCompletionModal = ({ user, API_URL, onClose }) => {
 
       const payload = {
         username: username.trim(),
+        displayName: displayName.trim(),
         avatar: avatarUrl,
         banner: bannerUrl,
       };
