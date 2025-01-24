@@ -74,7 +74,8 @@ body {
 /* Posts Section */
 .date-header {
   font-size: 1rem;
-  color: #666;
+  color: #616161;
+  font-weight: 500;
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
@@ -98,8 +99,9 @@ body {
   display: flex;
   gap: 1rem;
   margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
   justify-content: center;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .toggle-btn {
@@ -132,7 +134,7 @@ body {
 }
 
 .date-header {
-  color: #374151;
+  /*color: #374151;*/
   border-bottom: 1px solid #e5e7eb;
 }
 

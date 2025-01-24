@@ -7,57 +7,94 @@ function EditProfile({ user, setUser }) {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
 
-  // Initialize state with user data
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
-  const [avatar, setAvatar] = useState("");
-  const [banner, setBanner] = useState("");
+  const [avatar, setAvatar] = useState(null);
+  const [banner, setBanner] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || "");
+  const [bannerPreview, setBannerPreview] = useState(user?.banner || "");
+  const [uploading, setUploading] = useState(false);
 
-  // State to store the original user data for comparison
-  const [originalData, setOriginalData] = useState({});
-
-  // Sync component state with user prop
   useEffect(() => {
     if (user) {
       setDisplayName(user.displayName || "");
       setBio(user.bio || "");
-      setAvatar(user.avatar || "");
-      setBanner(user.banner || "");
-      setOriginalData({
-        displayName: user.displayName || "",
-        bio: user.bio || "",
-        avatar: user.avatar || "",
-        banner: user.banner || "",
-      });
+      setAvatarPreview(user.avatar || "");
+      setBannerPreview(user.banner || "");
     } else {
-      navigate("/login"); // Redirect to login if user is not authenticated
+      navigate("/login");
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleFileChange = (e, setFile, setPreview) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setPreview(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-    // Check if at least one field is different before submitting
-    if (
-      displayName === originalData.displayName &&
-      bio === originalData.bio &&
-      avatar === originalData.avatar &&
-      banner === originalData.banner
-    ) {
-      alert("No changes detected. Please update at least one field.");
-      return;
+  const uploadFilesToS3 = async (files) => {
+    if (!files || files.length === 0) return [];
+
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const response = await fetch(`${API_URL}/batch-upload-s3`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("File upload error:", error);
+      throw new Error("Failed to upload files.");
     }
 
-    const payload = {
-      display_name: displayName || null, // Send null if the field is empty
-      bio: bio || null,
-      avatar: avatar || null,
-      banner: banner || null,
-    };
+    const { file_urls } = await response.json();
+    console.log("uploaded:", file_urls);
+    return file_urls;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setUploading(true);
 
     try {
+      // Prepare files for batch upload
+      const filesToUpload = [];
+      if (avatar) filesToUpload.push(avatar);
+      if (banner) filesToUpload.push(banner);
+
+      let avatarUrl = avatarPreview;
+      let bannerUrl = bannerPreview;
+
+      if (filesToUpload.length > 0) {
+        const uploadedUrls = await uploadFilesToS3(filesToUpload);
+        if (uploadedUrls.length == 1) {
+          if (avatar) avatarUrl = uploadedUrls[0];
+          if (banner) bannerUrl = uploadedUrls[0];
+        } else if (uploadedUrls.length > 0) {
+          if (avatar) avatarUrl = uploadedUrls[0];
+          if (banner) bannerUrl = uploadedUrls[1];
+        }
+      }
+
+      const payload = {
+        displayName: displayName.trim(),
+        bio: bio.trim(),
+        avatarUrl,
+        bannerUrl,
+      };
+
       const response = await fetch(`${API_URL}/user/profile`, {
-        method: "POST",
+        method: "PUT",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
@@ -67,48 +104,36 @@ function EditProfile({ user, setUser }) {
 
       if (response.ok) {
         alert("Profile updated successfully!");
-
-        // Update the user object globally using setUser
         const updatedUser = {
           ...user,
-          displayName: displayName || user.displayName,
-          bio: bio || user.bio,
-          avatar: avatar || user.avatar,
-          banner: banner || user.banner,
+          displayName,
+          bio,
+          avatar: avatarUrl,
+          banner: bannerUrl,
         };
         setUser(updatedUser);
-
-        // Update original data to match the new state
-        setOriginalData({ displayName, bio, avatar, banner });
+        navigate("/");
       } else {
-        const errorData = await response.json();
-        alert(
-          `Failed to update profile: ${errorData.detail || "Unknown error"}`,
-        );
+        const error = await response.json();
+        alert(`Failed to update profile: ${error.message || "unknown error"}`);
       }
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("An error occurred. Please try again.");
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "600px",
-        margin: "0 auto",
-        padding: "20px",
-        paddingTop: "70px",
-      }}
-    >
-      <h1>Settings</h1>
+    <div className="edit-profile-container">
+      <h1>Edit Profile</h1>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="display_name">Display Name:</label>
-          <input
-            type="text"
+          <textarea
             id="display_name"
-            name="display_name"
+            rows="1"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
@@ -117,35 +142,51 @@ function EditProfile({ user, setUser }) {
           <label htmlFor="bio">Bio:</label>
           <textarea
             id="bio"
-            name="bio"
             rows="4"
             value={bio}
             onChange={(e) => setBio(e.target.value)}
           ></textarea>
         </div>
         <div className="form-group">
-          <label htmlFor="avatar">Avatar URL:</label>
+          <label>Avatar:</label>
+          {avatarPreview && (
+            <img
+              src={avatarPreview}
+              alt="Avatar Preview"
+              style={{
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                marginBottom: "10px",
+              }}
+            />
+          )}
           <input
-            type="text"
-            id="avatar"
-            name="avatar"
-            value={avatar}
-            onChange={(e) => setAvatar(e.target.value)}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileChange(e, setAvatar, setAvatarPreview)}
+            disabled={uploading}
           />
         </div>
         <div className="form-group">
-          <label htmlFor="banner">Banner URL:</label>
+          <label>Banner:</label>
+          {bannerPreview && (
+            <img
+              src={bannerPreview}
+              alt="Banner Preview"
+              style={{ width: "100%", height: "auto", marginBottom: "10px" }}
+            />
+          )}
           <input
-            type="text"
-            id="banner"
-            name="banner"
-            value={banner}
-            onChange={(e) => setBanner(e.target.value)}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleFileChange(e, setBanner, setBannerPreview)}
+            disabled={uploading}
           />
         </div>
         <div className="form-group">
-          <button type="submit" className="button">
-            Update Profile
+          <button type="submit" className="button" disabled={uploading}>
+            {uploading ? "Updating..." : "Update Profile"}
           </button>
         </div>
       </form>

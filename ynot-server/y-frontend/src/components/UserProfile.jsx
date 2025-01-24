@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
 
 function UserProfile({ isLoggedIn, userHandle }) {
   const { username } = useParams();
-  const [searchParams] = useSearchParams();
-  const rkey = searchParams.get("rkey");
   const navigate = useNavigate();
 
   const [activeView, setActiveView] = useState("activity");
@@ -29,8 +27,6 @@ function UserProfile({ isLoggedIn, userHandle }) {
         const profileData = await profileResponse.json();
         console.log(profileData);
         setProfile(profileData);
-
-        console.log(profile);
 
         const postsResponse = await fetch(`${API_URL}/user/${username}/posts`);
         if (!postsResponse.ok) {

@@ -1,7 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -9,7 +10,8 @@ from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
 from app.models.models import Post, User, UserSession
 from app.schemas.schemas import (FrontendPost, GetUserResponse,
-                                 ProfileCompletionRequest)
+                                 ProfileCompletionRequest,
+                                 UpdateProfileRequest)
 
 router = APIRouter()
 
@@ -122,11 +124,40 @@ async def get_user_profile(
 
     return GetUserResponse(
         email=user.email,
+        display_name=user.name,
         username=user.username,
         bio=user.bio,
         avatar=user.avatar,
         banner=user.banner,
     )
+
+
+@router.put("/profile")
+async def update_profile(
+    request: UpdateProfileRequest,
+    db: AsyncSession = Depends(get_async_session),
+    session: UserSession = Depends(login_required),
+) -> dict:
+    query = (
+        update(User)
+        .where(User.id == session.user.id)
+        .values(
+            name=request.displayName,
+            bio=request.bio,
+            avatar=request.avatarUrl,
+            banner=request.bannerUrl,
+        )
+        .execution_options(synchronize_session="fetch")
+    )
+    try:
+        await db.execute(query)
+        await db.commit()
+        return {"message": "Successfully updated profile"}
+    except Exception as e:
+        print(f"Error while updating user profile: {e}")
+        raise HTTPException(
+            status_code=500, detail="Internal server error while updating profile"
+        )
 
 
 #

@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import List, Optional
 
 from pydantic import AnyHttpUrl, BaseModel, Field, HttpUrl
-from sqlalchemy import DateTime
 
 
 class PreSignedUrlRequest(BaseModel):
@@ -23,6 +22,14 @@ class RegistrationRequest(BaseModel):
 class LoginRequest(BaseModel):
     ownIdData: str
     token: str
+    userAgent: str
+
+
+class UpdateProfileRequest(BaseModel):
+    displayName: str
+    bio: str
+    avatarUrl: Optional[str]
+    bannerUrl: Optional[str]
 
 
 class SetOwnIdDataRequest(BaseModel):
@@ -117,31 +124,10 @@ class FrontendPost(BaseModel):
         from_attributes = True
 
 
-class RecordPut(BaseModel):
-    note: str
-    tags: List[str]
-    urls: List[str]
-    rkey: str
-
-
-class RecordDelete(BaseModel):
-    collection: str
-    rkey: str
-
-    class Config:
-        from_attributes = True
-
-
 class GetUserResponse(BaseModel):
     email: str
-    username: str
-    bio: Optional[str] = ""
-    avatar: str
-    banner: str
-
-
-class UserPost(BaseModel):
     display_name: str
+    username: str
     bio: Optional[str] = ""
     avatar: str
     banner: str
