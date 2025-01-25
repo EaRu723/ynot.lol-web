@@ -1,12 +1,21 @@
 import { OwnID } from "@ownid/react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import "../styles/PasswordlessRegistration.css";
+import "react-phone-number-input/style.css";
+import PhoneInput from "react-phone-number-input";
 
 const PasswordlessRegistration = ({ API_URL }) => {
   const [ownIDData, setOwnIDData] = useState("");
   const emailField = useRef(null);
-  const phoneNumber = useRef(null);
+  const phoneNumberRef = useRef(null);
+  const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (phoneNumberRef.current) {
+      phoneNumberRef.current.value = phone;
+    }
+  }, [phone]);
 
   // Called when OwnID successfully registers the user
   function onRegister(event) {
@@ -17,12 +26,7 @@ const PasswordlessRegistration = ({ API_URL }) => {
   async function onSubmit(event) {
     event.preventDefault();
     const email = emailField.current.value;
-    const phoneNum = phoneNumber.current.value;
-
-    //if (!email || !ownIDData || !phoneNum) {
-    //  alert("Ensure all fields and biometric authentication are provided");
-    //  return;
-    //}
+    const phoneNum = phoneNumberRef.current.value;
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -69,18 +73,26 @@ const PasswordlessRegistration = ({ API_URL }) => {
           />
         </div>
         <div className="form-group-inline">
+          <PhoneInput
+            placeholder="Enter phone number"
+            defaultCountry="US"
+            value={phone}
+            onChange={setPhone}
+            required
+          />
           <input
-            ref={phoneNumber}
-            type="tel"
+            ref={phoneNumberRef}
+            value={phone}
+            type="hidden"
             id="phoneNumber"
             name="phoneNumber"
             placeholder="Enter phone number"
-            required
+            readOnly
           />
           <div className="ownid-container">
             <OwnID
               type="register"
-              loginIdField={phoneNumber}
+              loginIdField={phoneNumberRef}
               onError={(error) => console.error("OwnID error:", error)}
               onRegister={onRegister}
             />

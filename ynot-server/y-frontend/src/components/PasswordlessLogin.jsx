@@ -1,10 +1,19 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OwnID } from "@ownid/react";
 import PropTypes from "prop-types";
 import "../styles/PasswordlessLogin.css";
+import "react-phone-number-input/style.css";
+import PhoneInput from "react-phone-number-input";
 
 const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
-  const phoneNumber = useRef(null);
+  const phoneNumberRef = useRef(null);
+  const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    if (phoneNumberRef.current) {
+      phoneNumberRef.current.value = phone;
+    }
+  }, [phone]);
 
   async function onSubmit(data) {
     setIsLoggedIn(true);
@@ -50,16 +59,23 @@ const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
         className="login-form"
       >
         <div className="form-group-inline">
-          <input
-            ref={phoneNumber}
-            type="tel"
-            name="phoneNumber"
+          <PhoneInput
             placeholder="Enter phone number"
+            defaultCountry="US"
+            value={phone}
+            onChange={setPhone}
             required
+          />
+          <input
+            type="hidden"
+            ref={phoneNumberRef}
+            name="phoneNumber"
+            value={phone}
+            readOnly
           />
           <OwnID
             type="login"
-            loginIdField={phoneNumber}
+            loginIdField={phoneNumberRef}
             onError={(error) => console.error(error)}
             onLogin={(data) => onSubmit(data)}
           />
@@ -67,6 +83,7 @@ const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
         <button type="submit" className="button">
           Log In
         </button>
+        <div value={phoneNumberRef}></div>
       </form>
     </div>
   );
