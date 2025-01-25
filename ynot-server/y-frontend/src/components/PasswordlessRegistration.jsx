@@ -4,13 +4,14 @@ import PropTypes from "prop-types";
 import "../styles/PasswordlessRegistration.css";
 
 const PasswordlessRegistration = ({ API_URL }) => {
-  const [ownIDData, setOwnIDData] = useState(null);
+  const [ownIDData, setOwnIDData] = useState("");
   const emailField = useRef(null);
   const phoneNumber = useRef(null);
 
   // Called when OwnID successfully registers the user
   function onRegister(event) {
     setOwnIDData(event.data);
+    console.log(event.data);
   }
 
   async function onSubmit(event) {
@@ -18,10 +19,10 @@ const PasswordlessRegistration = ({ API_URL }) => {
     const email = emailField.current.value;
     const phoneNum = phoneNumber.current.value;
 
-    if (!email || !ownIDData || !phoneNum) {
-      alert("Ensure all fields and biometric authentication are provided");
-      return;
-    }
+    //if (!email || !ownIDData || !phoneNum) {
+    //  alert("Ensure all fields and biometric authentication are provided");
+    //  return;
+    //}
 
     try {
       const response = await fetch(`${API_URL}/auth/register`, {

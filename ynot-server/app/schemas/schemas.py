@@ -131,4 +131,4 @@ class GetUserResponse(BaseModel):
     username: str
     bio: Optional[str] = ""
     avatar: str
-    banner: str
+    banner: Optional[str]

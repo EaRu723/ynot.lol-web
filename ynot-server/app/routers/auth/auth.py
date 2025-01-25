@@ -82,10 +82,18 @@ async def register(
     query = select(User).where(User.login_id == request.loginId)
     result = await db.execute(query)
     existing_user = result.scalar_one_or_none()
-
     if existing_user:
         raise HTTPException(
-            status_code=400, detail="Already registered with this login ID"
+            status_code=400, detail="Phone number already associated with an account"
+        )
+
+    # Check if email is already in use
+    query = select(User).where(User.email == request.email)
+    result = await db.execute(query)
+    existing_email_user = result.scalar_one_or_none()
+    if existing_email_user:
+        raise HTTPException(
+            status_code=400, detail="Email already associated with an account"
         )
 
     # Create a new user
