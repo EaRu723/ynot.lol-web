@@ -250,7 +250,7 @@ async def generate_presigned_url(request: PreSignedUrlRequest):
     Endpoint to generate a presigned url for a file to be uploaded to S3.
     """
     try:
-        unique_filename = f"{uuid.uuid4()}-{request.file_name}"
+        unique_filename = f"{uuid.uuid4()}-{request.file_name}".replace(" ", "_")
         presigned_url = s3_client.generate_presigned_url(
             "put_object",
             Params={
@@ -296,7 +296,7 @@ async def batch_upload(
                 )
 
             # Generate a unique filename
-            unique_filename = f"{uuid.uuid4()}-{file.filename}"
+            unique_filename = f"{uuid.uuid4()}-{file.filename}".replace(" ", "_")
             public_url = f"https://{AWS_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{unique_filename}"
 
             # Upload file to S3
