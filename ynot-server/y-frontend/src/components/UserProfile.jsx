@@ -25,7 +25,6 @@ function UserProfile({ isLoggedIn, userHandle }) {
           throw new Error("Failed to fetch user profile");
         }
         const profileData = await profileResponse.json();
-        console.log(profileData);
         setProfile(profileData);
 
         const postsResponse = await fetch(`${API_URL}/user/${username}/posts`);

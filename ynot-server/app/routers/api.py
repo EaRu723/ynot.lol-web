@@ -1,3 +1,4 @@
+import json
 import uuid
 from typing import List
 
@@ -46,6 +47,7 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     async def broadcast(self, message: dict):
+        message = json.loads(json.dumps(message, default=str))
         for connection in self.active_connections:
             await connection.send_json(message)
 
@@ -60,6 +62,7 @@ async def websocket_feed(websocket: WebSocket):
         while True:
             data = await websocket.receive_json()
             print(f"Received from client: {data}")
+            await manager.broadcast(data)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -364,11 +367,28 @@ async def create_post(
 
     # Fetch post with relationships loaded
     result = await db.execute(
-        select(Post).options(joinedload(Post.tags)).where(Post.id == post.id)
+        select(Post)
+        .options(joinedload(Post.tags), joinedload(Post.owner))
+        .where(Post.id == post.id)
     )
     returned_post = result.unique().scalar_one()
 
-    return PostResponse.from_orm(returned_post)
+    frontend_post = FrontendPost(
+        id=returned_post.id,
+        owner_id=returned_post.owner_id,
+        owner=returned_post.owner.username,
+        title=returned_post.title,
+        note=returned_post.note,
+        urls=returned_post.urls or [],
+        tags=[tag.name for tag in returned_post.tags],
+        file_keys=returned_post.file_keys or [],
+        created_at=returned_post.created_at,
+    )
+
+    # Broadcast new post to all WebSocket clients
+    await manager.broadcast(frontend_post.model_dump())
+
+    return frontend_post
 
 
 @router.delete("/post")

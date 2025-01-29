@@ -112,7 +112,7 @@ function EditProfile({ user, setUser }) {
           banner: bannerUrl,
         };
         setUser(updatedUser);
-        navigate("/");
+        navigate(`/user/${user.username}`);
       } else {
         const error = await response.json();
         alert(`Failed to update profile: ${error.message || "unknown error"}`);

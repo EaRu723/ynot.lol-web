@@ -132,6 +132,7 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
         alert(`Post ${post ? "updated" : "created"} successfully`);
         e.target.reset();
         onClose();
+        window.location.reload();
       } else {
         alert(
           `Post ${post ? "update" : "creation"} failed: ${response.statusText}`,

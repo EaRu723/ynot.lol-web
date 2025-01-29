@@ -2,62 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import PostModal from "./PostModal.jsx";
 import PropTypes from "prop-types";
 import "../styles/TimelinePosts.css";
-import { calculateTimeElapsed } from "../utils/timeUtils.js";
 import { useSearchParams } from "react-router-dom";
-
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-};
-
-const groupPostsByDate = (posts) => {
-  return posts.reduce((acc, post) => {
-    const dateKey = new Date(post.created_at).toDateString();
-    if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push(post);
-    return acc;
-  }, {});
-};
-
-const renderTextWithTagsAndLinks = (text) => {
-  if (!text) return "";
-
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const tagRegex = /#[^\s#]+/g;
-
-  // Split text by both URLs and hashtags
-  const parts = text.split(/(https?:\/\/[^\s]+|#[^\s#]+)/g);
-
-  return parts.map((part, index) => {
-    if (urlRegex.test(part)) {
-      // Render links
-      return (
-        <a
-          key={index}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link"
-        >
-          {part}
-        </a>
-      );
-    } else if (tagRegex.test(part)) {
-      // Render hashtags
-      return (
-        <span key={index} className="hashtag">
-          {part}
-        </span>
-      );
-    }
-    // Render normal text
-    return part;
-  });
-};
+import { renderTextWithTagsAndLinks } from "../utils/textUtils.jsx";
 
 const PostCard = ({ post, apiUrl, isOwner }) => {
   const [menuOpen, setMenuOpen] = useState(false);

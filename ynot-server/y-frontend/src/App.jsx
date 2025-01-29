@@ -12,6 +12,7 @@ import PasswordlessRegistration from "./components/PasswordlessRegistration.jsx"
 import PasswordlessLogin from "./components/PasswordlessLogin.jsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.jsx";
 import TermsOfService from "./components/TermsOfService.jsx";
+import PostStream from "./components/PostStream.jsx";
 
 const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -60,7 +61,6 @@ const App = () => {
   }, [API_URL]);
 
   useEffect(() => {
-    console.log("API URL: " + API_URL);
     checkAuthentication();
   }, [checkAuthentication, API_URL]);
 
@@ -84,6 +84,8 @@ const App = () => {
             <UserProfile isLoggedIn={isLoggedIn} userHandle={user.username} />
           }
         />
+
+        <Route path="stream" element={<PostStream />} />
 
         <Route
           path="/settings"

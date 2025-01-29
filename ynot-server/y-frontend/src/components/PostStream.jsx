@@ -1,5 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
+import { calculateTimeElapsed } from "../utils/timeUtils";
+import "../styles/PostStream.css";
+import { renderTextWithTagsAndLinks } from "../utils/textUtils";
 
 function PostStream() {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -13,9 +17,7 @@ function PostStream() {
 
     wsRef.current.onmessage = (event) => {
       const post = JSON.parse(event.data);
-      if (post.type === "com.y.post") {
-        setPosts((prevPosts) => [post.data, ...prevPosts].slice(0, 10));
-      }
+      setPosts((prevPosts) => [post, ...prevPosts].slice(0, 10));
     };
 
     wsRef.current.onclose = () => {
@@ -63,17 +65,12 @@ function PostStream() {
     <div
       ref={scrollAreaRef}
       style={{
-        height: "500px",
         overflowY: "auto",
-        border: "1px solid #ddd",
         padding: "10px",
         borderRadius: "8px",
-        backgroundColor: "#f9f9f9",
+        margin: "2rem",
       }}
     >
-      <h2 style={{ margin: "0 0 15px 0" }}>
-        <i>People</i> on Y
-      </h2>
       {posts.map((post, index) => (
         <PostItem key={post.id || index} post={post} />
       ))}
@@ -101,52 +98,19 @@ function PostItem({ post }) {
     }
   }, [post.note]);
 
-  // Function to parse text and make URLs clickable
-  const renderTextWithLinks = (text) => {
-    const urlRegex = /(https?:\/\/[^\s]+)/g; // Regex to match URLs
-    const parts = text.split(urlRegex);
-
-    return parts.map((part, index) => {
-      if (urlRegex.test(part)) {
-        return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "#007bff", textDecoration: "underline" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
-  };
-
   const handlePostClick = () => {
-    navigate(`${post.handle}/profile/?rkey=${post.rkey}`);
+    navigate(`/user/${post.owner}?post=${post.id}`);
   };
 
   return (
-    <div
-      onClick={handlePostClick}
-      style={{
-        padding: "10px",
-        marginBottom: "8px",
-        borderRadius: "4px",
-        backgroundColor: "#fff",
-        boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.1)",
-        cursor: "pointer",
-      }}
-    >
+    <div onClick={handlePostClick} className="post-item-container">
       <small
         onClick={handlePostClick}
-        style={{ margin: "0 0 8px 0", display: "block", color: "#555" }}
+        style={{ marginBottom: "5px", display: "block", color: "#555" }}
       >
-        @{post.handle}
+        @{post.owner}
       </small>
+      {post.title && <h3 style={{ margin: "0.5rem 0" }}>{post.title}</h3>}
       <pre
         ref={textRef}
         style={{
@@ -159,7 +123,7 @@ function PostItem({ post }) {
           transition: "height 0.3s ease",
         }}
       >
-        {renderTextWithLinks(post.note)}
+        {renderTextWithTagsAndLinks(post.note)}
         {!expanded && isOverflowing && (
           <span
             style={{
@@ -167,35 +131,31 @@ function PostItem({ post }) {
               bottom: 0,
               right: 0,
               width: "100%",
-              height: "20px",
+              height: "3rem",
               background:
                 "linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #fff 100%)",
             }}
           />
         )}
       </pre>
-      {isOverflowing && (
-        <span
-          onClick={(e) => {
-            setExpanded(!expanded);
-            e.stopPropagation();
-          }}
-          style={{
-            color: "#007bff",
-            fontSize: "12px",
-            cursor: "pointer",
-            display: "block",
-            marginBottom: "5px",
-          }}
-        >
-          {expanded ? "Collapse" : "Expand"}
-        </span>
-      )}
       <small style={{ color: "#888" }}>
-        {new Date(post.created_at).toLocaleString()}
+        {calculateTimeElapsed(post.created_at)}
       </small>
     </div>
   );
 }
+
+PostItem.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.number,
+    owner: PropTypes.string,
+    title: PropTypes.string,
+    note: PropTypes.string,
+    created_at: PropTypes.string,
+    urls: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+    file_keys: PropTypes.arrayOf(PropTypes.string),
+  }),
+};
 
 export default PostStream;

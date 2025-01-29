@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from sqlalchemy import (JSON, Boolean, CheckConstraint, Column, DateTime,
                         ForeignKey, Integer, MetaData, String, Table, Text,
                         func)
@@ -72,7 +70,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     name = Column(String)
     username = Column(String, unique=True)
-    bio = Column(Text, unique=True)
+    bio = Column(Text, unique=False)
     avatar = Column(String, nullable=True)
     banner = Column(String, nullable=True)
     is_profile_complete = Column(Boolean, default=False)

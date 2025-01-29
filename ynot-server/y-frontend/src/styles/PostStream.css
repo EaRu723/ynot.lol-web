@@ -1,0 +1,13 @@
+.post-item-container {
+  padding: 10px;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  border: 1px solid black;
+  cursor: pointer;
+  max-width: 80rem;
+}
+
+.post-item-container:hover {
+  transform: scale(1.01);
+  transition: transform 0.1s ease-in-out;
+}
