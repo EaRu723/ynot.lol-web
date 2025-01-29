@@ -27,7 +27,6 @@ function DiscoverPage({ API_URL, isLoggedIn }) {
           fontWeight: "bold",
           textAlign: "left",
           padding: "0 20 0 20",
-          paddingTop: "4rem",
           margin: "16px",
           marginLeft: "8px",
         }}
