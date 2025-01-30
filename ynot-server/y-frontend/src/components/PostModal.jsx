@@ -209,9 +209,15 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
             />
           </div>
           <div className="form-area">
-            <button type="submit" className="submit-button">
-              Submit
-            </button>
+            {!uploading ? (
+              <button type="submit" className="submit-button">
+                Submit
+              </button>
+            ) : (
+              <button type="submit" className="submit-button" disabled>
+                Uploading...
+              </button>
+            )}
           </div>
         </form>
       </div>
