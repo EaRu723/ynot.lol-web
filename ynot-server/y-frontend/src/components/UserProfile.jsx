@@ -4,7 +4,7 @@ import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
 
-function UserProfile({ isLoggedIn, userHandle }) {
+function UserProfile({ isLoggedIn, setIsLoggedIn, user, setUser }) {
   const { username } = useParams();
   const navigate = useNavigate();
 
@@ -125,7 +125,7 @@ function UserProfile({ isLoggedIn, userHandle }) {
             </div>
           </div>
 
-          {isLoggedIn && userHandle === username && (
+          {isLoggedIn && user.username === username && (
             <div className="profile-actions">
               <button
                 onClick={() => navigate("/settings")}
@@ -163,7 +163,7 @@ function UserProfile({ isLoggedIn, userHandle }) {
         >
           Favorites
         </button>
-        {isLoggedIn && userHandle === username && (
+        {isLoggedIn && user.username === username && (
           <button
             className={`toggle-btn ${activeView === "private" ? "active" : ""}`}
             onClick={() => handleViewChange("private")}
@@ -181,7 +181,7 @@ function UserProfile({ isLoggedIn, userHandle }) {
                 posts={datePosts}
                 apiUrl={API_URL}
                 isLoggedIn={isLoggedIn}
-                userHandle={userHandle}
+                userHandle={user.username}
               />
             </div>
           </div>

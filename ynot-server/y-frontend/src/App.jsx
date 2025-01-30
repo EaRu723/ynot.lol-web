@@ -81,7 +81,12 @@ const App = () => {
         <Route
           path="/user/:username"
           element={
-            <UserProfile isLoggedIn={isLoggedIn} userHandle={user.username} />
+            <UserProfile
+              isLoggedIn={isLoggedIn}
+              setIsLoggedIn={setIsLoggedIn}
+              user={user}
+              setUser={setUser}
+            />
           }
         />
 
