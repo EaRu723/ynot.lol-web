@@ -4,7 +4,7 @@ import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
 
-function UserProfile({ isLoggedIn, setIsLoggedIn, user, setUser }) {
+function UserProfile({ isLoggedIn, user }) {
   const { username } = useParams();
   const navigate = useNavigate();
 

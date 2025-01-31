@@ -80,14 +80,7 @@ const App = () => {
 
         <Route
           path="/user/:username"
-          element={
-            <UserProfile
-              isLoggedIn={isLoggedIn}
-              setIsLoggedIn={setIsLoggedIn}
-              user={user}
-              setUser={setUser}
-            />
-          }
+          element={<UserProfile isLoggedIn={isLoggedIn} user={user} />}
         />
 
         <Route path="stream" element={<PostStream />} />
