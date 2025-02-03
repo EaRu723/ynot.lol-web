@@ -8,7 +8,8 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
   const [title, setTitle] = useState(post ? post.title : "");
   const [note, setNote] = useState(post ? post.note : "");
   const [tags, setTags] = useState(post ? post.tags : []);
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState([]); // Array of File objects
+  const [previews, setPreviews] = useState([]); // Array of preview URLs
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -18,6 +19,18 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
       setTags(post.tags);
     }
   }, [post]);
+
+  // When files state changes, create preview URLs and clean up previous ones
+  useEffect(() => {
+    // Create preview URLs for all files
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setPreviews(newPreviews);
+
+    // Cleanup function to revoke object URLs when files change/unmount
+    return () => {
+      newPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [files]);
 
   const extractUrlsAndTags = (text) => {
     // Extract URLs
@@ -47,48 +60,25 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
 
   const uploadFilesToS3 = async () => {
     setUploading(true);
-    const uploadedKeys = [];
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file);
+    });
 
-    for (const file of files) {
-      // Get a pre-signed URL from the backend
-      const response = await fetch(`${API_URL}/generate-presigned-url`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          file_name: file.name,
-          file_type: file.type,
-        }),
-      });
+    const response = await fetch(`${API_URL}/batch-upload-s3`, {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    });
 
-      if (!response.ok) {
-        alert(`Failed to get pre-signed URL for file: ${file.name}`);
-        setUploading(false);
-        return;
-      }
-
-      const { url, key } = await response.json();
-
-      // Upload file to S3
-      const uploadResponse = await fetch(url, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type,
-        },
-        body: file,
-      });
-
-      if (!uploadResponse.ok) {
-        alert(`Failed to upload file: ${file.name}`);
-        setUploading(false);
-        return;
-      }
-
-      uploadedKeys.push(key);
+    if (!response.ok) {
+      alert("File upload failed");
+      setUploading(false);
+      return [];
     }
 
-    return uploadedKeys;
+    const { file_urls } = await response.json();
+    return file_urls; // array of public S3 URLs
   };
 
   const handleSubmit = async (e) => {
@@ -96,6 +86,7 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     if (!isLoggedIn) {
       onClose();
       onLogin();
+      return;
     }
 
     setUploading(true);
@@ -104,19 +95,20 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     for (const url of validUrls) {
       if (!isValidURL(url)) {
         alert("Invalid URL: " + url);
+        setUploading(false);
         return;
       }
     }
 
     try {
-      const fileKeys = files.length > 0 ? await uploadFilesToS3(files) : [];
+      const fileUrls = files.length > 0 ? await uploadFilesToS3() : [];
 
       const payload = {
         title,
         note,
         urls: validUrls,
         tags,
-        file_keys: fileKeys,
+        file_keys: fileUrls,
       };
 
       const response = await fetch(`${API_URL}/post`, {
@@ -163,6 +155,16 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     }
   };
 
+  // Updated handler for file input change event to append new files
+  const handleFileChange = (e) => {
+    // Convert FileList to Array
+    const selectedFiles = Array.from(e.target.files);
+    // Append new files to the existing files state
+    setFiles((prevFiles) => [...prevFiles, ...selectedFiles]);
+    // Optionally, you can clear the input value here if needed:
+    e.target.value = "";
+  };
+
   return (
     <div className="modal-container" onClick={handleClickOutside}>
       <div className="modal-view">
@@ -204,10 +206,24 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
             <input
               type="file"
               multiple
-              onChange={(e) => setFiles(e.target.files)}
+              accept="image/*"
+              onChange={handleFileChange}
               disabled={uploading}
             />
           </div>
+          {/* Preview area for selected images */}
+          {previews.length > 0 && (
+            <div className="previews-container">
+              {previews.map((src, index) => (
+                <img
+                  key={index}
+                  src={src}
+                  alt={`preview-${index}`}
+                  className="preview-image"
+                />
+              ))}
+            </div>
+          )}
           <div className="form-area">
             {!uploading ? (
               <button type="submit" className="submit-button">
