@@ -13,13 +13,21 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1rem;
+  max-height: 24rem;
   position: relative;
   aspect-ratio: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-between; /* Distribute space between title, body, and timestamp */
 }
 
 .post-card:hover {
+  transform: scale(1.02);
+  transition: transform 0.1s ease-in-out;
+}
+
+.highlighted-post {
+  border: 1px solid gray;
   transform: scale(1.02);
   transition: transform 0.1s ease-in-out;
 }
@@ -29,33 +37,89 @@
   font-size: 1.1rem;
   color: #111827;
   margin-bottom: 0.75rem;
-  padding-right: 2rem; /* Make space for menu button */
+  padding-right: 2rem;
 }
 
-.post-text {
+.post-body {
   flex: 1;
-  overflow-y: auto;
-  font-size: 0.95rem; /* Slightly smaller than title */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Post text with fixed max-height and conditional fade-out */
+.post-text {
+  position: relative; /* Needed for fade overlay */
+  max-height: 16rem;
+  overflow: hidden; /* Hide overflowing text */
+  font-size: 0.95rem;
   color: #374151;
+  margin: 0;
+}
+
+/* Fade overlay only when text overflows */
+.post-text.overflow::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2em; /* Adjust fade height as needed */
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, #fff 100%);
+  pointer-events: none;
 }
 
 .post-text pre {
-  white-space: pre-wrap; /* Since CSS 2.1 */
-  white-space: -moz-pre-wrap; /* Mozilla */
-  white-space: -pre-wrap; /* Opera 4-6 */
-  white-space: -o-pre-wrap; /* Opera 7 */
-  word-wrap: break-word; /* Internet Explorer 5.5+ */
+  white-space: pre-wrap;
+  word-wrap: break-word;
   font-family: inherit;
   margin: 0;
 }
 
-.highlighted-post {
-  border: 1px solid grey;
-  transform: scale(1.05);
-  transition: border 0.3s ease-out;
-  transform: 0.3s ease-out;
+/* Images container: single line, anchored at the bottom */
+.post-images {
+  white-space: nowrap; /* Keep images on one line */
+  overflow-x: hidden; /* Hide horizontal overflow */
+  position: relative; /* For the fade overlay */
+  /* Remove extra top margin because justify-content pushes this to bottom */
+  margin-bottom: 0.5rem;
 }
 
+/* Ensure images are inline */
+.post-images img {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+/* Right-side fade overlay for images */
+.post-images::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 3rem; /* Adjust fade width as needed */
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff);
+  pointer-events: none;
+}
+
+/* Each thumbnail image */
+.post-image-thumbnail {
+  width: 4rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.post-timestamp {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+/* Menu styling remains unchanged */
 .menu-container {
   position: absolute;
   top: 10px;
@@ -103,22 +167,5 @@
 .post-timestamp {
   font-size: 0.875rem;
   color: #6b7280;
-  margin-top: auto;
-  padding-top: 0.5rem;
-}
-
-.link {
-  color: #2563eb;
-  text-decoration: underline;
-  word-break: break-all;
-}
-
-/* Styling for hashtags */
-.hashtag {
-  color: #2563eb;
-  cursor: pointer;
-}
-
-.hashtag:hover {
-  text-decoration: underline;
+  margin-top: 0.5rem;
 }

@@ -1,26 +1,56 @@
 import { useState, useRef, useEffect } from "react";
 import PostModal from "./PostModal.jsx";
 import PropTypes from "prop-types";
+import { MaximizedPostModal } from "./MaximizedPostModal.jsx";
 import "../styles/TimelinePosts.css";
 import { useSearchParams } from "react-router-dom";
 import { renderTextWithTagsAndLinks } from "../utils/textUtils.jsx";
 
-const PostCard = ({ post, apiUrl, isOwner }) => {
+const PostCard = ({ post, apiUrl, isOwner, autoOpen }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [textOverflow, setTextOverflow] = useState(false);
   const menuRef = useRef(null);
+  const textRef = useRef(null);
 
-  const toggleMenu = () => setMenuOpen((prev) => !prev);
+  // Check if the text content is overflowing
+  useEffect(() => {
+    if (textRef.current) {
+      const hasOverflow =
+        textRef.current.scrollHeight > textRef.current.clientHeight;
+      setTextOverflow(hasOverflow);
+    }
+  }, [post.note]); // run whenever the note changes
+
+  // Automatically maximize if autoOpen prop is tru
+  useEffect(() => {
+    if (autoOpen) {
+      const timer = setTimeout(() => {
+        setIsViewModalOpen(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [autoOpen]);
+
+  // Toggle the dropdown menu
+  const toggleMenu = (e) => {
+    e.stopPropagation(); // prevent triggering the post click
+    setMenuOpen((prev) => !prev);
+  };
+
   const closeMenu = () => setMenuOpen(false);
 
-  const handleShare = () => {
+  const handleShare = (e) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(
       `${window.location.origin}/user/${post.owner}?post=${post.id}`,
     );
     alert("Post link copied to clipboard!");
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (e) => {
+    e.stopPropagation();
     const shouldDelete = window.confirm(
       "Are you sure you want to delete this post?",
     );
@@ -53,9 +83,15 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleEdit = () => {
+  const handleEdit = (e) => {
+    e.stopPropagation();
     closeMenu(); // Close the menu when the modal opens
     setIsEditModalOpen(true);
+  };
+
+  // When the card is clicked, open the view modal
+  const handleOpenModal = () => {
+    setIsViewModalOpen(true);
   };
 
   const formatTime = (dateString) => {
@@ -69,7 +105,7 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
 
   return (
     <>
-      <div className="post-card" id={post.id}>
+      <div className="post-card" id={post.id} onClick={handleOpenModal}>
         <div className="menu-container" ref={menuRef}>
           <button onClick={toggleMenu} className="menu-button">
             ⋮
@@ -86,6 +122,11 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
                   >
                     Delete
                   </button>
+                  {/*
+                  <button onClick={handleEdit}>
+                    Edit
+                  </button>
+                  */}
                 </>
               )}
             </div>
@@ -94,12 +135,40 @@ const PostCard = ({ post, apiUrl, isOwner }) => {
 
         <div className="post-title">{post.title || " "}</div>
 
-        <div className="post-text">
-          <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
+        {/* Wrap text and (optional) images in a container */}
+        <div className="post-body">
+          <div
+            className={`post-text ${textOverflow ? "overflow" : ""}`}
+            ref={textRef}
+          >
+            <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
+          </div>
+
+          {/* If there are images, show them in a container anchored to the bottom */}
+          {post.file_keys && post.file_keys.length > 0 && (
+            <div className="post-images">
+              {post.file_keys.map((url, index) => (
+                <img
+                  key={index}
+                  src={url}
+                  alt={`Post image ${index + 1}`}
+                  className="post-image-thumbnail"
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="post-timestamp">{formatTime(post.created_at)}</div>
       </div>
+
+      {isViewModalOpen && (
+        <MaximizedPostModal
+          post={post}
+          onClose={() => setIsViewModalOpen(false)}
+          isOwner={isOwner}
+        />
+      )}
 
       {isEditModalOpen && (
         <PostModal post={post} onClose={() => setIsEditModalOpen(false)} />
@@ -121,30 +190,30 @@ PostCard.propTypes = {
   }).isRequired,
   apiUrl: PropTypes.string,
   isOwner: PropTypes.bool,
+  autoOpen: PropTypes.bool,
 };
 
 const TimelinePosts = ({ posts, apiUrl, isLoggedIn, userHandle }) => {
   const [searchParams] = useSearchParams();
+  const sharePostId = searchParams.get("post");
 
   useEffect(() => {
-    const postId = searchParams.get("post");
-    if (postId) {
-      const postElement = document.getElementById(postId);
+    if (sharePostId) {
+      const postElement = document.getElementById(sharePostId);
       if (postElement) {
         postElement.classList.add("highlighted-post");
         postElement.scrollIntoView({ behavior: "smooth", block: "center" });
 
         setTimeout(() => {
           postElement.classList.remove("highlighted-post");
-        }, 1500);
+        }, 500);
       }
     }
-  });
+  }, [searchParams, sharePostId]);
 
   if (!Array.isArray(posts) || !posts.length)
     return <div>No posts to display</div>;
 
-  // Remove date grouping, render posts directly
   return (
     <div className="timeline-container">
       {posts.map((post) => (
@@ -153,6 +222,7 @@ const TimelinePosts = ({ posts, apiUrl, isLoggedIn, userHandle }) => {
           post={post}
           apiUrl={apiUrl}
           isOwner={isLoggedIn && post.owner === userHandle}
+          autoOpen={Number(sharePostId) === post.id}
         />
       ))}
     </div>
