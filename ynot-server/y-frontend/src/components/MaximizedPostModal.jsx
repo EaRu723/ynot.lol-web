@@ -7,7 +7,7 @@ export const MaximizedPostModal = ({ post, onClose, apiUrl, isOwner }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedImageIndex, setExpandedImageIndex] = useState(null);
 
-  // Disable scrolling on the main site body when the modal mounts
+  // Disable scrolling on the main body when the modal mounts
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -57,10 +57,6 @@ export const MaximizedPostModal = ({ post, onClose, apiUrl, isOwner }) => {
     }
   };
 
-  const handleContentClick = (e) => {
-    e.stopPropagation();
-  };
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString("en-US", {
@@ -69,98 +65,99 @@ export const MaximizedPostModal = ({ post, onClose, apiUrl, isOwner }) => {
     });
   };
 
-  const handleThumbnailClick = (index) => {
-    // Toggle the expanded image: if the clicked thumbnail is already expanded, collapse it.
-    setExpandedImageIndex((prevIndex) => (prevIndex === index ? null : index));
-  };
-
-  // Handler for clicks on the thumbnails container
-  const handleThumbnailsContainerClick = (e) => {
-    if (e.target === e.currentTarget && expandedImageIndex !== null) {
-      setExpandedImageIndex(null);
-    }
-  };
-
-  // Handler for clicks on the expanded image container
-  const handleExpandedImageContainerClick = (e) => {
-    if (e.target === e.currentTarget) {
-      setExpandedImageIndex(null);
-    }
-  };
-
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={handleContentClick}>
-        <div className="menu-container">
-          <button onClick={toggleMenu} className="menu-button">
-            ⋮
-          </button>
-          {menuOpen && (
-            <div className="menu-dropdown">
-              <button onClick={handleShare}>Share</button>
-              {isOwner && (
-                <button
-                  onClick={handleDelete}
-                  className="delete-button"
-                  style={{ color: "#dc2626" }}
+      <div className="maximized-post-container">
+        {/* Left column with stacked related post boxes */}
+        <div className="left-column" onClick={(e) => e.stopPropagation()}>
+          <div className="related-box">
+            <h3>Related Posts by URL</h3>
+            <p>List of posts related by URL goes here...</p>
+          </div>
+          <div className="related-box">
+            <h3>Related Posts by Tag</h3>
+            <p>List of posts related by tag goes here...</p>
+          </div>
+          <div className="related-box">
+            <h3>Related Posts by Keywords</h3>
+            <p>List of posts related by keywords goes here...</p>
+          </div>
+        </div>
+
+        {/* Center column: post content */}
+        <div className="center-column" onClick={(e) => e.stopPropagation()}>
+          <div className="menu-container">
+            <button onClick={toggleMenu} className="menu-button">
+              ⋮
+            </button>
+            {menuOpen && (
+              <div className="menu-dropdown">
+                <button onClick={handleShare}>Share</button>
+                {isOwner && (
+                  <button
+                    onClick={handleDelete}
+                    className="delete-button"
+                    style={{ color: "#dc2626" }}
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <h1 className="modal-post-title">{post.title || " "}</h1>
+          <p className="modal-post-owner">@{post.owner}</p>
+          <div className="modal-post-body">
+            <div className="modal-post-text">
+              <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <div className="modal-post-timestamp">
+              {formatDate(post.created_at)}
+            </div>
+          </div>
+        </div>
+
+        {/* Right column: gallery and comments section */}
+        <div className="right-column">
+          {post.file_keys && post.file_keys.length > 0 && (
+            <div
+              className={`gallery-modal ${expandedImageIndex !== null ? "expanded" : ""
+                }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {expandedImageIndex !== null ? (
+                <div
+                  className="gallery-expanded-image"
+                  onClick={() => setExpandedImageIndex(null)}
                 >
-                  Delete
-                </button>
+                  <img
+                    src={post.file_keys[expandedImageIndex]}
+                    alt="Expanded gallery"
+                  />
+                </div>
+              ) : (
+                <div className="gallery-thumbnails">
+                  {post.file_keys.map((url, index) => (
+                    <img
+                      key={index}
+                      src={url}
+                      alt={`Gallery image ${index + 1}`}
+                      className="gallery-thumbnail"
+                      onClick={() => setExpandedImageIndex(index)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}
-        </div>
-
-        <h1 className="modal-post-title">{post.title || " "}</h1>
-        <p className="modal-post-owner">@{post.owner}</p>
-        <div className="modal-post-body">
-          <div className="modal-post-text">
-            <pre>{renderTextWithTagsAndLinks(post.note)}</pre>
-          </div>
-        </div>
-
-        {/* Thumbnails row: only render if there is more than one image 
-            or if there is one image and it is not expanded */}
-        {post.file_keys &&
-          post.file_keys.length > 0 &&
-          (post.file_keys.length > 1 || expandedImageIndex === null) && (
-            <div
-              className="modal-thumbnails"
-              onClick={handleThumbnailsContainerClick}
-            >
-              {post.file_keys.map((url, index) => (
-                <img
-                  key={index}
-                  src={url}
-                  alt={`Post image ${index + 1}`}
-                  className="modal-image-thumbnail"
-                  onClick={() => handleThumbnailClick(index)}
-                  style={{
-                    display:
-                      expandedImageIndex === index ? "none" : "inline-block",
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-        {/* Expanded image container: appears on a new line below the thumbnails */}
-        {expandedImageIndex !== null && (
-          <div
-            className="modal-expanded-image"
-            onClick={handleExpandedImageContainerClick}
-          >
-            <img
-              src={post.file_keys[expandedImageIndex]}
-              alt={`Expanded image`}
-              onClick={() => handleThumbnailClick(expandedImageIndex)}
-            />
-          </div>
-        )}
-
-        <div className="modal-footer">
-          <div className="modal-post-timestamp">
-            {formatDate(post.created_at)}
+          <div className="comments-box" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0 }}>Comments</h2>
+            <p>
+              This is a dummy comments section. It dynamically resizes based on
+              the gallery box above.
+            </p>
           </div>
         </div>
       </div>
