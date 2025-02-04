@@ -13,6 +13,17 @@ class GoogleAuthRequest(BaseModel):
     id_token: str
 
 
+class AltRegistrationRequest(BaseModel):
+    email: str
+    username: str
+    password: str
+
+
+class AltLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 class RegistrationRequest(BaseModel):
     loginId: str
     ownIdData: str

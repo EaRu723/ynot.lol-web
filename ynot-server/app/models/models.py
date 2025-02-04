@@ -1,3 +1,4 @@
+import bcrypt
 from sqlalchemy import (JSON, Boolean, CheckConstraint, Column, DateTime,
                         ForeignKey, Integer, MetaData, String, Table, Text,
                         func)
@@ -68,6 +69,7 @@ class User(Base):
     login_id = Column(String, unique=True, index=True)
     ownid_data = Column(Text)
     email = Column(String, unique=True, index=True)
+    password_hash = Column(String, nullable=True)
     name = Column(String)
     username = Column(String, unique=True)
     bio = Column(Text, unique=False)
@@ -83,12 +85,18 @@ class User(Base):
     )
     posts = relationship("Post", back_populates="owner")
 
-    # __table_args__ = (
-    #     CheckConstraint("LENGTH(ownid_data) >= 5000", name="ownid_data_min_length"),
-    # )
-
     def __repr__(self):
         return f"<User(id={self.id}, google_id={self.login_id}, email={self.email})>"
+
+    def set_password(self, password: str):
+        hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+        self.password_hash = hashed.decode("utf-8")  # convert bytes to string
+
+    def verify_password(self, password: str) -> bool:
+        # Since self.password_hash is now a string, encode it back to bytes for comparison
+        return bcrypt.checkpw(
+            password.encode("utf-8"), self.password_hash.encode("utf-8")
+        )
 
 
 class UserSession(Base):
