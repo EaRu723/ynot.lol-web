@@ -13,6 +13,7 @@ import PasswordlessLogin from "./components/PasswordlessLogin.jsx";
 import PrivacyPolicy from "./components/PrivacyPolicy.jsx";
 import TermsOfService from "./components/TermsOfService.jsx";
 import PostStream from "./components/PostStream.jsx";
+import SecretLogin from "./components/SecretLogin.jsx";
 
 const App = () => {
   const API_URL = import.meta.env.VITE_API_BASE_URL;
@@ -101,6 +102,17 @@ const App = () => {
           path="/login"
           element={
             <PasswordlessLogin
+              API_URL={API_URL}
+              setIsLoggedIn={setIsLoggedIn}
+              setUser={setUser}
+            />
+          }
+        />
+
+        <Route
+          path="/secret-login"
+          element={
+            <SecretLogin
               API_URL={API_URL}
               setIsLoggedIn={setIsLoggedIn}
               setUser={setUser}

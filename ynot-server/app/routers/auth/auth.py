@@ -13,7 +13,8 @@ from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
 from app.models.models import User, UserSession
-from app.schemas.schemas import (GetOwnIdDataRequest, GetSessionRequest,
+from app.schemas.schemas import (AltLoginRequest, AltRegistrationRequest,
+                                 GetOwnIdDataRequest, GetSessionRequest,
                                  LoginRequest, RegistrationRequest,
                                  SetOwnIdDataRequest)
 
@@ -285,3 +286,83 @@ async def get_session_by_login_id(
         "ownid_data": user.ownid_data,
         "token": session_token,
     }
+
+
+@router.post("/secretregister")
+async def secret_register(
+    request: AltRegistrationRequest, db: AsyncSession = Depends(get_async_session)
+):
+    # Check if email is already in use
+    query = select(User).where(User.email == request.email)
+    result = await db.execute(query)
+    existing_user = result.scalar_one_or_none()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check if username is taken
+    query = select(User).where(User.username == request.username)
+    result = await db.execute(query)
+    existing_username = result.scalar_one_or_none()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Create new user with default values for fields not provided
+    new_user = User(
+        login_id=request.email,  # Use email as login_id or another default
+        ownid_data="",  # Default empty OwnID data
+        email=request.email,
+        username=request.username,
+        name=request.username,  # Default name to username
+        bio="",  # Default bio to empty string
+        avatar="https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg",
+        banner="",  # Default banner to empty string
+        is_profile_complete=False,
+    )
+    new_user.set_password(request.password)
+
+    try:
+        db.add(new_user)
+        await db.commit()
+        return {"message": "User registered successfully"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to register user")
+
+
+@router.post("/secretlogin")
+async def secret_login(
+    request: Request,
+    login_request: AltLoginRequest,
+    db: AsyncSession = Depends(get_async_session),
+):
+    # Find user by email
+    query = select(User).where(User.email == login_request.email)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+
+    if not user or not user.verify_password(login_request.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Create session
+    session_token = await create_session(
+        user_id=user.id,
+        ip_address=request.client.host,
+        user_agent=request.headers.get("User-Agent"),
+        db=db,
+    )
+
+    # Set session cookie
+    request.session["session_token"] = session_token
+
+    return {
+        "message": "Login successful",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "avatar": user.avatar,
+            "banner": user.banner,
+            "profile_complete": user.is_profile_complete,
+        },
+    }
+

@@ -13,6 +13,17 @@ class GoogleAuthRequest(BaseModel):
     id_token: str
 
 
+class AltRegistrationRequest(BaseModel):
+    email: str
+    username: str
+    password: str
+
+
+class AltLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 class RegistrationRequest(BaseModel):
     loginId: str
     ownIdData: str
@@ -50,6 +61,33 @@ class ProfileCompletionRequest(BaseModel):
     displayName: str
     avatar: Optional[str] = None
     banner: Optional[str] = None
+
+
+class CreateBookmarkRequest(BaseModel):
+    url: str
+    highlight: Optional[str]
+    note: Optional[str]
+
+
+class BookmarkResponse(BaseModel):
+    id: int
+    url: str
+    highlight: Optional[str]
+    note: Optional[str]
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=obj.id,
+            url=obj.url,
+            highlight=obj.highlight or "",
+            note=obj.note or "",
+            created_at=obj.created_at.isoformat(),  # Convert datetime to ISO 8601 string
+        )
 
 
 class TagBase(BaseModel):
