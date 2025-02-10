@@ -13,9 +13,9 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.config import settings
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models.models import Post, Site, Tag, User, UserSession
-from app.schemas.schemas import (CreatePostRequest, DeletePostRequest,
-                                 FrontendPost, PostResponse,
+from app.models.models import Bookmark, Post, Site, Tag, User, UserSession
+from app.schemas.schemas import (CreateBookmarkRequest, CreatePostRequest,
+                                 DeletePostRequest, FrontendPost, PostResponse,
                                  PreSignedUrlRequest, SiteBase, TagBase)
 
 router = APIRouter()
@@ -316,6 +316,33 @@ async def batch_upload(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error uploading files: {str(e)}")
+
+
+@router.post("/bookmark")
+async def create_bookmark(
+    request: CreateBookmarkRequest,
+    db: AsyncSession = Depends(get_async_session),
+    session: UserSession = Depends(login_required),
+):
+    """
+    Endpoint to create a bookmark from the Y Chrome extension. A bookmark has attributes URL, highlight, and note. Highlight and note are optional.
+    """
+    bookmark = Bookmark(
+        url=request.url,
+        note=request.note,
+        highlight=request.highlight,
+        owner_id=session.user_id,
+    )
+    try:
+        db.add(bookmark)
+        await db.commit()
+        await db.refresh(bookmark)
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Error creating bookmark: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create bookmark") from e
+
+    return {"message": "Bookmark created successfully"}
 
 
 @router.post("/post")

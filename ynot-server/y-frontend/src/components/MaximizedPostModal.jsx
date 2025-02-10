@@ -68,22 +68,6 @@ export const MaximizedPostModal = ({ post, onClose, apiUrl, isOwner }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="maximized-post-container">
-        {/* Left column with stacked related post boxes */}
-        <div className="left-column" onClick={(e) => e.stopPropagation()}>
-          <div className="related-box">
-            <h3>Related Posts by URL</h3>
-            <p>List of posts related by URL goes here...</p>
-          </div>
-          <div className="related-box">
-            <h3>Related Posts by Tag</h3>
-            <p>List of posts related by tag goes here...</p>
-          </div>
-          <div className="related-box">
-            <h3>Related Posts by Keywords</h3>
-            <p>List of posts related by keywords goes here...</p>
-          </div>
-        </div>
-
         {/* Center column: post content */}
         <div className="center-column" onClick={(e) => e.stopPropagation()}>
           <div className="menu-container">

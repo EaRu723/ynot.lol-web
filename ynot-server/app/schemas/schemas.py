@@ -63,6 +63,33 @@ class ProfileCompletionRequest(BaseModel):
     banner: Optional[str] = None
 
 
+class CreateBookmarkRequest(BaseModel):
+    url: str
+    highlight: Optional[str]
+    note: Optional[str]
+
+
+class BookmarkResponse(BaseModel):
+    id: int
+    url: str
+    highlight: Optional[str]
+    note: Optional[str]
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=obj.id,
+            url=obj.url,
+            highlight=obj.highlight or "",
+            note=obj.note or "",
+            created_at=obj.created_at.isoformat(),  # Convert datetime to ISO 8601 string
+        )
+
+
 class TagBase(BaseModel):
     id: int
     name: str

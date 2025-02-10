@@ -22,6 +22,18 @@ post_tags = Table(
 )
 
 
+class Bookmark(Base):
+    __tablename__ = "bookmarks"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    owner_id = Column(Integer, nullable=False)
+    url = Column(String, nullable=False)
+    note = Column(Text, nullable=True)
+    highlight = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class Post(Base):
     __tablename__ = "posts"
 
