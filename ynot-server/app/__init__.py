@@ -1,4 +1,6 @@
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,11 +9,23 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
+from app.db.lsd import lsd
 from app.middleware.user_middleware import LoadUserMiddleware
 from app.routers import api, user
 from app.routers.auth import auth, google_oauth
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize psycopg2 pool in a separate thread
+    await asyncio.to_thread(lsd.connect)
+    yield
+    # Clean up the pool on shutdown
+    await asyncio.to_thread(lsd.disconnect)
+
+
+app = FastAPI(lifespan=lifespan)
+
 
 app.add_middleware(
     CORSMiddleware,

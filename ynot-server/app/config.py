@@ -1,11 +1,7 @@
-import os
-
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 
 load_dotenv()
-
-DATABASE_URL = f"postgresql+asyncpg://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@db:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
 
 
 class Settings(BaseSettings):
@@ -17,10 +13,6 @@ class Settings(BaseSettings):
     app_port: int
     app_env: str
     app_url: str
-    # atprotocol_client_id: str
-    # atprotocol_client_secret: str
-    # atprotocol_redirect_uri: str
-    # path_to_private_key: str
     jwt_secret: str
     private_jwk: str
     session_secret: str
@@ -31,6 +23,11 @@ class Settings(BaseSettings):
     aws_secret_key: str
     aws_bucket_name: str
     ownid_shared_secret: str
+    lsd_url: str
+    lsd_db: str
+    lsd_user: str
+    lsd_host: str
+    lsd_password: str
 
     class Config:
         env_file = ".env"
