@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 from typing import List
@@ -12,10 +13,11 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from app.config import settings
 from app.db.db import get_async_session
+from app.db.lsd import get_lsd_conn
 from app.middleware.user_middleware import login_required
-from app.models.models import Bookmark, Post, Site, Tag, User, UserSession
+from app.models.models import Bookmark, Post, Site, Tag, UserSession
 from app.schemas.schemas import (CreateBookmarkRequest, CreatePostRequest,
-                                 DeletePostRequest, FrontendPost, PostResponse,
+                                 DeletePostRequest, FrontendPost,
                                  PreSignedUrlRequest, SiteBase, TagBase)
 
 router = APIRouter()
@@ -279,7 +281,7 @@ async def batch_upload(
     """
     urls = []
     max_file_size = 5 * 1024 * 1024  # 5 MB
-    allowed_types = ["image/jpeg", "image/png", "image/gif", "video/mp4"]
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4"]
 
     try:
         for file in files:
@@ -343,6 +345,24 @@ async def create_bookmark(
         raise HTTPException(status_code=500, detail="Failed to create bookmark") from e
 
     return {"message": "Bookmark created successfully"}
+
+
+@router.get("/hn-top-posts")
+async def get_top_posts(conn=Depends(get_lsd_conn)):
+    """Fetch Hacker News top posts."""
+    query = """
+    FROM https://news.ycombinator.com
+    |> GROUP BY span.titleline
+    |> SELECT a AS post
+    """
+
+    def blocking_query():
+        with conn.cursor() as curs:
+            curs.execute(query)
+            return curs.fetchall()
+
+    rows = await asyncio.to_thread(blocking_query)
+    return [{"post": row[0]} for row in rows]
 
 
 @router.post("/post")
