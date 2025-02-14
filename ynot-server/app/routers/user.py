@@ -8,9 +8,9 @@ from sqlalchemy.orm import joinedload
 
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
-from app.models.models import Post, User, UserSession
-from app.schemas.schemas import (FrontendPost, GetUserResponse,
-                                 ProfileCompletionRequest,
+from app.models.models import Bookmark, Post, User, UserSession
+from app.schemas.schemas import (BookmarkResponse, FrontendPost,
+                                 GetUserResponse, ProfileCompletionRequest,
                                  UpdateProfileRequest)
 
 router = APIRouter()
@@ -90,22 +90,31 @@ async def get_posts(
     posts_result = await db.execute(posts_query)
     posts = posts_result.unique().scalars().all()
 
-    frontend_posts = [
-        FrontendPost(
-            id=post.id,
-            owner_id=post.owner_id,
-            owner=user.username,
-            title=post.title,
-            note=post.note,
-            urls=post.urls,
-            file_keys=post.file_keys,
-            created_at=post.created_at,
-            tags=[tag.name for tag in post.tags],
-        )
-        for post in posts
-    ]
+    frontend_posts = [FrontendPost.from_orm(post) for post in posts]
 
     return frontend_posts
+
+
+@router.get("/{username}/bookmarks")
+async def get_bookmarks(username: str, db: AsyncSession = Depends(get_async_session)):
+    """
+    Returns a list of all bookmarks by username.
+    """
+    user_query = select(User).where(User.username == username)
+    result = await db.execute(user_query)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    bookmarks_query = (
+        select(Bookmark)
+        .where(Bookmark.owner_id == user.id)
+        .order_by(Bookmark.created_at.desc())
+    )
+    bookmarks_result = await db.execute(bookmarks_query)
+    bookmarks = bookmarks_result.unique().scalars().all()
+
+    return [BookmarkResponse.from_orm(bookmark) for bookmark in bookmarks]
 
 
 @router.get("/{username}/profile")
