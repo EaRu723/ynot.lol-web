@@ -280,7 +280,7 @@ async def batch_upload(
     Endpoint to upload multiple media files to S3. Validates files to ensure allowed filetype and under maximum size.
     """
     urls = []
-    max_file_size = 5 * 1024 * 1024  # 5 MB
+    max_file_size = 10 * 1024 * 1024  # 10 MB
     allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4"]
 
     try:
@@ -330,10 +330,10 @@ async def create_bookmark(
     Endpoint to create a bookmark from the Y Chrome extension. A bookmark has attributes URL, highlight, and note. Highlight and note are optional.
     """
     bookmark = Bookmark(
+        owner_id=session.user_id,
         url=request.url,
         note=request.note,
         highlight=request.highlight,
-        owner_id=session.user_id,
     )
     try:
         db.add(bookmark)
