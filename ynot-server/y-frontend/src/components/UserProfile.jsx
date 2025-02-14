@@ -10,6 +10,7 @@ function UserProfile({ isLoggedIn, user }) {
 
   const [activeView, setActiveView] = useState("activity");
   const [posts, setPosts] = useState([]);
+  const [bookmarks, setBookmarks] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,6 +34,15 @@ function UserProfile({ isLoggedIn, user }) {
         }
         const postsData = await postsResponse.json();
         setPosts(postsData);
+
+        const bookmarksResponse = await fetch(
+          `${API_URL}/user/${username}/bookmarks`,
+        );
+        if (!bookmarksResponse.ok) {
+          throw new Error("Failed to fetch user bookmarks");
+        }
+        const bookmarksData = await bookmarksResponse.json();
+        setBookmarks(bookmarksData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -47,22 +57,6 @@ function UserProfile({ isLoggedIn, user }) {
     setActiveView(view);
   };
 
-  // Add this function to group posts by date
-  const groupPostsByDate = (posts) => {
-    return posts.reduce((groups, post) => {
-      const date = new Date(post.created_at).toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      });
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(post);
-      return groups;
-    }, {});
-  };
-
   const handleLogout = async () => {
     try {
       const response = await fetch(`${API_URL}/auth/logout`, {
@@ -71,9 +65,8 @@ function UserProfile({ isLoggedIn, user }) {
       });
 
       if (response.ok) {
-        // Redirect to home page after logout
         navigate("/");
-        window.location.reload(); // Refresh to update auth state
+        window.location.reload();
       } else {
         throw new Error("Logout failed");
       }
@@ -84,8 +77,6 @@ function UserProfile({ isLoggedIn, user }) {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-
-  const groupedPosts = groupPostsByDate(posts);
 
   return (
     <div className="main">
@@ -173,19 +164,13 @@ function UserProfile({ isLoggedIn, user }) {
         )}
       </div>
       <div className="posts-by-date">
-        {Object.entries(groupedPosts).map(([date, datePosts]) => (
-          <div key={date} className="date-group">
-            <h2 className="date-header">{date}</h2>
-            <div className="posts-grid">
-              <TimelinePosts
-                posts={datePosts}
-                apiUrl={API_URL}
-                isLoggedIn={isLoggedIn}
-                userHandle={user.username}
-              />
-            </div>
-          </div>
-        ))}
+        <TimelinePosts
+          posts={posts}
+          bookmarks={bookmarks}
+          apiUrl={API_URL}
+          isLoggedIn={isLoggedIn}
+          userHandle={user.username}
+        />
       </div>
     </div>
   );

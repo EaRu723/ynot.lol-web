@@ -1,4 +1,3 @@
-/* General Styles */
 body {
   font-family: Arial, sans-serif;
   color: #333;
@@ -13,7 +12,6 @@ body {
   overflow: hidden;
 }
 
-/* Profile Banner */
 .profile-banner {
   width: 100%;
   height: 275px;
@@ -40,7 +38,6 @@ body {
   object-fit: cover;
 }
 
-/* Profile Information */
 .profile-info {
   padding: 20px;
   text-align: left;
@@ -70,7 +67,6 @@ body {
   white-space: pre-wrap;
 }
 
-/* Posts Section */
 .date-header {
   font-size: 1rem;
   color: #616161;
@@ -80,13 +76,6 @@ body {
   border-bottom: 1px solid #eee;
 }
 
-.posts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-/* Add styles for post content wrapping */
 .post-content {
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -138,7 +127,6 @@ body {
 }
 
 .posts-grid {
-  /* The actual grid layout is handled by TimelinePosts component */
   display: flex;
   flex-direction: column;
 }
@@ -148,8 +136,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000; /* Ensures header stays above other content */
-  /* Your other header styles */
+  z-index: 1000;
 }
 
 .profile-header {
