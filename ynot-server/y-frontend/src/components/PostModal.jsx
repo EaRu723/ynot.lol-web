@@ -72,9 +72,10 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     });
 
     if (!response.ok) {
-      alert("File upload failed");
+      const respJSON = await response.json();
+      alert(`${respJSON.detail}`);
       setUploading(false);
-      return [];
+      return null;
     }
 
     const { file_urls } = await response.json();
@@ -86,6 +87,12 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
     if (!isLoggedIn) {
       onClose();
       onLogin();
+      return;
+    }
+
+    // Validate either post body or an image has been included before posting
+    if (note.trim() === "" && files.length === 0) {
+      alert("Please include a note or image before posting");
       return;
     }
 
@@ -102,10 +109,13 @@ function PostModal({ post, onClose = null, isLoggedIn, onLogin }) {
 
     try {
       const fileUrls = files.length > 0 ? await uploadFilesToS3() : [];
+      if (fileUrls == null) {
+        return;
+      }
 
       const payload = {
-        title,
-        note,
+        title: title.trim(),
+        note: note.trim(),
         urls: validUrls,
         tags,
         file_keys: fileUrls,
