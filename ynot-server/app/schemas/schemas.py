@@ -71,6 +71,7 @@ class CreateBookmarkRequest(BaseModel):
 
 class BookmarkResponse(BaseModel):
     id: int
+    owner_id: int
     url: str
     highlight: Optional[str]
     note: Optional[str]
@@ -83,6 +84,7 @@ class BookmarkResponse(BaseModel):
     def from_orm(cls, obj):
         return cls(
             id=obj.id,
+            owner_id=obj.owner_id,
             url=obj.url,
             highlight=obj.highlight or "",
             note=obj.note or "",
@@ -161,6 +163,20 @@ class FrontendPost(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=obj.id,
+            owner_id=obj.owner_id,
+            owner=obj.owner.username,
+            title=obj.title,
+            note=obj.note,
+            urls=obj.urls or [],
+            tags=[tag.name for tag in obj.tags] if obj.tags else [],
+            file_keys=obj.file_keys or [],
+            created_at=obj.created_at.isoformat(),
+        )
 
 
 class GetUserResponse(BaseModel):

@@ -1,7 +1,6 @@
 import bcrypt
-from sqlalchemy import (JSON, Boolean, CheckConstraint, Column, DateTime,
-                        ForeignKey, Integer, MetaData, String, Table, Text,
-                        func)
+from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
+                        MetaData, String, Table, Text, func)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -25,7 +24,7 @@ post_tags = Table(
 class Bookmark(Base):
     __tablename__ = "bookmarks"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    owner_id = Column(Integer, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     url = Column(String, nullable=False)
     note = Column(Text, nullable=True)
     highlight = Column(Text, nullable=True)
