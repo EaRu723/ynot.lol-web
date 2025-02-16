@@ -35,16 +35,18 @@ const BookmarkCard = ({ bookmark }) => {
             {bookmark.url}
           </a>
         </div>
-        <div
-          className="bookmark-highlight"
-          style={{
-            backgroundColor: highlightColor,
-            padding: "0.25rem 0.5rem",
-            borderRadius: "4px",
-          }}
-        >
-          {bookmark.highlight}
-        </div>
+        {bookmark.highlight && (
+          <div
+            className="bookmark-highlight"
+            style={{
+              backgroundColor: highlightColor,
+              padding: "0.25rem 0.5rem",
+              borderRadius: "4px",
+            }}
+          >
+            {bookmark.highlight}
+          </div>
+        )}
         {bookmark.note && (
           <div className="bookmark-note">&gt; {bookmark.note}</div>
         )}
