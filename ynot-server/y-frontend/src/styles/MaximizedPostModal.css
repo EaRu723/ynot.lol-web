@@ -62,6 +62,13 @@
   height: 100%;
 }
 
+.title-avatar-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+}
+
 .gallery-modal {
   width: 100%;
   max-height: 40%;
@@ -131,6 +138,7 @@
   color: #999;
   font-size: 1rem;
   margin: 0.5rem 0;
+  text-decoration: none;
 }
 
 .modal-post-body {
@@ -167,6 +175,8 @@
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
+  padding-left: 0;
+  padding-bottom: 0px;
 }
 
 .menu-dropdown {
@@ -177,4 +187,9 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   z-index: 10;
+}
+
+.util-button {
+  background: white;
+  padding-left: 0;
 }

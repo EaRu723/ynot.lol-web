@@ -1,3 +1,8 @@
+.post-card-wrapper {
+  min-width: 300px;
+  margin: 0.5rem;
+}
+
 .post-card {
   background-color: #fff;
   border: 1px solid #e5e7eb;
