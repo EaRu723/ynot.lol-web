@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import TimelinePosts from "./TimelinePosts.jsx";
 import "../styles/UserProfile.css";
 import Linkify from "react-linkify";
@@ -170,10 +171,19 @@ function UserProfile({ isLoggedIn, user }) {
           apiUrl={API_URL}
           isLoggedIn={isLoggedIn}
           userHandle={user.username}
+          userAvatar={user.avatar}
         />
       </div>
     </div>
   );
 }
+
+UserProfile.propTypes = {
+  isLoggedIn: PropTypes.func,
+  user: PropTypes.shape({
+    username: PropTypes.string,
+    avatar: PropTypes.string,
+  }),
+};
 
 export default UserProfile;
