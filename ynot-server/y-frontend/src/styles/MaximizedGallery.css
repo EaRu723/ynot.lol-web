@@ -1,0 +1,51 @@
+.maximized-gallery-container {
+  position: relative;
+  overflow: auto;
+  background: #fff;
+  border-radius: 8px;
+  box-sizing: border-box;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 95%;
+  height: 90%;
+  padding: 1rem;
+  padding-right: 2.5rem;
+  margin: 6rem;
+  margin-top: 9rem;
+  margin-bottom: 9rem;
+  box-sizing: border-box;
+}
+
+.masonry {
+  padding: 1rem;
+  padding-bottom: 0;
+  overflow-y: auto;
+}
+
+.maximized-gallery-grid {
+  display: flex;
+  overflow-x: auto;
+  gap: 16px;
+  padding: 1rem;
+}
+
+.maximized-gallery-item {
+  padding: 0.5rem;
+}
+
+.maximized-gallery-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.gallery-post-owner {
+  color: #999;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.gallery-menu-container {
+  display: flex;
+  padding-left: 1rem;
+}

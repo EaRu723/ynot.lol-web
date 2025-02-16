@@ -16,6 +16,7 @@
     "react-image-crop": "^11.0.7",
     "react-linkify": "^1.0.0-alpha",
     "react-phone-number-input": "^3.4.11",
+    "react-responsive-masonry": "^2.7.1",
     "react-router-dom": "^7.0.1"
   },
   "devDependencies": {
