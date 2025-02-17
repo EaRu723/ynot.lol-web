@@ -2,7 +2,7 @@
 
 ```
 cd ynot-server
-docker-compose up --build -d ** may not need '-' 'docker compose...' works for me
+docker compose up --build
 
 cd ynot-server/y-frontend
 npm run build
