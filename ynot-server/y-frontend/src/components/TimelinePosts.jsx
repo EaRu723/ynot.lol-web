@@ -165,6 +165,7 @@ export const PostCard = ({ post, avatar, apiUrl, isOwner, autoOpen }) => {
           post={post}
           avatar={avatar}
           onClose={() => setIsViewModalOpen(false)}
+          apiUrl={apiUrl}
           isOwner={isOwner}
         />
       )}
