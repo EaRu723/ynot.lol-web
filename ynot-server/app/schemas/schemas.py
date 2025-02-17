@@ -85,7 +85,7 @@ class BookmarkResponse(BaseModel):
         return cls(
             id=obj.id,
             owner_id=obj.owner_id,
-            url=obj.url,
+            url=obj.url.url,
             highlight=obj.highlight or "",
             note=obj.note or "",
             created_at=obj.created_at.isoformat(),  # Convert datetime to ISO 8601 string

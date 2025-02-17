@@ -6,7 +6,7 @@ from typing import List
 import boto3
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile, WebSocket, WebSocketDisconnect)
-from sqlalchemy import delete, select, update
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -14,7 +14,6 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.config import settings
 from app.db.db import get_async_session
 from app.db.lsd import get_lsd_conn
-from app.lib.monolith import snapshot
 from app.middleware.user_middleware import login_required
 from app.models.models import Bookmark, Post, Site, Tag, Url, UserSession
 from app.schemas.schemas import (CreateBookmarkRequest, CreatePostRequest,
@@ -328,14 +327,31 @@ async def create_bookmark(
     """
     Endpoint to create a bookmark from the Y Chrome extension. A bookmark has attributes URL, highlight, and note. Highlight and note are optional.
     """
+
+    stmt = select(Url).where(Url.url == request.url)
+    result = await db.execute(stmt)
+    url_instance = result.scalar_one_or_none()
+
+    if not url_instance:
+        # Create a new URL record if it doesn't already exist
+        url_instance = Url(url=request.url)
+        db.add(url_instance)
+        try:
+            await db.commit()
+            await db.refresh(url_instance)
+        except SQLAlchemyError as e:
+            await db.rollback()
+            print(f"Error creating URL record: {e}")
+            raise HTTPException(status_code=500, detail="Failed to create URL") from e
+
     bookmark = Bookmark(
         owner_id=session.user_id,
-        url=request.url,
         note=request.note,
         highlight=request.highlight,
+        url_id=url_instance.id,
     )
+    db.add(bookmark)
     try:
-        db.add(bookmark)
         await db.commit()
         await db.refresh(bookmark)
     except SQLAlchemyError as e:
@@ -349,6 +365,7 @@ async def create_bookmark(
 @router.get("/hn-top-posts")
 async def get_top_posts(conn=Depends(get_lsd_conn)):
     """Fetch Hacker News top posts."""
+
     query = """
     FROM https://news.ycombinator.com
     |> GROUP BY span.titleline

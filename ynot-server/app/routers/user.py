@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
@@ -108,6 +108,7 @@ async def get_bookmarks(username: str, db: AsyncSession = Depends(get_async_sess
 
     bookmarks_query = (
         select(Bookmark)
+        .options(selectinload(Bookmark.url))
         .where(Bookmark.owner_id == user.id)
         .order_by(Bookmark.created_at.desc())
     )
