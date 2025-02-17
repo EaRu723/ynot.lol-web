@@ -172,7 +172,7 @@ class FrontendPost(BaseModel):
             owner=obj.owner.username,
             title=obj.title,
             note=obj.note,
-            urls=obj.urls or [],
+            urls=[url.url for url in obj.urls] if obj.urls else [],
             tags=[tag.name for tag in obj.tags] if obj.tags else [],
             file_keys=obj.file_keys or [],
             created_at=obj.created_at.isoformat(),

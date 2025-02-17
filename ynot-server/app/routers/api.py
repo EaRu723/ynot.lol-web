@@ -6,7 +6,7 @@ from typing import List
 import boto3
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile, WebSocket, WebSocketDisconnect)
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -14,8 +14,9 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.config import settings
 from app.db.db import get_async_session
 from app.db.lsd import get_lsd_conn
+from app.lib.monolith import snapshot
 from app.middleware.user_middleware import login_required
-from app.models.models import Bookmark, Post, Site, Tag, UserSession
+from app.models.models import Bookmark, Post, Site, Tag, Url, UserSession
 from app.schemas.schemas import (CreateBookmarkRequest, CreatePostRequest,
                                  DeletePostRequest, FrontendPost,
                                  PreSignedUrlRequest, SiteBase, TagBase)
@@ -25,13 +26,11 @@ router = APIRouter()
 AWS_BUCKET_NAME = settings.aws_bucket_name
 AWS_BUCKET_NAME = "ynot-media"
 AWS_REGION = "us-west-1"
-AWS_ACCESS_KEY = settings.aws_access_key
-AWS_SECRET_KEY = settings.aws_secret_key
 
 s3_client = boto3.client(
     "s3",
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
+    aws_access_key_id=settings.aws_access_key,
+    aws_secret_access_key=settings.aws_secret_key,
     region_name=AWS_REGION,
 )
 
@@ -376,30 +375,49 @@ async def create_post(
     for tag_name in request.tags:
         try:
             # Check if the tag exists
-            existing_tag = await db.execute(select(Tag).where(Tag.name == tag_name))
-            existing_tag = existing_tag.scalars().first()
+            result = await db.execute(select(Tag).where(Tag.name == tag_name))
+            tag_obj = result.scalars().first()
 
-            if existing_tag:
-                tag_objs.append(existing_tag)
-            else:
+            if not tag_obj:
                 # Create a new tag if it doesn't exist
-                new_tag = Tag(name=tag_name)
-                db.add(new_tag)
+                tag_obj = Tag(name=tag_name)
+                db.add(tag_obj)
                 await db.flush()
-                tag_objs.append(new_tag)
+            tag_objs.append(tag_obj)
         except IntegrityError:
             # Handle race condition where tag was created by another request
             await db.rollback()
-            existing_tag = await db.execute(select(Tag).where(Tag.name == tag_name))
-            existing_tag = existing_tag.scalars().first()
+            result = await db.execute(select(Tag).where(Tag.name == tag_name))
+            existing_tag = result.scalars().first()
             if existing_tag:
                 tag_objs.append(existing_tag)
+
+    # Fetch or create URLs
+    url_objs = []
+    for url_str in request.urls:
+        try:
+            # Check if URL exists
+            result = await db.execute(select(Url).where(Url.url == url_str))
+            url_obj = result.scalars().first()
+
+            if not url_obj:
+                url_obj = Url(url=url_str)
+                db.add(url_obj)
+                await db.flush()
+            url_objs.append(url_obj)
+        except IntegrityError:
+            # Handle race condition where url was created by another request
+            await db.rollback()
+            result = await db.execute(select(Url).where(Url.url == url_str))
+            existing_url = result.scalars().first()
+            if existing_url:
+                url_objs.append(existing_url)
 
     post = Post(
         owner_id=session.user.id,
         title=request.title,
         note=request.note,
-        urls=request.urls,
+        urls=url_objs,
         tags=tag_objs,
         file_keys=request.file_keys,
     )
@@ -415,7 +433,7 @@ async def create_post(
     # Fetch post with relationships loaded
     result = await db.execute(
         select(Post)
-        .options(joinedload(Post.tags), joinedload(Post.owner))
+        .options(joinedload(Post.tags), joinedload(Post.owner), joinedload(Post.urls))
         .where(Post.id == post.id)
     )
     returned_post = result.unique().scalar_one()
@@ -426,7 +444,7 @@ async def create_post(
         owner=returned_post.owner.username,
         title=returned_post.title,
         note=returned_post.note,
-        urls=returned_post.urls or [],
+        urls=[url.url for url in returned_post.urls],
         tags=[tag.name for tag in returned_post.tags],
         file_keys=returned_post.file_keys or [],
         created_at=returned_post.created_at,
@@ -444,25 +462,17 @@ async def delete_post(
     session: UserSession = Depends(login_required),
     db: AsyncSession = Depends(get_async_session),
 ) -> dict:
-    query = delete(Post).where(Post.id == request.id, Post.owner_id == session.user.id)
-    try:
-        result = await db.execute(query)
-        await db.commit()
+    stmt = (
+        update(Post)
+        .where(Post.id == request.id, Post.owner_id == session.user.id)
+        .values(is_deleted=True)
+    )
+    result = await db.execute(stmt)
+    if not result:
+        raise HTTPException(status_code=404, detail="Post not found")
+    await db.commit()
 
-        if result.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail="Post not found or unauthorized"
-            )
-
-        return {"message": "Post deleted successfully"}
-
-    except SQLAlchemyError as e:
-        print(f"Database error while deleting post with id {request.id}: {e}")
-        raise HTTPException(status_code=500, detail="Database error on delete post")
-
-    except Exception as e:
-        print(f"Unexpected error while deleting post with id {request.id}: {e}")
-        raise HTTPException(status_code=500, detail="Unexpected error on delete post")
+    return {"message": "Post deleted successfully"}
 
 
 # @router.post("/post")

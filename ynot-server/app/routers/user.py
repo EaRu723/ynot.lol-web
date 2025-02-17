@@ -83,8 +83,8 @@ async def get_posts(
 
     posts_query = (
         select(Post)
-        .options(joinedload(Post.tags))
-        .where(Post.owner_id == user.id)
+        .options(joinedload(Post.tags), joinedload(Post.urls))
+        .where(Post.owner_id == user.id, Post.is_deleted == False)
         .order_by(Post.created_at.desc())
     )
     posts_result = await db.execute(posts_query)
