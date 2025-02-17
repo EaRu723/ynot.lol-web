@@ -27,13 +27,6 @@ post_urls = Table(
     Column("url_id", Integer, ForeignKey("urls.id"), primary_key=True),
 )
 
-bookmark_urls = Table(
-    "bookmark_urls",
-    Base.metadata,
-    Column("bookmark_id", Integer, ForeignKey("bookmarks.id"), primary_key=True),
-    Column("url_id", Integer, ForeignKey("urls.id"), primary_key=True),
-)
-
 
 class Bookmark(Base):
     __tablename__ = "bookmarks"
@@ -41,11 +34,12 @@ class Bookmark(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     note = Column(Text, nullable=True)
     highlight = Column(Text, nullable=True)
+    url_id = Column(Integer, ForeignKey("urls.id"), nullable=False)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    urls = relationship("Url", secondary=bookmark_urls, back_populates="bookmarks")
+    url = relationship("Url", back_populates="bookmarks")
 
 
 class Url(Base):
@@ -57,7 +51,7 @@ class Url(Base):
     )
 
     posts = relationship("Post", secondary=post_urls, back_populates="urls")
-    bookmarks = relationship("Bookmark", secondary=bookmark_urls, back_populates="urls")
+    bookmarks = relationship("Bookmark", back_populates="url")
 
 
 class Post(Base):
