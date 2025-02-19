@@ -20,17 +20,38 @@ post_tags = Table(
     Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
 )
 
+post_urls = Table(
+    "post_urls",
+    Base.metadata,
+    Column("post_id", Integer, ForeignKey("posts.id"), primary_key=True),
+    Column("url_id", Integer, ForeignKey("urls.id"), primary_key=True),
+)
+
 
 class Bookmark(Base):
     __tablename__ = "bookmarks"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    url = Column(String, nullable=False)
     note = Column(Text, nullable=True)
     highlight = Column(Text, nullable=True)
+    url_id = Column(Integer, ForeignKey("urls.id"), nullable=False)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+    url = relationship("Url", back_populates="bookmarks")
+
+
+class Url(Base):
+    __tablename__ = "urls"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    url = Column(String, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    posts = relationship("Post", secondary=post_urls, back_populates="urls")
+    bookmarks = relationship("Bookmark", back_populates="url")
 
 
 class Post(Base):
@@ -40,12 +61,13 @@ class Post(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=True)
     note = Column(Text, nullable=False)
-    urls = Column(JSON, nullable=True)  # Parsed urls from post note
     file_keys = Column(JSON, nullable=True)  # S3 urls for uploaded files
+    is_deleted = Column(Boolean, default=False)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    urls = relationship("Url", secondary=post_urls, back_populates="posts")
     tags = relationship("Tag", secondary=post_tags, back_populates="posts")
     owner = relationship("User", back_populates="posts")
 

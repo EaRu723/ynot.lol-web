@@ -85,7 +85,7 @@ class BookmarkResponse(BaseModel):
         return cls(
             id=obj.id,
             owner_id=obj.owner_id,
-            url=obj.url,
+            url=obj.url.url,
             highlight=obj.highlight or "",
             note=obj.note or "",
             created_at=obj.created_at.isoformat(),  # Convert datetime to ISO 8601 string
@@ -172,7 +172,7 @@ class FrontendPost(BaseModel):
             owner=obj.owner.username,
             title=obj.title,
             note=obj.note,
-            urls=obj.urls or [],
+            urls=[url.url for url in obj.urls] if obj.urls else [],
             tags=[tag.name for tag in obj.tags] if obj.tags else [],
             file_keys=obj.file_keys or [],
             created_at=obj.created_at.isoformat(),

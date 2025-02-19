@@ -3,9 +3,11 @@
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 1rem;
+  margin: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  max-width: 300px;
 }
 
 .bookmark-card:hover {
@@ -17,6 +19,7 @@
   font-family: monospace;
   color: grey;
   text-decoration: underline;
+  overflow-wrap: break-word;
 }
 
 .bookmark-highlight,

@@ -7,7 +7,7 @@ import { renderTextWithTagsAndLinks } from "../utils/textUtils.jsx";
 import BookmarkCard from "./BookmarkCard.jsx";
 import "../styles/TimelinePosts.css";
 
-export const PostCard = ({ post, apiUrl, isOwner, autoOpen }) => {
+export const PostCard = ({ post, avatar, apiUrl, isOwner, autoOpen }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -163,7 +163,9 @@ export const PostCard = ({ post, apiUrl, isOwner, autoOpen }) => {
       {isViewModalOpen && (
         <MaximizedPostModal
           post={post}
+          avatar={avatar}
           onClose={() => setIsViewModalOpen(false)}
+          apiUrl={apiUrl}
           isOwner={isOwner}
         />
       )}
@@ -183,6 +185,7 @@ PostCard.propTypes = {
     created_at: PropTypes.string,
     file_keys: PropTypes.arrayOf(PropTypes.string),
   }).isRequired,
+  avatar: PropTypes.string,
   apiUrl: PropTypes.string,
   isOwner: PropTypes.bool,
   autoOpen: PropTypes.bool,
@@ -194,6 +197,7 @@ const TimelinePosts = ({
   apiUrl,
   isLoggedIn,
   userHandle,
+  userAvatar,
 }) => {
   const [searchParams] = useSearchParams();
   const sharePostId = searchParams.get("post");
@@ -246,11 +250,12 @@ const TimelinePosts = ({
           <div className="date-group" key={groupKey}>
             <h2 className="date-header">{displayDate}</h2>
             <div
-              className="posts-grid"
+              className="posts-scroll"
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "1rem",
+                display: "flex",
+                overflowX: "auto",
+                gap: "0.5rem",
+                paddingBottom: "1rem",
               }}
             >
               {items.map((item) => {
@@ -259,6 +264,7 @@ const TimelinePosts = ({
                     <PostCard
                       key={`post-${item.id}`}
                       post={item}
+                      avatar={userAvatar}
                       apiUrl={apiUrl}
                       isOwner={isLoggedIn && item.owner === userHandle}
                       autoOpen={sharePostId && String(item.id) === sharePostId}
@@ -301,6 +307,7 @@ TimelinePosts.propTypes = {
   apiUrl: PropTypes.string.isRequired,
   isLoggedIn: PropTypes.bool,
   userHandle: PropTypes.string,
+  userAvatar: PropTypes.string,
 };
 
 export default TimelinePosts;
