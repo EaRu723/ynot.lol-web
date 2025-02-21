@@ -15,6 +15,10 @@ const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
     }
   }, [phone]);
 
+  function onError(data) {
+    alert(`Error logging in: ${data}`);
+  }
+
   async function onSubmit(data) {
     setIsLoggedIn(true);
 
@@ -33,7 +37,7 @@ const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
     const loginResponse = await response.json();
 
     if (!response.ok) {
-      alert(`Error logging in: ${loginResponse.error}`);
+      alert(`Error logging in: ${loginResponse.detail}`);
     }
 
     setUser({
@@ -76,7 +80,7 @@ const PasswordlessLogin = ({ API_URL, setIsLoggedIn, setUser }) => {
           <OwnID
             type="login"
             loginIdField={phoneNumberRef}
-            onError={(error) => console.error(error)}
+            onError={(error) => onError(error)}
             onLogin={(data) => onSubmit(data)}
           />
         </div>
