@@ -1,6 +1,8 @@
 import asyncio
+from collections.abc import AsyncGenerator
 
 from psycopg2 import pool
+from psycopg2.extensions import connection
 
 from app.config import settings
 
@@ -41,7 +43,7 @@ class LSD:
 lsd = LSD()
 
 
-async def get_lsd_conn():
+async def get_lsd_conn() -> AsyncGenerator[connection, None]:
     conn = await asyncio.to_thread(lsd.get_connection)
     try:
         yield conn
