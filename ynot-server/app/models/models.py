@@ -46,6 +46,7 @@ class Url(Base):
     __tablename__ = "urls"
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     url = Column(String, nullable=False)
+    markdown = Column(Text, nullable=True)
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -6,6 +6,7 @@ from typing import List
 import boto3
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile, WebSocket, WebSocketDisconnect)
+from psycopg2.extensions import connection
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.config import settings
 from app.db.db import get_async_session
 from app.db.lsd import get_lsd_conn
+from app.lib.lsd import parse_markdown
 from app.middleware.user_middleware import login_required
 from app.models.models import Bookmark, Post, Site, Tag, Url, UserSession
 from app.schemas.schemas import (CreateBookmarkRequest, CreatePostRequest,
@@ -323,6 +325,7 @@ async def create_bookmark(
     request: CreateBookmarkRequest,
     db: AsyncSession = Depends(get_async_session),
     session: UserSession = Depends(login_required),
+    lsd_conn: connection = Depends(get_lsd_conn),
 ):
     """
     Endpoint to create a bookmark from the Y Chrome extension. A bookmark has attributes URL, highlight, and note. Highlight and note are optional.
@@ -334,7 +337,8 @@ async def create_bookmark(
 
     if not url_instance:
         # Create a new URL record if it doesn't already exist
-        url_instance = Url(url=request.url)
+        markdown_content = await parse_markdown(request.url, lsd_conn)
+        url_instance = Url(url=request.url, markdown=markdown_content)
         db.add(url_instance)
         try:
             await db.commit()
@@ -343,6 +347,23 @@ async def create_bookmark(
             await db.rollback()
             print(f"Error creating URL record: {e}")
             raise HTTPException(status_code=500, detail="Failed to create URL") from e
+    elif url_instance and url_instance.markdown is None:
+        # If URL record exists but doesn't have markdown content, update the row with content
+        markdown_content = await parse_markdown(request.url, lsd_conn)
+        update_stmt = (
+            update(Url)
+            .where(Url.id == url_instance.id)
+            .values(markdown=markdown_content)
+        )
+        try:
+            await db.execute(update_stmt)
+            await db.commit()
+        except SQLAlchemyError as e:
+            await db.rollback()
+            print(f"Error creating URL record: {e}")
+            raise HTTPException(
+                status_code=500, detail="Failed to update URL with page content"
+            ) from e
 
     bookmark = Bookmark(
         owner_id=session.user_id,
