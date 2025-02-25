@@ -1,7 +1,9 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
-import MaximizedBookmark from "./MaximizedBookmark.jsx";
+import { useState, lazy } from "react";
 import "../styles/BookmarkCard.css";
+
+// Lazy load component to avoid minified chunk size warning
+const MaximizedBookmark = lazy(() => import("./MaximizedBookmark.jsx"));
 
 const BookmarkCard = ({ bookmark }) => {
   const pastelColors = [
