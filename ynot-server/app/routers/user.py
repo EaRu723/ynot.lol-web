@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
@@ -167,6 +167,39 @@ async def update_profile(
         raise HTTPException(
             status_code=500, detail="Internal server error while updating profile"
         )
+
+
+@router.get("/search")
+async def search_profile_content(
+    query: str,
+    session: UserSession = Depends(login_required),
+    db: AsyncSession = Depends(get_async_session),
+) -> dict:
+    ts_query = func.plainto_tsquery("english", query)
+
+    posts_stmt = (
+        select(Post)
+        .options(joinedload(Post.owner), joinedload(Post.tags), joinedload(Post.urls))
+        .where(Post.owner_id == session.user.id, Post.search_vector.op("@@")(ts_query))
+    )
+    posts_result = await db.execute(posts_stmt)
+    posts = posts_result.unique().scalars().all()
+
+    bookmarks_stmt = (
+        select(Bookmark)
+        .options(joinedload(Bookmark.url))
+        .where(
+            Bookmark.owner_id == session.user.id,
+            Bookmark.search_vector.op("@@")(ts_query),
+        )
+    )
+    bookmarks_result = await db.execute(bookmarks_stmt)
+    bookmarks = bookmarks_result.unique().scalars().all()
+
+    posts_data = [PostResponse.from_orm(post) for post in posts]
+    bookmarks_data = [BookmarkResponse.from_orm(bookmark) for bookmark in bookmarks]
+
+    return {"posts": posts_data, "bookmarks": bookmarks_data}
 
 
 #
