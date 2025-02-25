@@ -16,41 +16,70 @@ function UserProfile({ isLoggedIn, user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const API_URL = import.meta.env.VITE_API_BASE_URL;
+  const [query, setQuery] = useState("");
+  const [isFiltered, setIsFiltered] = useState(false);
+
+  const fetchUserData = async () => {
+    try {
+      const profileResponse = await fetch(
+        `${API_URL}/user/${username}/profile`,
+      );
+      if (!profileResponse.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+      const profileData = await profileResponse.json();
+      setProfile(profileData);
+
+      const postsResponse = await fetch(`${API_URL}/user/${username}/posts`);
+      if (!postsResponse.ok) {
+        throw new Error("Failed to fetch user posts");
+      }
+      const postsData = await postsResponse.json();
+      setPosts(postsData);
+
+      const bookmarksResponse = await fetch(
+        `${API_URL}/user/${username}/bookmarks`,
+      );
+      if (!bookmarksResponse.ok) {
+        throw new Error("Failed to fetch user bookmarks");
+      }
+      const bookmarksData = await bookmarksResponse.json();
+      setBookmarks(bookmarksData);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setIsFiltered(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!query.trim()) {
+      fetchUserData();
+      return;
+    }
+    onSearch(query);
+  };
+
+  const onSearch = async (query) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/user/search?query=${encodeURIComponent(query)}`,
+      );
+      if (!response.ok) {
+        throw new Error("Search failed");
+      }
+      const data = await response.json();
+      setPosts(data.posts);
+      setBookmarks(data.bookmarks);
+      setIsFiltered(true);
+    } catch (error) {
+      console.error("Error during search:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const profileResponse = await fetch(
-          `${API_URL}/user/${username}/profile`,
-        );
-        if (!profileResponse.ok) {
-          throw new Error("Failed to fetch user profile");
-        }
-        const profileData = await profileResponse.json();
-        setProfile(profileData);
-
-        const postsResponse = await fetch(`${API_URL}/user/${username}/posts`);
-        if (!postsResponse.ok) {
-          throw new Error("Failed to fetch user posts");
-        }
-        const postsData = await postsResponse.json();
-        setPosts(postsData);
-
-        const bookmarksResponse = await fetch(
-          `${API_URL}/user/${username}/bookmarks`,
-        );
-        if (!bookmarksResponse.ok) {
-          throw new Error("Failed to fetch user bookmarks");
-        }
-        const bookmarksData = await bookmarksResponse.json();
-        setBookmarks(bookmarksData);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserData();
   }, [username, API_URL]);
 
@@ -163,6 +192,31 @@ function UserProfile({ isLoggedIn, user }) {
             Private
           </button>
         )}
+      </div>
+      <div className="profile-search">
+        <form onSubmit={handleSubmit} className="profile-search-form">
+          <input
+            type="text"
+            placeholder="Search your web"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="profile-search-input"
+          />
+          <button type="submit" className="profile-search-button">
+            Search
+          </button>
+          {isFiltered && (
+            <button
+              onClick={() => {
+                fetchUserData();
+                setQuery("");
+              }}
+              className="clear-search-button"
+            >
+              Clear search
+            </button>
+          )}
+        </form>
       </div>
       <div className="posts-by-date">
         <TimelinePosts
