@@ -19,7 +19,7 @@ from app.lib.lsd import parse_markdown
 from app.middleware.user_middleware import login_required
 from app.models.models import Bookmark, Post, Site, Tag, Url, UserSession
 from app.schemas.schemas import (CreateBookmarkRequest, CreatePostRequest,
-                                 DeletePostRequest, FrontendPost,
+                                 DeletePostRequest, PostResponse,
                                  PreSignedUrlRequest, SiteBase, TagBase)
 
 router = APIRouter()
@@ -362,7 +362,7 @@ async def create_bookmark(
             await db.rollback()
             print(f"Error creating URL record: {e}")
             raise HTTPException(
-                status_code=500, detail="Failed to update URL with page content"
+                status_code=500, detail="Failed to update URL with markdown content"
             ) from e
 
     bookmark = Bookmark(
@@ -407,6 +407,7 @@ async def create_post(
     request: CreatePostRequest,
     session: UserSession = Depends(login_required),
     db: AsyncSession = Depends(get_async_session),
+    lsd_conn: connection = Depends(get_lsd_conn),
 ):
     # Fetch or create tags
     tag_objs = []
@@ -439,9 +440,37 @@ async def create_post(
             url_obj = result.scalars().first()
 
             if not url_obj:
-                url_obj = Url(url=url_str)
+                markdown_content = await parse_markdown(url_str, lsd_conn)
+                url_obj = Url(url=url_str, markdown=markdown_content)
                 db.add(url_obj)
+                try:
+                    await db.commit()
+                    await db.refresh(url_obj)
+                except SQLAlchemyError as e:
+                    await db.rollback()
+                    print(f"Error creating URL record: {e}")
+                    raise HTTPException(
+                        status_code=500, detail="Failed to create URL"
+                    ) from e
                 await db.flush()
+            elif url_obj and url_obj.markdown is None:
+                markdown_content = await parse_markdown(url_str, lsd_conn)
+                update_stmt = (
+                    update(Url)
+                    .where(Url.id == url_obj.id)
+                    .values(markdown=markdown_content)
+                )
+                try:
+                    await db.execute(update_stmt)
+                    await db.commit()
+                except SQLAlchemyError as e:
+                    await db.rollback()
+                    print(f"Error creating URL record: {e}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to update URL with markdown content",
+                    ) from e
+
             url_objs.append(url_obj)
         except IntegrityError:
             # Handle race condition where url was created by another request
@@ -476,7 +505,7 @@ async def create_post(
     )
     returned_post = result.unique().scalar_one()
 
-    frontend_post = FrontendPost(
+    post_response = PostResponse(
         id=returned_post.id,
         owner_id=returned_post.owner_id,
         owner=returned_post.owner.username,
@@ -489,9 +518,9 @@ async def create_post(
     )
 
     # Broadcast new post to all WebSocket clients
-    await manager.broadcast(frontend_post.model_dump())
+    await manager.broadcast(post_response.model_dump())
 
-    return frontend_post
+    return post_response
 
 
 @router.delete("/post")
@@ -731,10 +760,10 @@ async def delete_post(
 #
 
 
-@router.get("/recent-posts", response_model=List[FrontendPost])
+@router.get("/recent-posts", response_model=List[PostResponse])
 async def get_recent_posts(
     limit: int = 10, db: AsyncSession = Depends(get_async_session)
-) -> List[FrontendPost]:
+) -> List[PostResponse]:
     result = await db.execute(
         select(Post)
         .options(selectinload(Post.owner), selectinload(Post.tags))
@@ -744,7 +773,7 @@ async def get_recent_posts(
     posts = result.scalars().all()
 
     frontend_posts = [
-        FrontendPost(
+        PostResponse(
             id=post.id,
             owner_id=post.owner_id,
             owner=post.owner.username,

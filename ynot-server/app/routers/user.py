@@ -9,8 +9,8 @@ from sqlalchemy.orm import joinedload, selectinload
 from app.db.db import get_async_session
 from app.middleware.user_middleware import login_required
 from app.models.models import Bookmark, Post, User, UserSession
-from app.schemas.schemas import (BookmarkResponse, FrontendPost,
-                                 GetUserResponse, ProfileCompletionRequest,
+from app.schemas.schemas import (BookmarkResponse, GetUserResponse,
+                                 PostResponse, ProfileCompletionRequest,
                                  UpdateProfileRequest)
 
 router = APIRouter()
@@ -53,8 +53,6 @@ async def complete_profile(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    print(request)
-
     user.username = request.username
     user.name = request.displayName
     if request.avatar:
@@ -71,7 +69,7 @@ async def complete_profile(
 async def get_posts(
     username: str,
     db: AsyncSession = Depends(get_async_session),
-) -> List[FrontendPost]:
+) -> List[PostResponse]:
     """
     Return a list of all posts by username.
     """
@@ -90,7 +88,7 @@ async def get_posts(
     posts_result = await db.execute(posts_query)
     posts = posts_result.unique().scalars().all()
 
-    frontend_posts = [FrontendPost.from_orm(post) for post in posts]
+    frontend_posts = [PostResponse.from_orm(post) for post in posts]
 
     return frontend_posts
 
