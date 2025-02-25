@@ -1,6 +1,8 @@
 import bcrypt
-from sqlalchemy import (JSON, Boolean, Column, DateTime, ForeignKey, Integer,
-                        MetaData, String, Table, Text, func)
+from sqlalchemy import (DDL, JSON, Boolean, Column, DateTime, ForeignKey,
+                        Index, Integer, MetaData, String, Table, Text, event,
+                        func)
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -39,7 +41,44 @@ class Bookmark(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    search_vector = Column(TSVECTOR)
+
     url = relationship("Url", back_populates="bookmarks")
+
+    __table_args__ = (
+        Index("ix_bookmarks_search_vector", "search_vector", postgresql_using="gin"),
+    )
+
+
+# Create trigger function for bookmarks full-text search
+# Here we pull in the markdown from the associated URL
+bookmark_trigger_function = DDL(
+    """
+    CREATE FUNCTION bookmarks_search_vector_trigger() RETURNS trigger AS $$
+    declare
+      url_markdown text;
+    begin
+      SELECT markdown INTO url_markdown FROM urls WHERE id = new.url_id;
+      new.search_vector := to_tsvector('english',
+        coalesce(new.note, '') || ' ' || coalesce(new.highlight, '') || ' ' || coalesce(url_markdown, '')
+      );
+      return new;
+    end
+    $$ LANGUAGE plpgsql;
+    """
+)
+
+# Create trigger on bookmarks table
+bookmark_trigger = DDL(
+    """
+    CREATE TRIGGER bookmarks_vector_update BEFORE INSERT OR UPDATE
+    ON bookmarks FOR EACH ROW EXECUTE PROCEDURE bookmarks_search_vector_trigger();
+    """
+)
+
+# Attach DDL events to Bookmark table
+event.listen(Bookmark.__table__, "after_create", bookmark_trigger_function)
+event.listen(Bookmark.__table__, "after_create", bookmark_trigger)
 
 
 class Url(Base):
@@ -68,9 +107,42 @@ class Post(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    search_vector = Column(TSVECTOR)
+
     urls = relationship("Url", secondary=post_urls, back_populates="posts")
     tags = relationship("Tag", secondary=post_tags, back_populates="posts")
     owner = relationship("User", back_populates="posts")
+
+    __table_args__ = (
+        Index("ix_posts_search_vector", "search_vector", postgresql_using="gin"),
+    )
+
+
+# Create trigger function for posts full-text search
+post_trigger_function = DDL(
+    """
+    CREATE FUNCTION posts_search_vector_trigger() RETURNS trigger AS $$
+    begin
+      new.search_vector := to_tsvector('english',
+        coalesce(new.title, '') || ' ' || coalesce(new.note, '')
+      );
+      return new;
+    end
+    $$ LANGUAGE plpgsql;
+    """
+)
+
+# Create trigger on posts table
+post_trigger = DDL(
+    """
+    CREATE TRIGGER posts_vector_update BEFORE INSERT OR UPDATE
+    ON posts FOR EACH ROW EXECUTE PROCEDURE posts_search_vector_trigger();
+    """
+)
+
+# Attach DDL events to Post table
+event.listen(Post.__table__, "after_create", post_trigger_function)
+event.listen(Post.__table__, "after_create", post_trigger)
 
 
 class Tag(Base):
