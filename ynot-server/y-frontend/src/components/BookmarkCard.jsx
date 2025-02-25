@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
+import MaximizedBookmark from "./MaximizedBookmark.jsx";
 import "../styles/BookmarkCard.css";
 
 const BookmarkCard = ({ bookmark }) => {
@@ -18,6 +19,16 @@ const BookmarkCard = ({ bookmark }) => {
     return pastelColors[randomIndex];
   });
 
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+
+  const openModal = () => {
+    setIsViewModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsViewModalOpen(false);
+  };
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString("en-US", {
@@ -28,33 +39,42 @@ const BookmarkCard = ({ bookmark }) => {
   };
 
   return (
-    <div className="bookmark-card-wrapper">
-      <div className="bookmark-card" id={`bookmark-${bookmark.id}`}>
-        <div className="bookmark-url">
-          <a href={bookmark.url} target="_blank" rel="noopener noreferrer">
-            {bookmark.url}
-          </a>
-        </div>
-        {bookmark.highlight && (
-          <div
-            className="bookmark-highlight"
-            style={{
-              backgroundColor: highlightColor,
-              padding: "0.25rem 0.5rem",
-              borderRadius: "4px",
-            }}
-          >
-            {bookmark.highlight}
+    <>
+      <div className="bookmark-card-wrapper" onClick={openModal}>
+        <div className="bookmark-card" id={`bookmark-${bookmark.id}`}>
+          <div className="bookmark-url">
+            <a href={bookmark.url} target="_blank" rel="noopener noreferrer">
+              {bookmark.url}
+            </a>
           </div>
-        )}
-        {bookmark.note && (
-          <div className="bookmark-note">&gt; {bookmark.note}</div>
-        )}
-        <div className="bookmark-timestamp">
-          {formatTime(bookmark.created_at)}
+          {bookmark.highlight && (
+            <div
+              className="bookmark-highlight"
+              style={{
+                backgroundColor: highlightColor,
+                padding: "0.25rem 0.5rem",
+                borderRadius: "4px",
+              }}
+            >
+              {bookmark.highlight}
+            </div>
+          )}
+          {bookmark.note && (
+            <div className="bookmark-note">&gt; {bookmark.note}</div>
+          )}
+          <div className="bookmark-timestamp">
+            {formatTime(bookmark.created_at)}
+          </div>
         </div>
       </div>
-    </div>
+      {isViewModalOpen && (
+        <MaximizedBookmark
+          bookmark={bookmark}
+          highlightColor={highlightColor}
+          onClose={closeModal}
+        />
+      )}
+    </>
   );
 };
 

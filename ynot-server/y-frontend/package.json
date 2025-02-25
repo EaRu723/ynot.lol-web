@@ -15,9 +15,11 @@
     "react-dom": "^18.3.1",
     "react-image-crop": "^11.0.7",
     "react-linkify": "^1.0.0-alpha",
+    "react-markdown": "^10.0.0",
     "react-phone-number-input": "^3.4.11",
     "react-responsive-masonry": "^2.7.1",
-    "react-router-dom": "^7.0.1"
+    "react-router-dom": "^7.0.1",
+    "rehype-raw": "^7.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

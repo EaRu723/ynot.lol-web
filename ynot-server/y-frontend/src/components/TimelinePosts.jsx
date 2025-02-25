@@ -43,7 +43,7 @@ export const PostCard = ({ post, avatar, apiUrl, isOwner, autoOpen }) => {
     navigator.clipboard.writeText(
       `${window.location.origin}/user/${post.owner}?post=${post.id}`,
     );
-    alert("Post link copied to clipboard!");
+    alert("Share link copied to clipboard!");
   };
 
   const handleDelete = async (e) => {

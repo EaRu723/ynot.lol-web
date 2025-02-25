@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import PostModal from "./PostModal";
 import "../styles/PostPreview.css";
 import { calculateTimeElapsed } from "../utils/timeUtils.js";
