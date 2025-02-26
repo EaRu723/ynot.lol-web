@@ -4,6 +4,7 @@ import uuid
 from typing import List
 
 import boto3
+import chromadb
 from fastapi import (APIRouter, Depends, File, HTTPException, Request,
                      UploadFile, WebSocket, WebSocketDisconnect)
 from psycopg2.extensions import connection
@@ -13,8 +14,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.config import settings
+from app.db.chroma import get_chroma_client
 from app.db.db import get_async_session
 from app.db.lsd import get_lsd_conn
+from app.lib.chroma import heartbeat
 from app.lib.lsd import parse_markdown
 from app.middleware.user_middleware import login_required
 from app.models.models import Bookmark, Post, Site, Tag, Url, UserSession
@@ -232,6 +235,12 @@ async def insert_data(session: AsyncSession = Depends(get_async_session)):
 async def ping():
     """Check if the API is running"""
     return {"message": "pong"}
+
+
+@router.get("/chroma/heartbeat")
+async def chroma_heartbeat(client=Depends(get_chroma_client)):
+    async with get_chroma_client() as client:
+        return await client.heartbeat()
 
 
 @router.get("/sites", response_model=List[SiteBase])

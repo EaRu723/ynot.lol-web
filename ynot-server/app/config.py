@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     lsd_user: str
     lsd_host: str
     lsd_password: str
+    chroma_port: int
 
     class Config:
         env_file = ".env"

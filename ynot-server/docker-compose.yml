@@ -13,14 +13,28 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  chroma:
+    image: chromadb/chroma:0.6.3
+    container_name: chromadb
+    hostname: chromadb
+    restart: unless-stopped
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    ports:
+      - "8080:${CHROMA_PORT}"
+    volumes:
+      - ./chromadb:/chroma/chroma
+    command:
+      - "--workers 1 --host 0.0.0.0 --port 8080 --proxy-headers --timeout-keep-alive 30"
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: app
     restart: always
-    ports:
-      - "8000:${APP_PORT}"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -28,6 +42,8 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: ${POSTGRES_PORT}
       APP_ENV: ${APP_ENV}
+    ports:
+      - "8000:${APP_PORT}"
     volumes:
       - .:/app
     depends_on:
